@@ -1,0 +1,2 @@
+three.min.js: three.js r149 (https://threejs.org), licença MIT, (c) 2010-2023 three.js authors.
+Usado pelo build-offline.sh (embutido no arquivo único) e pelos testes (servido no lugar do CDN).

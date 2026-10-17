@@ -1,0 +1,22 @@
+const {open,ROOT}=require('../lib');
+(async()=>{
+  const {browser,page,logs}=await open();
+  const shot=async n=>{await page.evaluate(()=>__vt.renderOnce());await page.screenshot({path:ROOT+'/test/shots/'+n+'.png'});};
+  const info=()=>page.evaluate(()=>{const i=__vt.renderer.info;return{calls:i.render.calls,tris:i.render.triangles,geos:i.memory.geometries,tex:i.memory.textures};});
+  await page.evaluate(()=>{__vt.start(true);__vt.G.time=0.14;__vt.sim(30);});
+  await shot('10-vale-dia');console.log('Vale dia (spawn):',JSON.stringify(await info()));
+  await page.evaluate(()=>{__vt.tp(96.6,-90);__vt.cam.yaw=-Math.PI/2;__vt.cam.pitch=0.25;__vt.sim(40);});
+  await shot('11-entrada');console.log('Entrada da tumba:',JSON.stringify(await info()));
+  await page.evaluate(()=>{__vt.tp(0,-128.6);__vt.cam.yaw=0;__vt.cam.pitch=0.2;__vt.sim(40);});
+  await shot('12-final');console.log('Porta final:',JSON.stringify(await info()));
+  await page.evaluate(()=>{__vt.G.time=0.76;__vt.tp(-62,128);__vt.cam.yaw=0.5;__vt.cam.pitch=0.3;__vt.sim(30);});
+  await shot('13-noite');
+  await page.evaluate(()=>{__vt.G.time=0.76;__vt.tp(-60,124);__vt.cam.yaw=Math.atan2(62,128)*0+3.14;__vt.cam.pitch=0.25;__vt.sim(60);});
+  await shot('14-noite-inscricao');
+  await page.evaluate(()=>{__vt.G.time=0.5;__vt.tp(0,100);__vt.cam.yaw=0;__vt.cam.pitch=0.3;__vt.sim(60);});
+  await shot('15-entardecer');
+  await page.evaluate(()=>{__vt.G.time=0.02;__vt.tp(0,60);__vt.cam.yaw=0.4;__vt.sim(60);});
+  await shot('16-amanhecer');
+  console.log('LOGS',logs.filter(l=>!l.includes('ERR_FAILED')).join('\n')||'(nenhum erro)');
+  await browser.close();
+})().catch(e=>{console.error('FALHOU',e);process.exit(1);});

@@ -1,0 +1,315 @@
+<title>Vale das Tumbas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Rye&family=Special+Elite&display=swap">
+<style>
+/* Layout: o palco 3D ocupa a tela inteira; o HUD flutua por cima (vida e relíquias à esquerda,
+   bússola no topo, diário e menu à direita) e os comandos de toque ficam nos cantos de baixo.
+   Visual: caderno de campo de um explorador (papel queimado, tinta, latão) sobre o deserto. */
+:root{
+  --ink:#17100b; --ink-2:#241912; --ink-3:#33241a;
+  --paper:#ecdcb4; --paper-dim:#bfa97a;
+  --brass:#d8a24a; --copper:#c8743a;
+  --ice:#6fd3ff; --reactor:#5dff7a; --spore:#b98cff; --gold:#ffd24a; --alert:#ff5a4a;
+  --f-display:'Rye','Georgia',serif;
+  --f-hud:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;
+  --f-note:'Special Elite','Courier New',monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none;background:var(--ink);color:var(--paper);
+  font-family:var(--f-hud);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#app{position:relative;width:100%;height:100%;overflow:hidden;background:var(--ink);touch-action:none}
+#boot{position:absolute;inset:0;z-index:20;background:var(--ink);display:grid;place-items:center;text-align:center;padding:24px}
+#boot span{display:block;font-family:var(--f-display);font-size:clamp(30px,8vw,48px);color:var(--brass)}
+#boot small{display:block;font-family:var(--f-note);font-size:15px;color:var(--paper-dim);margin-top:10px}
+#boot p{font-family:var(--f-note);font-size:17px;color:var(--paper);max-width:420px;line-height:1.5}
+#c{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#inputLayer{position:absolute;inset:0;touch-action:none;z-index:1}
+#hud{position:absolute;inset:0;z-index:2;pointer-events:none;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+body:not(.playing) #hud{display:none}
+
+/* HUD: vida e relíquias */
+#hl{position:absolute;top:12px;left:max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.chip{display:flex;align-items:center;gap:10px;padding:6px 12px;border-radius:999px;background:rgba(23,16,11,.72);
+  border:1px solid rgba(216,162,74,.35);backdrop-filter:blur(3px)}
+#hearts{display:flex;gap:4px}
+#hearts svg{width:22px;height:20px;fill:var(--alert);transition:fill .2s,opacity .2s}
+#hearts svg.off{fill:none;stroke:var(--alert);stroke-width:1.6;opacity:.55}
+.chip .lbl{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--paper-dim);font-weight:600}
+#relics{display:flex;gap:6px}
+#relics i{width:15px;height:15px;border-radius:50%;border:2px solid var(--paper-dim);background:transparent;display:block;transition:all .3s}
+#relics i.on{border-color:transparent;box-shadow:0 0 8px currentColor}
+#relicCount{font-weight:700;font-size:15px}
+#goal{font-size:15px;font-weight:600;letter-spacing:.02em;padding:5px 12px;max-width:min(300px,calc(100vw - 150px));line-height:1.2;border-color:rgba(255,210,74,.55)}
+#goal:empty{display:none}
+#goal.flash,.chip.flash{animation:gflash 1.6s ease-out}
+@keyframes gflash{0%{box-shadow:0 0 0 4px rgba(255,210,74,.95)}100%{box-shadow:0 0 0 0 rgba(255,210,74,0)}}
+#compass .mk.goal b{width:15px;height:15px;outline:2px solid currentColor;outline-offset:2px}
+#compass .mk.goal span{font-size:13px}
+
+/* bússola */
+#compass{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:min(440px,calc(100% - 210px));height:34px;
+  border-radius:999px;background:rgba(23,16,11,.72);border:1px solid rgba(216,162,74,.35);overflow:hidden;backdrop-filter:blur(3px)}
+#compass .tick{position:absolute;left:50%;top:0;bottom:0;width:2px;background:var(--brass);opacity:.8}
+#compass .mk{position:absolute;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:1px;
+  font-size:11px;font-weight:700;letter-spacing:.06em;text-shadow:0 1px 2px #000}
+#compass .mk b{display:block;width:11px;height:11px;border-radius:50%;box-shadow:0 0 6px currentColor;background:currentColor}
+body.intomb #compass{display:none}
+
+/* lanterna */
+#lantern{position:absolute;top:54px;left:50%;transform:translateX(-50%);width:min(240px,50%);display:none;align-items:center;gap:8px;padding:5px 12px}
+body.intomb #lantern{display:flex}
+body.incity #lantern{display:none}
+body.cine #hud{display:none}
+#lantern svg{width:16px;height:16px;fill:var(--gold);flex:none}
+#lbar{flex:1;height:8px;border-radius:5px;background:rgba(255,255,255,.14);overflow:hidden}
+#lfill{height:100%;width:100%;background:var(--gold);border-radius:5px;transition:background .2s}
+#lantern.low #lfill{background:var(--alert)}
+#lantern.low svg{fill:var(--alert)}
+#lantern.rad{border-color:var(--reactor);box-shadow:0 0 12px rgba(93,255,122,.55)}
+#lantern.rad #lfill{background:var(--reactor)}
+#ltxt{font-size:14px;font-weight:700;min-width:34px;text-align:right;font-variant-numeric:tabular-nums}
+
+/* botões do topo à direita */
+#hr{position:absolute;top:12px;right:max(16px,env(safe-area-inset-right,0px));display:flex;gap:8px;pointer-events:auto}
+.sq{width:42px;height:42px;border-radius:12px;background:rgba(23,16,11,.78);border:1px solid rgba(216,162,74,.45);
+  color:var(--paper);display:grid;place-items:center;cursor:pointer;padding:0;touch-action:none}
+.sq svg{width:22px;height:22px;fill:none;stroke:var(--paper);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.sq:focus-visible,.btn:focus-visible,.tbtn:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.sq .dot{position:absolute;margin:-26px -26px 0 0;width:10px;height:10px;border-radius:50%;background:var(--alert);display:none}
+.sq.new .dot{display:block}
+
+/* mensagens */
+#msgs{display:flex;flex-direction:column;gap:6px;width:min(320px,calc(100vw - 32px))}
+#msgs:empty{display:none}
+.toast{font-family:var(--f-note);font-size:14px;line-height:1.35;padding:9px 12px;background:rgba(23,16,11,.86);color:var(--paper);max-height:240px;overflow:hidden;
+  border-left:3px solid var(--brass);border-radius:4px;animation:tin .25s ease-out;transition:opacity .45s,max-height .45s,padding .45s,margin .45s}
+.toast.warn{border-left-color:var(--alert)}
+.toast.good{border-left-color:var(--reactor)}
+.toast.out{opacity:0;max-height:0;padding-top:0;padding-bottom:0;margin-top:-6px}
+.toast .n{display:inline-block;margin-left:8px;padding:0 6px;border-radius:8px;background:var(--brass);color:var(--ink);font-family:var(--f-hud);font-size:13px;font-weight:700}
+.toast.bump{animation:tbump .35s ease-out}
+@keyframes tbump{40%{transform:scale(1.04)}}
+@keyframes tin{from{transform:translateX(-10px);opacity:0}to{transform:none;opacity:1}}
+
+/* aviso de interação: centralizado, acima dos comandos, nunca captura toque */
+#prompt{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(204px + env(safe-area-inset-bottom,0px));
+  width:max-content;max-width:min(520px,calc(100% - 32px));text-align:center;padding:9px 16px;border-radius:12px;
+  background:rgba(23,16,11,.86);border:1px solid var(--brass);font-size:19px;font-weight:600;letter-spacing:.03em;
+  display:none;pointer-events:none;text-wrap:balance}
+#prompt kbd{font-family:var(--f-hud);font-weight:700;background:var(--brass);color:var(--ink);border-radius:5px;padding:0 7px;margin-right:8px}
+body:not(.touch) #prompt{bottom:calc(36px + env(safe-area-inset-bottom,0px))}
+/* deitado: o aviso de interação vai para baixo, entre o joystick e os botões (avisos ficam à esquerda, no alto) */
+@media (max-height:520px){body.touch #prompt{bottom:calc(14px + env(safe-area-inset-bottom,0px));max-width:max(180px,calc(100% - 440px));font-size:17px;padding:7px 12px}
+  #compass{width:min(440px,calc(100% - 290px))}
+  #lantern{top:12px;width:min(240px,calc(100% - 290px))}}
+
+/* comandos de toque */
+#touchUI{position:absolute;inset:0;pointer-events:none;display:none}
+body.touch.playing #touchUI{display:block}
+#joyBase{position:fixed;width:118px;height:118px;margin:-59px 0 0 -59px;border-radius:50%;background:rgba(236,220,180,.12);
+  border:2px solid rgba(236,220,180,.4);display:none}
+#joyThumb{position:absolute;left:50%;top:50%;width:50px;height:50px;margin:-25px 0 0 -25px;border-radius:50%;
+  background:rgba(236,220,180,.55);border:2px solid rgba(236,220,180,.9)}
+.tbtn{position:absolute;pointer-events:auto;touch-action:none;border-radius:50%;border:2px solid rgba(236,220,180,.7);
+  background:rgba(60,40,24,.78);color:var(--paper);font-family:var(--f-hud);font-weight:700;font-size:15px;letter-spacing:.05em;
+  text-transform:uppercase;display:grid;place-items:center;padding:0;cursor:pointer}
+.tbtn.on{background:var(--brass);color:var(--ink);border-color:var(--gold)}
+.tbtn:active{transform:scale(.94);background:rgba(216,162,74,.8);color:var(--ink)}
+.tbtn.hint{animation:pulse .9s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 8px rgba(255,210,74,.35)}}
+#bUse{width:92px;height:92px;right:max(18px,env(safe-area-inset-right,0px));bottom:calc(22px + env(safe-area-inset-bottom,0px));font-size:19px}
+#bJump{width:70px;height:70px;right:calc(max(18px,env(safe-area-inset-right,0px)) + 104px);bottom:calc(14px + env(safe-area-inset-bottom,0px))}
+#bRun{width:64px;height:64px;right:calc(max(18px,env(safe-area-inset-right,0px)) + 92px);bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+#bLight{width:70px;height:70px;right:max(24px,env(safe-area-inset-right,0px));bottom:calc(122px + env(safe-area-inset-bottom,0px));font-size:11.5px;letter-spacing:0}
+#bRun{font-size:13px;letter-spacing:0}
+/* dica das zonas de toque: some quando cada lado é usado pela primeira vez */
+#zoneHint{position:absolute;inset:0;pointer-events:none;transition:opacity .6s}
+#zoneHint>div{position:absolute;top:56%;bottom:calc(24px + env(safe-area-inset-bottom,0px));border:2px dashed rgba(236,220,180,.45);border-radius:22px;
+  display:grid;place-items:center;text-align:center;font-size:17px;font-weight:600;letter-spacing:.03em;color:rgba(236,220,180,.9);text-shadow:0 1px 3px #000;transition:opacity .5s}
+#zoneHint .zl{left:max(14px,env(safe-area-inset-left,0px));width:calc(44% - 24px)}
+#zoneHint .zr{left:56%;right:max(14px,env(safe-area-inset-right,0px));bottom:calc(250px + env(safe-area-inset-bottom,0px));top:46%}
+@media (max-height:700px) and (min-height:521px){#zoneHint>div{font-size:14px}#zoneHint .zr{top:42%}}
+#zoneHint>div.off{opacity:0}
+#zoneHint span{background:rgba(23,16,11,.55);padding:6px 10px;border-radius:10px}
+@media (max-height:520px){#zoneHint>div{top:48%}#zoneHint .zr{bottom:calc(196px + env(safe-area-inset-bottom,0px));top:30%;right:25%}#zoneHint>div{font-size:15px}}
+/* celular em pé: bússola ou lanterna ganham uma segunda linha com a largura toda; relíquias sem o rótulo */
+@media (max-width:600px) and (min-height:521px){
+  #compass,#lantern{top:58px;left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));width:auto;transform:none}
+  #hl>.chip:first-child{margin-bottom:46px}
+  .chip .lbl{display:none}
+}
+
+/* telas (início, pausa, diário, confirmação) */
+#fade{position:absolute;inset:0;z-index:5;background:#000;opacity:0;pointer-events:none;display:grid;place-items:center}
+#fadeTxt{font-family:var(--f-note);font-size:20px;color:var(--paper);letter-spacing:.04em;opacity:0;transition:opacity .2s}
+#vig{position:absolute;inset:0;z-index:3;pointer-events:none;opacity:0;transition:opacity .35s;
+  background:radial-gradient(ellipse at center,rgba(255,40,20,0) 45%,rgba(255,40,20,.55) 100%)}
+#vig.flash{opacity:1;transition:none}
+#blink{position:absolute;inset:0;z-index:4;pointer-events:none;background:#000;opacity:0}
+#blink.on{animation:blinkA .55s ease-out}
+@keyframes blinkA{from{opacity:.85}to{opacity:0}}
+#endTxt{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:8px;text-align:center;cursor:pointer;touch-action:manipulation;
+  padding:24px max(18px,env(safe-area-inset-right,0px)) max(28px,env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));
+  background:linear-gradient(0deg,rgba(14,22,12,.8),rgba(14,22,12,0) 55%)}
+#endLine{font-family:var(--f-note);font-size:clamp(19px,4.6vw,28px);line-height:1.5;color:#fff6d8;text-shadow:0 2px 10px #000;max-width:660px;margin:0;min-height:3em;opacity:0}
+#endLine.show{animation:endFade 1.6s ease forwards}
+@keyframes endFade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+#endHint{font-family:var(--f-hud);letter-spacing:.1em;text-transform:uppercase;font-size:12px;color:rgba(255,246,216,.6)}
+@media (prefers-reduced-motion:reduce){#endLine.show{animation:none;opacity:1}}
+#spore{position:absolute;inset:0;z-index:1;pointer-events:none;opacity:0;transition:opacity .25s;
+  background:radial-gradient(ellipse at center,rgba(185,140,255,.12) 20%,rgba(150,100,220,.5) 100%)}
+.screen{position:absolute;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  background:linear-gradient(180deg,rgba(23,16,11,.35),rgba(23,16,11,.8));overflow:auto}
+.panel{width:min(520px,100%);max-height:100%;overflow:auto;padding:26px 24px;background:rgba(36,25,18,.94);border:1px solid rgba(216,162,74,.5);
+  border-radius:6px;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+h1{font-family:var(--f-display);font-weight:400;font-size:clamp(34px,8vw,52px);line-height:1;margin:0 0 6px;color:var(--brass);text-wrap:balance;letter-spacing:.01em}
+h2{font-family:var(--f-display);font-weight:400;font-size:26px;margin:0 0 12px;color:var(--brass)}
+.sub{font-family:var(--f-note);font-size:15px;line-height:1.45;color:var(--paper);margin:0 0 18px}
+.eras{display:flex;gap:8px;margin:0 0 20px}
+.eras i{flex:1;height:5px;border-radius:3px;display:block}
+.stack{display:flex;flex-direction:column;gap:10px}
+.btn{font-family:var(--f-hud);font-weight:700;font-size:20px;letter-spacing:.06em;text-transform:uppercase;padding:13px 18px;border-radius:8px;
+  border:2px solid var(--brass);background:transparent;color:var(--paper);cursor:pointer;touch-action:manipulation;text-align:center}
+.btn.main{background:var(--brass);color:var(--ink)}
+.btn.danger{border-color:var(--alert);color:var(--alert)}
+.btn:hover{filter:brightness(1.15)}
+.note{font-family:var(--f-note);font-size:13px;line-height:1.5;color:var(--paper-dim);margin:16px 0 0}
+.ctl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:16px;margin:14px 0 0}
+.ctl b{color:var(--brass);font-weight:700}
+.tabs{display:flex;gap:8px;align-items:center;margin:0 0 12px;flex-wrap:wrap}
+.tab{font-size:14px;padding:7px 14px}
+.tab.on{background:var(--brass);color:var(--ink)}
+#secCount{margin-left:auto;font-family:var(--f-note);font-size:13px;color:var(--paper-dim)}
+#mapCv{width:100%;max-width:360px;display:block;margin:0 auto 10px;border:2px solid var(--brass);border-radius:4px;background:#1f160e}
+#mapNote{text-align:center;margin:0 0 16px}
+#diaryList{display:flex;flex-direction:column;gap:12px;margin:0 0 16px}
+.entry{padding:12px 14px;background:rgba(236,220,180,.08);border-left:3px solid var(--brass);border-radius:3px}
+.entry h3{margin:0 0 4px;font-size:18px;letter-spacing:.04em;text-transform:uppercase;color:var(--brass);font-weight:700}
+.entry p{margin:0;font-family:var(--f-note);font-size:14.5px;line-height:1.5}
+.entry .tag{font-size:11px;background:var(--alert);color:#fff;border-radius:4px;padding:1px 6px;margin-left:8px;vertical-align:middle}
+@media (prefers-reduced-motion:reduce){.toast,.tbtn.hint{animation:none}}
+/* celular na horizontal: painéis mais compactos, botões em duas colunas e sem a lista de controles */
+@media (max-height:520px){
+  .panel{padding:14px 20px}
+  h1{font-size:34px;margin-bottom:4px}
+  h2{font-size:22px;margin-bottom:8px}
+  .sub{font-size:14px;margin:0 0 10px}
+  .eras{margin:0 0 10px}
+  .btn{padding:8px 14px;font-size:17px}
+  .stack{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .ctl,.note{display:none}
+  #mapCv{max-width:min(360px,calc(100vh - 190px))}
+  .entry{padding:9px 12px}
+}
+</style>
+
+<div id="app">
+  <div id="boot"><div><span>Vale das Tumbas</span><small>Carregando o vale...</small></div></div>
+  <canvas id="c" aria-label="Vale das Tumbas, jogo 3D"></canvas>
+  <div id="inputLayer"></div>
+
+  <div id="hud">
+    <div id="hl">
+      <div class="chip"><div id="hearts" aria-label="Vida"></div></div>
+      <div class="chip"><span class="lbl">Relíquias</span><div id="relics"></div><span id="relicCount">0/4</span></div>
+      <div class="chip" id="goal" aria-live="polite"></div>
+      <div id="msgs"></div>
+    </div>
+    <div id="compass" aria-label="Bússola"><div class="tick"></div></div>
+    <div id="lantern" class="chip">
+      <svg viewBox="0 0 24 24"><path d="M9 2h6v3l2 3v3H7V8l2-3V2zm-1 11h8l-1 9H9l-1-9z"/></svg>
+      <div id="lbar"><div id="lfill"></div></div><span id="ltxt">130s</span>
+    </div>
+    <div id="hr">
+      <button class="sq" id="btnDiary" aria-label="Diário"><svg viewBox="0 0 24 24"><path d="M4 5c3-1 6-1 8 1 2-2 5-2 8-1v14c-3-1-6-1-8 1-2-2-5-2-8-1z"/><path d="M12 6v14"/></svg><span class="dot"></span></button>
+      <button class="sq" id="btnMenu" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h14"/></svg></button>
+    </div>
+    <div id="prompt"></div>
+    <div id="touchUI">
+      <div id="zoneHint" hidden><div class="zl"><span>Arraste aqui<br>para andar</span></div><div class="zr"><span>Arraste aqui<br>para olhar ao redor</span></div></div>
+      <div id="joyBase"><div id="joyThumb"></div></div>
+      <button class="tbtn" id="bRun" data-act="run">Correr</button>
+      <button class="tbtn" id="bLight" data-act="lantern">Lanterna</button>
+      <button class="tbtn" id="bJump" data-act="jump">Pular</button>
+      <button class="tbtn" id="bUse" data-act="use">Usar</button>
+    </div>
+  </div>
+
+  <div id="endTxt" hidden><p id="endLine"></p><small id="endHint">Toque ou aperte Usar para continuar</small></div>
+  <div id="spore"></div>
+  <div id="blink"></div>
+  <div id="vig"></div>
+  <div id="fade"><span id="fadeTxt"></span></div>
+
+  <div class="screen" id="scStart">
+    <div class="panel">
+      <h1>Vale das Tumbas</h1>
+      <p class="sub">Cinco eras foram seladas no deserto. Siga as torres, entre nas tumbas e traga as quatro relíquias até a porta final.</p>
+      <div class="eras" aria-hidden="true"><i style="background:var(--copper)"></i><i style="background:var(--ice)"></i><i style="background:var(--reactor)"></i><i style="background:var(--spore)"></i><i style="background:var(--gold)"></i></div>
+      <div class="stack">
+        <button class="btn main" id="btnContinue">Continuar</button>
+        <button class="btn" id="btnNew">Novo jogo</button>
+        <button class="btn" id="btnFull" hidden>Tela cheia</button>
+      </div>
+      <div class="ctl" id="ctlStart"></div>
+      <p class="note" id="startNote">Explore o vale, entre nas quatro tumbas e leve as relíquias até a porta ao norte. O jogo salva sozinho.</p>
+    </div>
+  </div>
+
+  <div class="screen" id="scEnd" hidden>
+    <div class="panel">
+      <h1>FIM</h1>
+      <p class="sub">A Cidade-Jardim acordou. As quatro eras estão reunidas e o vale continua aberto para quem quiser explorar de novo.</p>
+      <div class="stack">
+        <button class="btn main" id="eVale">Voltar ao vale</button>
+        <button class="btn" id="eAgain">Jogar de novo</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen" id="scPause" hidden>
+    <div class="panel">
+      <h2>Pausa</h2>
+      <p class="sub" id="saveInfo"></p>
+      <div class="stack">
+        <button class="btn main" id="pResume">Continuar</button>
+        <button class="btn" id="pSound">Som: ligado</button>
+        <button class="btn" id="pGfx">Gráficos: normais</button>
+        <button class="btn" id="pCam">Câmera automática: ligada</button>
+        <button class="btn" id="pFull" hidden>Tela cheia</button>
+        <button class="btn" id="pDiary">Diário</button>
+        <button class="btn danger" id="pErase">Apagar progresso</button>
+        <button class="btn" id="pHome">Voltar ao início</button>
+      </div>
+      <div class="ctl" id="ctlPause"></div>
+    </div>
+  </div>
+
+  <div class="screen" id="scConfirm" hidden>
+    <div class="panel">
+      <h2 id="cfTitle">Apagar o progresso?</h2>
+      <p class="sub" id="cfText">Isso apaga as relíquias, o diário e a posição salva.</p>
+      <div class="stack">
+        <button class="btn danger" id="cfYes">Apagar</button>
+        <button class="btn main" id="cfNo">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen" id="scDiary" hidden>
+    <div class="panel">
+      <h2>Diário de campo</h2>
+      <div class="tabs"><button class="btn tab on" id="tabNotes">Anotações</button><button class="btn tab" id="tabMap">Mapa</button><span id="secCount"></span></div>
+      <div id="diaryList"></div>
+      <div id="mapBox" hidden><canvas id="mapCv" width="360" height="360" aria-label="Mapa do vale"></canvas><p class="sub" id="mapNote"></p></div>
+      <button class="btn main" id="dClose">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
