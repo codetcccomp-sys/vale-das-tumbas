@@ -63,6 +63,7 @@ CONSTRUIR.final=function(){
   /* Jardim Central: canteiros, fonte e o console */
   const foco={x:14*16,y:11*16};A.focoPainel=foco;
   terminal(A,14,15,'final',foco,'consoleCity','Programar o Jardim Central');
+  criarLume(A,17.5,15.5,'final');
   /* árvore-matriz no terraço; o portão abre quando o jardim acende */
   const arv=objeto(A,SPR.get('arvore',false,0),14*16,4*16+8,{col:[-14,-10,14,0]});arv.desenho=(g,ob,t)=>blit(g,SPR.get('arvore',G.learn.c1,Math.floor(t*2)%3),ob.x,ob.y,40,90);
   portao(A,13,5,2,'portaoVinha',()=>!!G.learn.c1);

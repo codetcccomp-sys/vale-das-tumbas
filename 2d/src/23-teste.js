@@ -2,6 +2,7 @@
    Só existe quando a página abre com #vt no endereço: os testes automáticos usam window.__vt para ler o estado e
    para teletransportar o explorador. O jogo normal não cria nada disso. */
 function ganchoTeste(){
+  window.__vtPularTreino=location.hash.indexOf('treino')<0;
   window.__vt={G,R,AREAS,TOMBS,LANG,DESAFIO,SAVE2D,PAINEL,IN,
     ir(x,y,dir){posicionar(x,y,dir||G.p.dir);camSeguir(G.p.x,G.p.y,0,G.area,true);},
     quadros(n,dt){for(let i=0;i<(n||1);i++){passoJogo(dt||1/60,performance.now());}desenharJogo();},

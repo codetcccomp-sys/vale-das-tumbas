@@ -93,7 +93,15 @@ CONSTRUIR.bio=function(){
   for(let i=0;i<8;i++)A.decalques.push({img:SPR.get('trilho'),x:TRILHO.x*16+i*40,y:TRILHO.y*16+9},{img:SPR.get('trilho'),x:TRILHO.x*16+i*40+16,y:TRILHO.y*16+9},{img:SPR.get('trilho'),x:TRILHO.x*16+i*40+24,y:TRILHO.y*16+9});
   const foco={x:14*16,y:10*16};A.focoPainel=foco;
   terminal(A,14,13,'bio',foco,'consoleBio','Usar o console da estufa');
-  interacao(A,{x:14*16,y:7*16,r:30,label:()=>'Ler a placa da estufa',use:()=>{addDiary('oficina_bio');toast('O polinizador repete a rotina que receber. REPETIR conta as voltas; ENQUANTO testa uma condição antes de cada volta e para quando ela fica falsa.');}});
+  interacao(A,{x:14*16,y:7*16,r:30,label:()=>'Ler a placa da estufa',use:()=>{addDiary('oficina_bio');toast('A estufa repete a rotina que receber. O for conta as voltas; o while testa uma condição antes de cada volta e para quando ela dá False.');}});
+  criarLume(A,17.5,13,'bio');
+  tochasProgresso(A,'bio',[[9,14],[10.5,14],[12,14],[17,14],[18.5,14]],'#c9a6ff');
+  /* as quatro tochas de seiva da estufa: acendem uma depois da outra com o for (etapa b0) */
+  const TOCHAS_BIO=[[9,7],[12,7],[16,7],[19,7]];
+  const tochasAcesas=()=>{const vis=PAINEL.aberto&&PAINEL.area===A?painelVis():null;return vis&&vis.cfg.mundo==='tochas'?vis.ws.acesas:(G.learn.b0?4:0);};
+  TOCHAS_BIO.forEach(([x,y],i)=>{const o=objeto(A,SPR.get('tocha',false,0,'#c9a6ff'),x*16+8,y*16+14,{col:[-4,-3,4,0]});
+    o.desenho=(g,ob,t)=>{const on=tochasAcesas()>i;blit(g,SPR.get('tocha',on,Math.floor(t*8+i)%3,'#c9a6ff'),ob.x,ob.y,6,30);if(PAINEL.aberto&&PAINEL.area===A&&painelVis().cfg.mundo==='tochas')FONTE.rotulo(g,String(i+1),Math.round(ob.x+R.ox),Math.round(ob.y+3+R.oy),on?'#e8d0ff':'#8a7a9a','#0b0705');};
+    A.lampadas.push({x:x*16+8,y:y*16-12,get r(){return tochasAcesas()>i?44:0;},cor:'#c9a6ff'});});
   portao(A,14,5,2,'membrana',()=>saberOk('bio'));
   pedestal(A,14,3,'bio');
   A.update=(dt,t)=>{
@@ -115,13 +123,13 @@ CONSTRUIR.bio=function(){
   };
   A.reiniciar=()=>{reiniciarGuardas(A);for(const pt of A.pontos)pt.aceso=false;canto.pos=0;canto.fila=[];addDiary('bio_enter',true);};
   A.objetivo=()=>{if(!aberto())return{t:'Saber: Repetições e automação',s:'Toque no coração da sala para ouvir a canção e repita a ordem nos bulbos.'};if(G.p.y>15*16&&G.p.y<23*16)addDiary('bio_spores',true);return objetivoTumba('bio','No console da estufa');};
-  A.aoEvento=(ev)=>{const a=ev.anim||{};if(a.rega!==undefined){SFX.rega();const x=TRILHO.x*16+a.rega*TRILHO.passo+8;gotas(x,TRILHO.y*16-6,6);}if(a.encharca||a.vazio||ev.tipo==='erro'){SFX.deny();R.treme=0.2;}};
-  A.aoConcluir=(cfg)=>{if(cfg.id==='b4')setTimeout(()=>toast('A estufa respira sozinha: a membrana da câmara da Semente da vida se abriu.','good'),600);};
+  A.aoEvento=(ev)=>{const a=ev.anim||{};if(a.tocha!==undefined){const p=[[9,7],[12,7],[16,7],[19,7]][a.tocha];SFX.lamp();faiscas(p[0]*16+8,p[1]*16-12,10,['#ffffff','#e8d0ff','#c9a6ff']);}if(a.rega!==undefined){SFX.rega();const x=TRILHO.x*16+a.rega*TRILHO.passo+8;gotas(x,TRILHO.y*16-6,6);}if(a.encharca||a.vazio||ev.tipo==='erro'){SFX.deny();R.treme=0.2;}};
+  A.aoConcluir=(cfg)=>{if(saberOk('bio'))setTimeout(()=>toast('A estufa respira sozinha: a membrana da câmara da Semente da vida se abriu.','good'),600);};
   return A;
 };
 function desenharEstufa(A,g,t){
   let vis=PAINEL.aberto&&PAINEL.area===A?painelVis():null;if(vis&&vis.cfg.mundo!=='estufa')vis=null;
-  const cfg=vis?vis.cfg:(desafiosDa('bio').find(d=>!G.learn[d.id])||DESAFIO.b4);
+  const cfg=vis?vis.cfg:(desafiosDa('bio').find(d=>!G.learn[d.id]&&d.mundo==='estufa')||DESAFIO.b4);
   const ws=vis?vis.ws:MUNDOS.estufa.init(cfg.situacoes[0]);if(!ws||!ws.pods)return;
   const X=i=>TRILHO.x*16+i*TRILHO.passo+8,Y=TRILHO.y*16;
   /* fim do trilho: a base do polinizador */

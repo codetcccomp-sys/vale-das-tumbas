@@ -1,8 +1,9 @@
 /* ====================== entrada: teclado, toque e controle ======================
-   Teclado: WASD ou setas andam, Shift corre, E / Espaço / Enter interagem, J diário, T lanterna, Esc pausa.
+   Teclado: WASD ou setas andam, Shift corre, E / Espaço / Enter interagem, G Guia de Programação, C vista ampla,
+   J diário, T lanterna, Esc pausa.
    Toque: joystick que aparece onde o dedo encosta na metade esquerda (empurrado até o fim, corre) e botões grandes
    à direita (ação, lanterna). Andar e apertar botões funcionam ao mesmo tempo (vários dedos).
-   Controle: analógico ou direcional anda, A interage, Y lanterna, X diário, Start pausa.
+   Controle: analógico ou direcional anda, A interage, Y lanterna, X diário, Select Guia, Start pausa.
    Com o painel de programação aberto, nada disso move o explorador: o painel usa os próprios botões. */
 const IN={mode:isTouch()?'touch':'kb',keys:Object.create(null),fila:new Set(),joy:{id:null,ox:0,oy:0,x:0,y:0,on:false},pad:null,padPrev:{},usouJoy:false};
 function isTouch(){return('ontouchstart' in window)||(navigator.maxTouchPoints>0);}
@@ -11,7 +12,7 @@ function take(a){if(IN.fila.has(a)){IN.fila.delete(a);return true;}return false;
 function limparEntrada(){IN.fila.clear();for(const k in IN.keys)IN.keys[k]=false;IN.joy.on=false;IN.joy.id=null;IN.joy.x=IN.joy.y=0;atualizarJoyDom();}
 function modoEntrada(m){if(IN.mode===m)return;IN.mode=m;document.body.classList.toggle('touch',m==='touch');if(typeof aoMudarEntrada==='function')aoMudarEntrada();}
 
-const TECLA_ACAO={KeyE:'usar',Space:'usar',Enter:'usar',KeyJ:'diario',KeyM:'mapa',KeyT:'lanterna',Escape:'pausa',KeyP:'pausa'};
+const TECLA_ACAO={KeyE:'usar',Space:'usar',Enter:'usar',KeyJ:'diario',KeyM:'mapa',KeyT:'lanterna',KeyG:'guia',KeyC:'vista',Escape:'pausa',KeyP:'pausa'};
 addEventListener('keydown',e=>{
   if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'))return;
   modoEntrada('kb');
@@ -64,7 +65,7 @@ function atualizarJoyDom(){
 function lerControle(){
   const gp=navigator.getGamepads?navigator.getGamepads():null;let p=null;if(gp)for(const g of gp)if(g&&g.connected){p=g;break;}
   IN.pad=p;if(!p)return;
-  const bt=i=>!!(p.buttons[i]&&p.buttons[i].pressed),map={0:'usar',3:'lanterna',2:'diario',9:'pausa'};
+  const bt=i=>!!(p.buttons[i]&&p.buttons[i].pressed),map={0:'usar',3:'lanterna',2:'diario',8:'guia',9:'pausa'};
   for(const i in map){const on=bt(+i);if(on&&!IN.padPrev[i]){apertar(map[i]);modoEntrada('pad');}IN.padPrev[i]=on;}
   if(Math.hypot(p.axes[0]||0,p.axes[1]||0)>0.3)modoEntrada('pad');
 }

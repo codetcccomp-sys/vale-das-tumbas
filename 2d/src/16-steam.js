@@ -118,7 +118,9 @@ CONSTRUIR.steam=function(){
   const foco={x:12*16,y:11*16+8};A.focoPainel=foco;
   A.luzesExtra=t=>{if(PAINEL.aberto&&PAINEL.area===A){luz(TAB.x*16+40,TAB.y*16+40,64,1,'#ffd890');luz(14*16,8*16,44,0.9,'#ffb455');}};
   terminal(A,17,12,'steam',foco,'alavancaSteam','Usar o Computador Ancestral');
-  interacao(A,{x:14*16,y:10*16+6,r:30,alto:44,label:()=>'Ler a placa do Computador Ancestral',use:()=>{addDiary('oficina_steam');toast('As placas são lidas de cima para baixo, uma de cada vez. O autômato cumpre exatamente o que elas mandam: nem mais, nem menos. Use a alavanca ao lado.');}});
+  criarLume(A,19,12,'steam');
+  tochasProgresso(A,'steam',[[16,14],[17,14],[18,14],[19,14]],'#ffb455');
+  interacao(A,{x:14*16,y:10*16+6,r:30,alto:44,label:()=>'Ler a placa do Computador Ancestral',use:()=>{addDiary('oficina_steam');toast('O código é lido de cima para baixo, uma linha de cada vez. O autômato cumpre exatamente o que as linhas mandam: nem mais, nem menos. Use a alavanca ao lado.');}});
   /* portão de bronze da câmara: abre com o saber da Sequência */
   portao(A,13,6,2,'portaoBronze',()=>saberOk('steam'));
   pedestal(A,13,3,'steam');
@@ -138,7 +140,7 @@ CONSTRUIR.steam=function(){
     if(Math.random()<dt*1.5)vapor(14*16+(Math.random()-0.5)*90,8*16,1);
   };
   A.reiniciar=()=>{for(const pl of placas){pl.est=0;pl.t=0;}reiniciarGuardas(A);for(const pt of A.pontos)pt.aceso=false;addDiary('steam_enter',true);};
-  A.objetivo=()=>{const o=objetivoTumba('steam','No Computador Ancestral (Oficina do Autômato, ao norte)');return o;};
+  A.objetivo=()=>objetivoTumba('steam','No Computador Ancestral (Oficina do Autômato, ao norte)');
   /* tabuleiro: desenha o percurso da etapa (a da execução, ou a próxima a fazer) */
   A.desenharChao=(g,t)=>desenharTabuleiro(A,g,t);
   A.aoEvento=(ev)=>{
@@ -146,7 +148,7 @@ CONSTRUIR.steam=function(){
     if(a.anda)SFX.piston();if(a.bate||ev.tipo==='erro'){SFX.deny();R.treme=0.25;}
     if(a.ativa){SFX.gate();const c=tabCelula(painelVis().cfg,painelVis().ws.x,painelVis().ws.y);faiscas(c.x+8,c.y+8,14);}
   };
-  A.aoConcluir=(cfg)=>{if(cfg.id==='s2'){R.treme=0.6;setTimeout(()=>toast('Um estrondo ao norte: o portão de bronze da câmara se abriu.','good'),700);}};
+  A.aoConcluir=(cfg)=>{if(saberOk('steam')){R.treme=0.6;setTimeout(()=>toast('Um estrondo ao norte: o portão de bronze da câmara se abriu.','good'),700);}};
   return A;
 };
 /* posição de uma casa do percurso no chão da oficina (o percurso fica centralizado embaixo no tabuleiro 5×5) */

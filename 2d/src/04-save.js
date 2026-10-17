@@ -4,17 +4,20 @@
      nunca é alterado nem apagado: ele só é lido para migrar as conquistas na primeira vez.
    - Cada campo é conferido. Um campo estragado volta ao valor neutro (e marca fixed) em vez de descartar tudo.
    - As relíquias trazidas do 3D voltam "adormecidas": o saber de cada tumba é controlado à parte (learn), então
-     quem já venceu uma tumba no 3D pode revisitá-la e fazer os desafios educativos. */
-const SAVE2D_KEY='vale_das_tumbas_2d',CFG2D_KEY='vale_das_tumbas_2d_cfg',SAVE3D_KEY='vale_das_tumbas_save',SAVE2D_VER=1;
+     quem já venceu uma tumba no 3D pode revisitá-la e fazer os desafios educativos.
+   - rev conta as revisões do conteúdo: um save sem rev é de antes das etapas novas (treino, corrigir, elif, tochas).
+     Nele, uma tumba que já estava completa ganha as etapas novas, e o treino conta como feito: o progresso não volta. */
+const SAVE2D_KEY='vale_das_tumbas_2d',CFG2D_KEY='vale_das_tumbas_2d_cfg',SAVE3D_KEY='vale_das_tumbas_save',SAVE2D_VER=1,SAVE2D_REV=2;
 for(const k in SABERES)ENTRIES[SABER_ENTRY[k]]={t:'Saber: '+SABERES[k].nome,s:SABERES[k].resumo,cod:SABERES[k].exemplo};
-ENTRIES.saber_tudo={t:'Saber: tudo junto',s:'Um programa de verdade mistura tudo: a ordem das placas, contêineres que guardam valores, decisões que escolhem o caminho e repetições que poupam trabalho.',cod:DESAFIO.c1.exemplo.codigo};
+ENTRIES.saber_tudo={t:'Saber: tudo junto',s:'Um programa de verdade mistura tudo: a ordem das linhas, variáveis que guardam valores, decisões que escolhem o caminho e repetições que poupam trabalho.',cod:DESAFIO.c1.exemplo.codigo};
 
 const SAVE2D=(function(){
   const obj=o=>!!o&&typeof o==='object'&&!Array.isArray(o),num=n=>typeof n==='number'&&isFinite(n);
   const hora=t=>t>=0&&t<1?t:((t%1)+1)%1;   // hora do dia em [0,1) sem arredondar o que já está certo
   const INSC_IDS=INSC.map(i=>i.id);
   /* save novo, vazio */
-  function novo(){return{v:SAVE2D_VER,relics:{steam:false,diesel:false,atom:false,bio:false},learn:{},progs:{},diary:[],insc:{},sec:{},abertas:[],done:false,time:0.12,pos:null,tomb:null,migr:null};}
+  function novo(){return{v:SAVE2D_VER,rev:SAVE2D_REV,relics:{steam:false,diesel:false,atom:false,bio:false},learn:{},progs:{},diary:[],insc:{},sec:{},abertas:[],done:false,time:0.12,pos:null,tomb:null,migr:null,
+    treino:{feito:false,passo:0,manivela:false},dicas:{},poi:{},guia:false};}
   /* confere um save 2D. Devolve null quando não há nada aproveitável. */
   function limpar(d){
     if(!obj(d)||d.v!==SAVE2D_VER)return null;
@@ -22,6 +25,8 @@ const SAVE2D=(function(){
     const s=novo();
     if(Array.isArray(d.diary)){for(const id of d.diary){if(typeof id==='string'&&ENTRIES[id]){if(s.diary.indexOf(id)<0)s.diary.push(id);}else bad();}}else if(d.diary!==undefined)bad();
     if(obj(d.learn)){for(const k in d.learn){if(DESAFIO[k]&&d.learn[k]===true)s.learn[k]=true;else bad();}}else if(d.learn!==undefined)bad();
+    const antigo=d.rev===undefined;
+    if(antigo)for(const k in ETAPAS_ANTIGAS)if(ETAPAS_ANTIGAS[k].every(id=>s.learn[id]))for(const c of desafiosDa(k))s.learn[c.id]=true;
     if(obj(d.relics)){for(const k of RELIC_KEYS){const v=d.relics[k];if(v!==undefined&&typeof v!=='boolean')bad();s.relics[k]=v===true;}}else if(d.relics!==undefined)bad();
     /* a anotação de cada relíquia só existe depois de pegá-la: uma relíquia perdida no save é deduzida dela */
     for(const k of RELIC_KEYS)if(!s.relics[k]&&s.diary.indexOf(RELIC_INFO[k].diary)>=0){s.relics[k]=true;bad();}
@@ -35,6 +40,13 @@ const SAVE2D=(function(){
     if(d.pos!==undefined&&d.pos!==null){if(obj(d.pos)&&num(d.pos.x)&&num(d.pos.y)&&d.pos.x>=0&&d.pos.x<=VALE_W&&d.pos.y>=0&&d.pos.y<=VALE_H)s.pos={x:d.pos.x,y:d.pos.y};else bad();}
     if(d.tomb!==undefined&&d.tomb!==null){if(typeof d.tomb==='string'&&TOMBS[d.tomb])s.tomb=d.tomb;else bad();}
     if(obj(d.migr))s.migr={relics:num(d.migr.relics)?clamp(Math.round(d.migr.relics),0,4):0,done3d:d.migr.done3d===true};
+    /* treino: quem já jogava antes desta versão não precisa refazer */
+    if(antigo)s.treino.feito=true;
+    else if(d.treino!==undefined){if(obj(d.treino)){s.treino.feito=d.treino.feito===true;s.treino.manivela=d.treino.manivela===true;
+      if(num(d.treino.passo))s.treino.passo=clamp(Math.round(d.treino.passo),0,TREINO_PASSOS);else if(d.treino.passo!==undefined)bad();}else bad();}
+    if(obj(d.dicas)){for(const k in d.dicas){const n=d.dicas[k];if(DESAFIO[k]&&Number.isInteger(n)&&n>=0&&n<=3)s.dicas[k]=n;else bad();}}else if(d.dicas!==undefined)bad();
+    s.poi=pick(d.poi,POI_IDS,true);
+    if(d.guia!==undefined&&typeof d.guia!=='boolean')bad();s.guia=d.guia===true;
     s.fixed=fixed;
     return s;
   }
@@ -60,7 +72,7 @@ const SAVE2D=(function(){
     for(const k of RELIC_KEYS)s.relics[k]=!!d3.relics[k];
     s.diary=d3.diary.slice();if(s.diary.indexOf('migrado')<0)s.diary.push('migrado');
     s.insc=Object.assign({},d3.insc);s.sec=Object.assign({},d3.sec);s.time=d3.time;
-    s.migr={relics:RELIC_KEYS.filter(k=>d3.relics[k]).length,done3d:!!d3.done};
+    s.migr={relics:RELIC_KEYS.filter(k=>d3.relics[k]).length,done3d:!!d3.done};s.treino.feito=true;
     if(d3.tomb){const T=TOMBS[d3.tomb];s.pos={x:T.out.x+0.5,y:T.out.y+0.5};}
     else if(d3.pos){const p=v3(d3.pos.x,d3.pos.z);s.pos=posSegura(p.x,p.y,livre);}
     s.fixed=d3.fixed;
@@ -78,8 +90,10 @@ const SAVE2D=(function(){
   }
   /* o que entra no save a partir do estado do jogo */
   function montar(st){
-    return{v:SAVE2D_VER,relics:Object.assign({},st.relics),learn:Object.assign({},st.learn),progs:st.progs,diary:st.diary.slice(),insc:st.insc,sec:st.sec,
-      abertas:st.abertas.slice(),done:!!st.done,time:st.time,pos:st.pos?{x:st.pos.x,y:st.pos.y}:null,tomb:st.tomb||null,migr:st.migr||null};
+    const tr=st.treino||{feito:true,passo:0,manivela:false};
+    return{v:SAVE2D_VER,rev:SAVE2D_REV,relics:Object.assign({},st.relics),learn:Object.assign({},st.learn),progs:st.progs,diary:st.diary.slice(),insc:st.insc,sec:st.sec,
+      abertas:st.abertas.slice(),done:!!st.done,time:st.time,pos:st.pos?{x:st.pos.x,y:st.pos.y}:null,tomb:st.tomb||null,migr:st.migr||null,
+      treino:{feito:!!tr.feito,passo:tr.passo|0,manivela:!!tr.manivela},dicas:Object.assign({},st.dicas||{}),poi:Object.assign({},st.poi||{}),guia:!!st.guia};
   }
   return{novo,limpar,ler3d,migrar,posSegura,montar};
 })();

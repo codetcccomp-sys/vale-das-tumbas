@@ -28,6 +28,12 @@ const path=require('path'),fs=require('fs');const {chromium}=require('playwright
       S('celula',true,0),S('valvula','#5dff7a',0),S('pontao'),S('reator',0),S('bateria',7),S('comporta',0.5),S('carregador',true,2),S('tanque',4),S('portaoManut',0),S('dreno',true,0),S('painelAtom',0),
       S('flor',true,0),S('bulbo',0,true),S('bulbo',1,false),S('coracao2',0),S('capsula',0),S('membrana',2,0),S('organismo',1,3,0),S('organismo',3,3,0),S('consoleBio',0),
       S('arvore',true,0),S('canteiro2',true),S('canteiro2',false),S('fonte',true,0),S('placaDistrito','#c8743a'),S('consoleCity',0),S('portaoVinha',2,0),S('vaso',0),S('pedestal','#c8743a'),S('escada','#8a5432'),S('lampada','#ffb455',0)],8,{w:124,h:96},2);
+    /* treino, Lume, Guia, ambientação do vale e máquinas que reagem ao código (célula do tamanho do maior sprite) */
+    const amb=[S('lume',0),S('lume',1),S('iconeGuia','if','#c9a6ff'),S('iconeGuia','x = 5','#6fd3ff'),S('iconeGuia','for','#b98cff'),S('tocha',false,0),S('tocha',true,0),S('tocha',true,1),S('manivela'),
+      S('terminalTreino',false,0),S('terminalTreino',true,1),S('portaoMadeira',4,0),S('portaoMadeira',4,2),S('placaTreino'),S('acacia',0),S('acacia',1),S('braseiro',0),S('braseiro',1),S('estatuaEngenheira'),S('observatorio'),S('poco'),S('carroca'),
+      S('tendaRasgada'),S('fogueiraFria'),S('arcoQuebrado',0),S('arcoQuebrado',1),S('ponteTabuas',3),S('cacos',0),S('pedrinhas',0),S('flores',0),S('racha',0),S('engrChao',0),
+      S('tanqueDiesel',1),S('tanqueDiesel',4),S('painelSenha',false,0),S('painelSenha',true,0),S('portinhola',false),S('portinhola',true),S('ventilador',0,true),S('luzStatus',false),S('luzStatus',true),S('reator',0,'#ff5a3a'),S('reator',0,'#5dff7a')];
+    folha('ambiente_e_ajuda',amb,8,{w:Math.max(...amb.map(i=>i.width))+6,h:Math.max(...amb.map(i=>i.height))+4},2);
     const vals=['engr','caixas','galao','frasco','placa','cartao','fusivel1','fusivel0','alavanca1','alavanca0','plaq','plaqDec'].map(i=>S('valor',i));
     folha('valores_e_icones',vals.concat([S('coracao',true),S('coracao',false)],['steam','diesel','atom','bio'].flatMap(k=>[0,1,2].map(e=>S('reliquia',k,e)))),7,{w:26,h:26},4);
     /* tiles de cada tema */

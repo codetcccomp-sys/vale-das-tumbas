@@ -29,7 +29,7 @@ function lerInscricao(d){
 function desenharMapaVale(cv){
   const A=AREAS.vale,W=A.w,H=A.h;cv.width=W;cv.height=H;const g=ctx2(cv);
   const full=cnv(W,H),f=ctx2(full),id=f.createImageData(W,H),d=id.data;
-  const cor={areia:[220,190,140],duna:[205,172,120],estrada:[150,130,100],trilha:[176,140,96],grama:[110,150,80],agua:[70,130,170],penhasco:[110,80,52],nada:[60,40,30]};
+  const cor={areia:[220,190,140],duna:[205,172,120],estrada:[150,130,100],trilha:[176,140,96],grama:[110,150,80],agua:[70,130,170],penhasco:[110,80,52],leito:[168,136,98],nada:[60,40,30]};
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){const c=cor[A.kind(x,y)]||[200,180,140],o=(y*W+x)*4,n=hash2(x,y,1)*10;d[o]=c[0]+n;d[o+1]=c[1]+n;d[o+2]=c[2]+n;d[o+3]=255;}
   f.putImageData(id,0,0);
   for(const k in TRILHAS){f.fillStyle=COR_TRILHA[k];for(const p of TRILHAS[k])f.fillRect(Math.round(p[0])-1,Math.round(p[1])-1,2,2);}

@@ -22,7 +22,7 @@ const S3={v:1,relics:{steam:true,diesel:true,atom:false,bio:false},diary:['camp'
     const s3depois=await ev(()=>localStorage.getItem('vale_das_tumbas_save'));t.ok(s3depois===txt,'o save do 3D continua exatamente igual');
     /* a tumba das Engrenagens continua com os desafios: a relíquia desperta só com o saber */
     t.ok(await ev(()=>!saberOk('steam')&&tumbaAberta('steam')&&!tumbaAberta('diesel')),'relíquia trazida do 3D não pula os desafios: Motores segue selada');
-    await ev(()=>{__vt.entrar('steam');__vt.usarEm(17*16+8,13*16+6,'cima');for(const id of['s0','s1','s2']){escolherDesafio(__vt.DESAFIO[id]);concluirDesafio(__vt.DESAFIO[id]);}fecharPainel();});
+    await ev(()=>{__vt.entrar('steam');__vt.usarEm(17*16+8,13*16+6,'cima');for(const id of['s0','s1','s3','s2']){escolherDesafio(__vt.DESAFIO[id]);concluirDesafio(__vt.DESAFIO[id]);}fecharPainel();});
     e=await ev(()=>({rel:relicEstado('steam'),diario:__vt.G.diary.indexOf('saber_seq')>=0}));t.ok(e.rel===2&&e.diario,'concluir os desafios desperta a relíquia e registra o saber no diário',e);
     const sv=await ev(()=>__vt.lerSave());t.ok(sv&&sv.v===1&&sv.migr&&sv.migr.relics===2&&sv.learn.s2,'save 2D versionado guarda a migração e as etapas',sv&&{v:sv.v,migr:sv.migr});
     /* sai do jogo dentro da tumba e continua: volta à porta */

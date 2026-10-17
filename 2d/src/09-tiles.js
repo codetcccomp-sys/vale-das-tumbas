@@ -16,7 +16,7 @@ const TEMA={
 /* tipos de tile: solido bloqueia; perigo diz o que acontece ao pisar (vao, agua) */
 const TK={
   nada:{solido:true},chao:{},chao2:{},parede:{solido:true,parede:true},vao:{perigo:'vao'},agua:{perigo:'agua',agua:true},aguaRasa:{agua:true,lento:true},
-  areia:{},duna:{},estrada:{},trilha:{},grama:{},penhasco:{solido:true,parede:true},rad:{rad:true},grade:{},tapete:{},raiz:{},flor:{}
+  areia:{},duna:{},estrada:{},trilha:{},grama:{},leito:{},penhasco:{solido:true,parede:true},rad:{rad:true},grade:{},tapete:{},raiz:{},flor:{}
 };
 
 function corVar(lista,tx,ty,s){return lista[Math.floor(hash2(tx,ty,s)*lista.length)%lista.length];}
@@ -33,6 +33,7 @@ function desenharTile(g,A,tx,ty,px,py){
       const up=viz(0,-1);if(up!=='agua'&&up!=='aguaRasa'&&up!=='parede'){P.r(g,px,py,16,3,tom(C[0],-0.35));P.r(g,px,py+3,16,1,C[1]);}
       for(let i=0;i<3;i++){const x=(hash2(tx,ty,20+i)*14)|0,y=4+((hash2(tx,ty,30+i)*11)|0);P.r(g,px+x,py+y,2,1,tom(C[0],0.12));}return;}
     case'areia':case'duna':case'estrada':case'trilha':case'grama':return valeChao(g,A,T,k,tx,ty,px,py,viz);
+    case'leito':return leitoChao(g,tx,ty,px,py,viz);
     default:P.r(g,px,py,16,16,'#000');
   }
 }
@@ -102,6 +103,14 @@ function parede(g,A,T,k,tx,ty,px,py,h,viz){
     if(!isW(viz(0,-1)))P.r(g,px,py,16,2,cl);if(!isW(viz(-1,0)))P.r(g,px,py,2,16,cl);if(!isW(viz(1,0)))P.r(g,px+14,py,2,16,tom(T.topo,0.15));
     if(h<0.2)P.p(g,px+(h*60|0)%12+2,py+(h*90|0)%12+2,tom(T.topo,0.2));
   }
+}
+/* rio seco: cascalho e lama rachada, um pouco mais baixo que a areia (barranco escuro onde a margem começa) */
+function leitoChao(g,tx,ty,px,py,viz){
+  P.r(g,px,py,16,16,'#b0906a');
+  for(let i=0;i<7;i++){const x=(hash2(tx,ty,i+60)*15)|0,y=(hash2(tx,ty,i+70)*15)|0;P.r(g,px+x,py+y,i%3?1:2,1,i%2?'#8a6a48':'#d0b88a');}
+  if(hash2(tx,ty,77)<0.5){const x=(hash2(tx,ty,78)*10)|0;P.linha(g,px+x,py+3,px+x+4,py+8,'#94744e');P.linha(g,px+x+4,py+8,px+x+2,py+13,'#94744e');}
+  const banco=q=>q!=='leito';
+  if(banco(viz(-1,0)))P.r(g,px,py,2,16,'#8a6a48');if(banco(viz(1,0)))P.r(g,px+14,py,2,16,'#d8bf90');if(banco(viz(0,-1)))P.r(g,px,py,16,2,'#8a6a48');
 }
 /* chão do vale: areia com ruído e ondas de duna contínuas entre tiles; estrada de pedra; trilha batida; grama do oásis */
 function valeChao(g,A,T,k,tx,ty,px,py,viz){

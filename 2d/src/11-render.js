@@ -3,7 +3,7 @@
    sem suavização: todo pixel do jogo vira um quadrado de k×k pixels do aparelho. O fator sai do lado menor da tela
    (cerca de 250 pixels de jogo no lado menor), então os sprites ficam do mesmo tamanho em pé e deitado.
    A câmera anda em subpixels, mas o desenho usa a posição arredondada: nada treme nem deforma. */
-const R={cv:null,g:null,lo:null,lg:null,W:320,H:240,k:3,dpr:1,cam:{x:0,y:0},ox:0,oy:0,luz:null,lz:null,chunks:new Map(),treme:0,vista:null};
+const R={cv:null,g:null,lo:null,lg:null,W:320,H:240,k:3,dpr:1,cam:{x:0,y:0},ox:0,oy:0,luz:null,lz:null,chunks:new Map(),treme:0,vista:null,longe:false};
 function renderInit(){
   R.cv=document.getElementById('c');R.g=R.cv.getContext('2d',{alpha:false});
   R.lo=cnv(320,240);R.lg=ctx2(R.lo);R.luz=cnv(320,240);R.lz=ctx2(R.luz);
@@ -14,7 +14,8 @@ function renderInit(){
 function redimensionar(){
   const dpr=Math.min(window.devicePixelRatio||1,4),w=Math.max(1,innerWidth),h=Math.max(1,innerHeight);
   const dw=Math.round(w*dpr),dh=Math.round(h*dpr);
-  R.dpr=dpr;R.k=Math.max(1,Math.round(Math.min(dw,dh)/250));
+  /* vista ampla (C / VER): um degrau a menos de ampliação mostra mais do mundo, ainda com pixels inteiros */
+  R.dpr=dpr;R.k=Math.max(1,Math.round(Math.min(dw,dh)/250)-(R.longe?1:0));
   R.W=Math.ceil(dw/R.k);R.H=Math.ceil(dh/R.k);
   R.cv.width=dw;R.cv.height=dh;R.cv.style.width=w+'px';R.cv.style.height=h+'px';
   R.lo.width=R.W;R.lo.height=R.H;R.luz.width=R.W;R.luz.height=R.H;

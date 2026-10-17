@@ -1,9 +1,10 @@
 /* ====================== estado do jogo ====================== */
 const $=id=>document.getElementById(id);
 const G={
-  mode:'menu',   // menu | play | paused | painel | diario | trans | fim
+  mode:'menu',   // menu | play | paused | painel | diario | guia | dialogo | trans | fim
   area:null,curTomb:null,hearts:3,invuln:0,danoT:0,lantern:100,lanternOn:false,
   relics:{steam:false,diesel:false,atom:false,bio:false},learn:{},progs:{},diary:[],diaryNew:0,insc:{},sec:{},abertas:[],done:false,time:0.12,migr:null,
+  treino:{feito:true,passo:0,manivela:false},dicas:{},poi:{},guia:false,lumeFalou:false,
   p:{x:0,y:0,vx:0,vy:0,dir:'baixo',anim:0,parado:0,usar:0,run:false,caindo:0,vel:0,passoAcc:0},
   checkpoint:null,valePos:null,t:0,nightSeen:false,salvoEm:0
 };
@@ -199,7 +200,7 @@ function trocarArea(A,x,y,dir){
   G.area=A;posicionar(x,y,dir);G.checkpoint=null;
   document.body.classList.toggle('intomb',A.id!=='vale');document.body.classList.toggle('semLanterna',A.gastaLanterna===false);
   if(A.entrar)A.entrar();
-  auArea(A.id!=='vale',noiteAgora()>0.5,A.som||A.id);
+  auArea(!areaExterna(A),noiteAgora()>0.5,A.som||A.id);
   camSeguir(x,y,0,A,true);alvoInter=null;
 }
 function transicao(fn,msg){
@@ -215,6 +216,7 @@ function sairTumba(derrota){
   transicao(()=>{const T=TOMBS[k]||TOMBS.steam;G.curTomb=null;trocarArea(AREAS.vale,T.out.x*16+8,T.out.y*16+8,'baixo');G.lanternOn=false;salvar(false);},derrota?null:TXT.backValley);
 }
 function areaTumba(k){if(!AREAS[k])AREAS[k]=CONSTRUIR[k]();return AREAS[k];}
+const areaExterna=A=>!!A&&(A.id==='vale'||A.id==='treino');
 
 /* ====================== salvamento no navegador ====================== */
 function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
@@ -228,7 +230,7 @@ function salvar(mostrar){
   if(G.mode==='menu')return false;
   const naTumba=G.area&&G.area.id!=='vale';
   const st={relics:G.relics,learn:G.learn,progs:G.progs,diary:G.diary,insc:G.insc,sec:G.sec,abertas:G.abertas,done:G.done,time:G.time,migr:G.migr,
-    pos:naTumba?null:{x:G.p.x/16,y:G.p.y/16},tomb:naTumba?G.curTomb:null};
+    pos:naTumba?null:{x:G.p.x/16,y:G.p.y/16},tomb:naTumba?G.curTomb:null,treino:G.treino,dicas:G.dicas,poi:G.poi,guia:G.guia};
   const ok=lsSet(SAVE2D_KEY,JSON.stringify(SAVE2D.montar(st)));
   if(!ok&&!saveAvisou){saveAvisou=true;toast(TXT.saveFail,'warn');}else if(ok&&mostrar)toast(TXT.saved);
   G.salvoEm=G.t;return ok;
@@ -236,10 +238,12 @@ function salvar(mostrar){
 function aplicarSave(s){
   G.relics=Object.assign({},s.relics);G.learn=Object.assign({},s.learn);G.progs=s.progs||{};G.diary=s.diary.slice();G.insc=s.insc;G.sec=s.sec;G.abertas=s.abertas.slice();
   G.done=s.done;G.time=s.time;G.migr=s.migr;
+  G.treino=Object.assign({},s.treino);G.dicas=Object.assign({},s.dicas);G.poi=Object.assign({},s.poi);G.guia=!!s.guia;G.lumeFalou=G.treino.passo>1;
 }
 function resetEstado(){
   G.hearts=3;G.invuln=0;G.danoT=0;G.lantern=100;G.lanternOn=false;G.relics={steam:false,diesel:false,atom:false,bio:false};G.learn={};G.progs={};G.diary=[];G.diaryNew=0;
   G.insc={};G.sec={};G.abertas=[];G.done=false;G.time=0.12;G.migr=null;G.checkpoint=null;G.curTomb=null;G.nightSeen=false;$('btnDiary').classList.remove('new');
+  G.treino={feito:false,passo:0,manivela:false};G.dicas={};G.poi={};G.guia=false;G.lumeFalou=false;
 }
 /* começa: novo jogo, continuar o save 2D ou migrar o save do 3D (sem mexer nele) */
 function iniciarJogo(modo){
@@ -249,13 +253,17 @@ function iniciarJogo(modo){
   else{s=lerSave();
     if(!s&&modo==='migrar'){const d3=ler3d();if(d3){s=SAVE2D.migrar(d3,(tx,ty)=>posLivreVale(tx,ty));avisos.push('Progresso do jogo 3D trazido: '+s.migr.relics+' relíquia'+(s.migr.relics===1?'':'s')+' (adormecida'+(s.migr.relics===1?'':'s')+'), diário e '+Object.keys(s.sec).length+'/12 segredos. O save do 3D continua intacto.');}}}
   if(s)aplicarSave(s);
+  /* nos testes automáticos (#vt), um jogo novo pula o treino, a não ser que o endereço peça (#vt-treino) */
+  if(!s&&window.__vtPularTreino)G.treino.feito=true;
   aplicarSegredos();
   const A=AREAS.vale;let x=A.spawn.x,y=A.spawn.y,dir='cima';
   if(s&&s.tomb){const T=TOMBS[s.tomb];x=T.out.x*16+8;y=T.out.y*16+8;dir='baixo';}
   else if(s&&s.pos){const q=SAVE2D.posSegura(s.pos.x,s.pos.y,posLivreVale);x=q.x*16;y=q.y*16;}
-  trocarArea(A,x,y,dir);G.curTomb=null;
+  if(!G.treino.feito){if(!AREAS.treino)AREAS.treino=CONSTRUIR.treino();const T=AREAS.treino;T.reiniciar();trocarArea(T,T.spawn.x,T.spawn.y,'cima');}
+  else trocarArea(A,x,y,dir);
+  G.curTomb=null;
   esconderTelas();document.body.classList.add('jogando');G.mode='play';limparEntrada();hudKey='';atualizarHud.go=null;
-  if(!s){addDiary('camp',true);toast(TXT.welcome);setTimeout(()=>{if(G.mode==='play')toast(TXT.tip[IN.mode==='pad'?'pad':IN.mode==='touch'?'touch':'kb']);},2600);mostrarDicaToque();}
+  if(!s){addDiary('camp',true);toast(G.treino.feito?TXT.welcome:TXT.welcomeTreino);setTimeout(()=>{if(G.mode==='play')toast(TXT.tip[IN.mode==='pad'?'pad':IN.mode==='touch'?'touch':'kb']);},2600);mostrarDicaToque();}
   else{if(!avisos.length)toast('Progresso carregado: '+saberesCount()+'/4 saberes, '+secCount()+'/12 segredos.'+(s.tomb?' Você está na porta da '+TOMBS[s.tomb].name+'.':''),'good');for(const a of avisos)toast(a,'good');if(s.fixed)toast(TXT.saveFixed,'warn');}
   salvar(false);
 }
@@ -266,8 +274,8 @@ function mostrarTela(id){for(const s of document.querySelectorAll('.tela'))s.hid
 function esconderTelas(){for(const s of document.querySelectorAll('.tela'))s.hidden=true;document.body.classList.remove('modal');}
 function focoPrimeiro(id){const b=document.querySelector('#'+id+' .btn:not([hidden])');if(b)try{b.focus({preventScroll:true});}catch(e){}}
 function ctlHtml(){
-  const rows=IN.mode==='touch'?[['Joystick (lado esquerdo)','andar; empurre até o fim para correr'],['AÇÃO','interagir'],['LUZ','lanterna nas tumbas'],['Diário · II','diário e pausa']]
-    :[['WASD ou setas','andar'],['Shift','correr'],['E, Espaço ou Enter','interagir'],['T','lanterna'],['J','diário'],['Esc','pausa']];
+  const rows=IN.mode==='touch'?[['Joystick (lado esquerdo)','andar; empurre até o fim para correr'],['AÇÃO','interagir'],['VER','afastar a câmera'],['LUZ','lanterna nas tumbas'],['Guia','Guia de Programação'],['Diário · II','diário e pausa']]
+    :[['WASD ou setas','andar'],['Shift','correr'],['E, Espaço ou Enter','interagir'],['C','afastar a câmera'],['G','Guia de Programação'],['T','lanterna'],['J','diário'],['Esc','pausa']];
   return rows.map(r=>'<b>'+r[0]+'</b><span>'+r[1]+'</span>').join('');
 }
 function atualizarInicio(){
@@ -296,6 +304,7 @@ function ligarBotoes(){
   $('btnContinue').onclick=()=>iniciarJogo(lerSave()?'continuar':'migrar');
   $('btnNew').onclick=()=>{if(lerSave())confirmar('Começar de novo?','Isso apaga o progresso da versão 2D (o save do jogo 3D não é tocado).','Apagar e começar',()=>iniciarJogo('novo'));else iniciarJogo('novo');};
   $('pResume').onclick=retomar;$('pFull').onclick=alternarTelaCheia;$('btnFull').onclick=alternarTelaCheia;
+  $('btnGuiaIni').onclick=()=>abrirGuia();$('pGuiaPausa').onclick=()=>abrirGuia();$('gFechar').onclick=fecharGuia;
   $('pSound').onclick=()=>{auInit();auSetOn(!AU.on);lsSet(CFG2D_KEY,JSON.stringify({sound:AU.on}));$('pSound').textContent=AU.on?TXT.soundOn:TXT.soundOff;};
   $('pDiary').onclick=()=>{esconderTelas();G.mode='play';abrirDiario();};
   $('pErase').onclick=()=>confirmar('Apagar o progresso?','Isso apaga o progresso da versão 2D: relíquias, saberes, programas, diário e segredos. O save do jogo 3D não é tocado.','Apagar',()=>{lsDel(SAVE2D_KEY);iniciarJogo('novo');});
@@ -322,6 +331,8 @@ function passoJogo(dt,now){
     if(take('pausa')){pausar();return;}
     if(take('diario')){abrirDiario();return;}
     if(take('mapa')){abrirDiario('mapa');return;}
+    if(take('guia')){abrirGuia();return;}
+    if(take('vista'))alternarVista();
     if(take('lanterna')&&A.id!=='vale'&&A.id!=='final'){if(G.lantern>0){G.lanternOn=!G.lanternOn;SFX.click();}else toast('A lanterna está sem carga. Recarregue num ponto de energia.','warn');}
     if(A.id==='vale'){G.time=(G.time+dt/DAY_LEN)%1;const n=noiteAgora();if(n>0.6&&!G.nightSeen){G.nightSeen=true;toast(TXT.nightHint);addDiary('night',true);}}
     else if(G.lanternOn&&A.gastaLanterna!==false){G.lantern=Math.max(0,G.lantern-dt*(A.dreno?A.dreno():1));if(G.lantern<=0){G.lanternOn=false;toast('A lanterna apagou. Recarregue num ponto de energia.','warn');}}
@@ -333,13 +344,15 @@ function passoJogo(dt,now){
     acSalvar+=dt;if(acSalvar>20&&A.id==='vale'){acSalvar=0;salvar(false);}
   }else if(G.mode==='diario'){if(take('pausa')||take('diario'))fecharDiario();}
   else if(G.mode==='paused'){if(take('pausa'))retomar();}
-  else if(G.mode==='painel'){painelPasso(dt);if(take('pausa'))fecharPainel();}
-  IN.fila.delete('usar');IN.fila.delete('lanterna');IN.fila.delete('mapa');
+  else if(G.mode==='painel'){painelPasso(dt);if(take('pausa'))fecharPainel();else if(take('guia'))abrirGuia(topicoGuia(PAINEL.cfg));}
+  else if(G.mode==='guia'){if(take('pausa')||take('guia'))fecharGuia();}
+  else if(G.mode==='dialogo'){if(take('pausa'))fecharFala();}
+  IN.fila.delete('usar');IN.fila.delete('lanterna');IN.fila.delete('mapa');IN.fila.delete('vista');IN.fila.delete('guia');
   if(A){if(A.update)A.update(dt,G.t);atualizarGuardas(dt);}
   atualizarParticulas(dt);
   toastTick(now);
   if(G.mode!=='menu')atualizarHud();
-  auUpdate(dt,A&&A.id!=='vale',A?noiteAgora()>0.5:false,G.mode);
+  auUpdate(dt,A&&!areaExterna(A),A?noiteAgora()>0.5:false,G.mode);
 }
 function atualizarGuardas(dt){const A=G.area;if(!A.ents)return;for(const e of A.ents)if(e.update)e.update(dt,G.mode==='play');}
 function desenharJogo(){
@@ -351,6 +364,7 @@ function desenharJogo(){
   for(const o of A.objs){
     if(!o.on||!naTela(o.x,o.y-o.ay/2,Math.max(o.img.width,o.img.height)))continue;
     enfileirar(o.y+(o.camada||0),g=>{
+      if(o.sombra)sombra(g,o.x,o.y,o.sombra[0],o.sombra[1],o.sombra[2]);
       if(o.desenho){o.desenho(g,o,G.t);return;}
       let img=o.img;if(o.frames)img=o.frames[Math.floor(G.t*o.fps)%o.frames.length];
       blit(g,img,o.x,o.y,o.ax,o.ay,o.alfa);

@@ -12,6 +12,7 @@ const TILE=16;
 /* ====================== textos (pt-BR) ====================== */
 const TXT={
   welcome:'Boas-vindas ao Vale das Tumbas. Os sistemas da cidade antiga dormem: recupere os conhecimentos guardados nas quatro tumbas.',
+  welcomeTreino:'Boas-vindas ao Vale das Tumbas! Antes das tumbas, um treino rápido: siga o objetivo no alto da tela.',
   saved:'Progresso salvo: relíquias, saberes, programas, diário, segredos e posição no vale.',
   saveFixed:'Parte do salvamento estava danificada. O que pôde ser aproveitado foi recuperado.',
   saveFail:'Não foi possível salvar o progresso neste navegador.',
@@ -26,7 +27,7 @@ const TXT={
   nightHint:'Uma inscrição brilha ao longe...',dayInsc:'A inscrição está apagada. Volte à noite.',
   panelPause:'Painel aberto: a exploração está pausada.',
   ending:['A civilização do vale avançou do vapor à engenharia genética.','Seus sistemas funcionavam com instruções, dados, decisões e repetições. Você reuniu os quatro conhecimentos.','A Cidade-Jardim respira de novo. Ela esperou por você.'],
-  tip:{touch:'Joystick à esquerda para andar. Perto de algo, toque no botão de ação à direita.',kb:'WASD ou setas para andar, E ou Espaço para interagir, Shift corre, J abre o diário, Esc pausa.',pad:'Analógico anda, A interage, Start pausa.'}
+  tip:{touch:'Joystick à esquerda para andar. Perto de algo, toque no botão de ação à direita.',kb:'WASD ou setas para andar, E ou Espaço para interagir, Shift corre, G abre o Guia, J o diário, Esc pausa.',pad:'Analógico anda, A interage, Select abre o Guia, Start pausa.'}
 };
 
 /* ====================== o mundo: posições em tiles (1 tile = 16 px) ======================
@@ -52,6 +53,10 @@ const RELIC_INFO={
 const relNome=(k,mai)=>{const r=RELIC_INFO[k],a=mai?r.art.toUpperCase():r.art;return a+' '+r.name;};
 const relDe=k=>(RELIC_INFO[k].art==='o'?'do ':'da ')+RELIC_INFO[k].name;
 const RELIC_KEYS=['steam','diesel','atom','bio'];
+/* lugares que têm desafios mas não são tumbas */
+const LUGARES={treino:'Pátio de Treino'};
+const nomeLugar=k=>TOMBS[k]?TOMBS[k].name:LUGARES[k]||k;
+const TREINO_PASSOS=8;
 
 /* inscrições noturnas (as mesmas do 3D) e segredos do vale (4 fragmentos, 5 baús, 3 inscrições de dia) */
 const INSC=[
@@ -59,13 +64,23 @@ const INSC=[
   {id:'automato',x:108,y:94,t:'Inscrição do Autômato',s:'Todos os caminhos sobem. A Cidade-Jardim espera ao norte, atrás de quatro encaixes.'},
   {id:'steam',x:121,y:64,t:'Inscrição do vapor',s:'Vapor e engrenagem: aprenda a ordem das coisas. Quem troca a ordem chega a outro lugar.'},
   {id:'diesel',x:43,y:95,t:'Inscrição do diesel',s:'Cada máquina lê o que está guardado. Guarde o valor certo, do tipo certo, e a máquina obedece.'},
-  {id:'atom',x:58,y:119,t:'Inscrição do átomo',s:'A água esfria o que o átomo acende. Pergunte antes de agir: se, senão.'},
+  {id:'atom',x:58,y:119,t:'Inscrição do átomo',s:'A água esfria o que o átomo acende. Pergunte antes de agir: if, elif, else.'},
   {id:'bio',x:125,y:115,t:'Inscrição da vida',s:'O que vive repete: respira, cresce, para quando basta. Saiba quando parar.'}
 ];
 const SEC_FRAGS=[{id:'f_nw',x:39,y:75,q:'noroeste'},{id:'f_ne',x:127,y:39,q:'nordeste'},{id:'f_sw',x:47,y:140,q:'sudoeste'},{id:'f_se',x:145,y:136,q:'sudeste'}];
 const SEC_CHESTS=[{id:'c1',x:42,y:107},{id:'c2',x:55,y:152},{id:'c3',x:140,y:44},{id:'c4',x:127,y:131},{id:'c5',x:66,y:125}];
 const SEC_INSC=[{id:'d1',x:80,y:129},{id:'d2',x:71,y:67},{id:'d3',x:118,y:79}];
 const SEC_IDS=SEC_FRAGS.map(f=>f.id).concat(SEC_CHESTS.map(c=>c.id),SEC_INSC.map(d=>d.id));
+/* pontos de interesse no caminho entre as tumbas: cada um conta uma pista sobre programação e vai para o diário */
+const POIS=[
+  {id:'acamp',x:104,y:79,t:'Acampamento abandonado',s:'Uma barraca rasgada e uma fogueira fria. No caderno esquecido: "O autômato das Engrenagens faz exatamente o que está escrito, na ordem escrita. Quando ele bate, o erro costuma estar numa linha antes."'},
+  {id:'ponte',x:61,y:82,t:'Ponte do leito seco',s:'Uma ponte de tábuas sobre um rio que secou. Entalhado no corrimão: "energia = True liga a máquina; energia = \"True\" só escreve uma palavra."'},
+  {id:'observ',x:66,y:110,t:'Observatório em ruínas',s:'A cúpula caiu, mas a luneta ainda aponta para o norte. Num caderno de medições: "temperatura 82 → resfriar · 61 → ventilar · 33 → nada. Testar do mais quente para o mais frio."'},
+  {id:'estatua',x:97,y:118,t:'Estátua da Engenheira',s:'Uma estátua segura uma tábua de pedra com quatro palavras gravadas: = guarda · if pergunta · for repete · while espera.'},
+  {id:'poco',x:113,y:135,t:'Poço antigo',s:'Você soltou uma pedrinha e contou: 1, 2, 3, 4... tchibum! A borda tem um aviso: "Conte as voltas antes de descer o balde: range(4) dá quatro."'},
+  {id:'carroca',x:120,y:69,t:'Carroça tombada',s:'Engrenagens espalhadas pela areia, cada uma marcada com um número inteiro. Um bilhete preso na roda: "5 peças é int; 2,5 litros é float; \"MOTOR\" é string."'}
+];
+const POI_IDS=POIS.map(p=>p.id);
 
 /* ====================== diário ======================
    Os ids das anotações são os mesmos do jogo 3D (para o diário migrar). Os textos falam do jogo 2D. */
@@ -101,11 +116,14 @@ const ENTRIES={
   /* novas no jogo 2D */
   oficina_steam:{t:'O Computador Ancestral',s:'Uma máquina de pedra, bronze e engrenagens. Placas de comando, uma alavanca e um pequeno autômato que cumpre exatamente o que as placas mandam.'},
   oficina_diesel:{t:'A oficina dos contêineres',s:'Contêineres com nome, tipo e valor, ligados às máquinas por canos e cabos. Cada máquina consulta o seu contêiner na hora de trabalhar.'},
-  oficina_atom:{t:'O painel do reator',s:'Sensores medem a energia e o nível da água. O painel compara cada medida e escolhe um caminho: se for verdade, um; senão, outro.'},
-  oficina_bio:{t:'A estufa automática',s:'Um polinizador corre num trilho entre organismos artificiais. Ele repete a rotina que receber, e só para quando ela manda.'},
+  oficina_atom:{t:'O painel do reator',s:'Sensores medem a energia, o nível da água e a temperatura. O painel compara cada medida e escolhe um caminho: if, elif ou else.'},
+  oficina_bio:{t:'A estufa automática',s:'Um polinizador corre num trilho entre organismos artificiais, e tochas de seiva iluminam o corredor. A estufa repete a rotina que receber, e só para quando ela manda.'},
+  treino:{t:'Pátio de treino',s:'O Lume me ensinou o básico: andar, olhar ao redor, interagir, pegar objetos, abrir o Guia de Programação e executar o primeiro comando, acender_tocha().'},
+  lume:{t:'Lume, o autômato-guia',s:'Um pequeno autômato de latão com uma lanterna no peito. Ele conhece os mecanismos das tumbas e dá dicas aos poucos: primeiro o conceito, depois o caminho, e só por último algo bem perto da solução.'},
   migrado:{t:'Lembranças de outra viagem',s:'Trouxe do primeiro diário as relíquias, as anotações e os segredos. As relíquias voltaram adormecidas: para despertá-las, preciso reaprender o que cada tumba ensina.'}
 };
 for(const d of INSC)ENTRIES['insc_'+d.id]={t:d.t,s:d.s};
+for(const d of POIS)ENTRIES['poi_'+d.id]={t:d.t,s:d.s};
 Object.assign(ENTRIES,{
   sec_f_nw:{t:'Fragmento de mapa (noroeste)',s:'Um pedaço rasgado de um mapa antigo. A página Mapa do diário mostra o que ele revela.'},
   sec_f_ne:{t:'Fragmento de mapa (nordeste)',s:'Um pedaço rasgado de um mapa antigo. A página Mapa do diário mostra o que ele revela.'},

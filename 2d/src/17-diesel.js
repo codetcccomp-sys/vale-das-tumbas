@@ -25,6 +25,12 @@ Object.assign(OBJS,{
   portaoAco(larg,est){const w=larg*16,c=cnv(w,30),g=ctx2(c);if(est===2){P.r(g,0,0,w,3,'#33373f');return c;}const h=est===1?14:28;
     P.r(g,0,30-h,w,h,'#5a606c');for(let y=30-h;y<30;y+=4)P.r(g,0,y,w,1,'#3a3f48');P.r(g,0,30-h,w,2,'#c8a030');P.ponti(g,0,30-h,w,2,'#2a2a2a',0);return contorno(c,'#0b0705');},
   barril(){const c=cnv(14,18),g=ctx2(c);P.r(g,2,2,10,15,'#3a5a3a');P.r(g,2,2,3,15,'#4a7a4a');for(const y of[5,12])P.r(g,2,y,10,1,'#2a3a2a');P.elip(g,7,2,5,1.5,'#2a3a2a');return contorno(c,'#0b0705');},
+  tanqueDiesel(n){const c=cnv(22,36),g=ctx2(c);P.r(g,2,4,18,30,'#4a505c');P.r(g,2,4,18,3,'#6a707c');P.r(g,5,8,12,22,'#14202a');const h=Math.round(22*clamp(n,0,4)/4);if(h>0){P.r(g,5,30-h,12,h,'#c8a030');P.r(g,5,30-h,12,1,'#ffe080');}
+    for(let i=1;i<4;i++)P.r(g,15,30-Math.round(22*i/4),2,1,'#cfd8e0');P.r(g,8,0,6,5,'#3a3f48');return contorno(c,'#0b0705');},
+  painelSenha(ok,f){const c=cnv(30,26),g=ctx2(c);P.r(g,2,2,26,18,'#3a3f48');P.r(g,2,2,26,2,'#5a606c');P.r(g,4,6,22,10,ok?'#0e2a14':'#14202a');P.r(g,13,20,4,5,'#3a3f48');
+    P.circ(g,24,4,1.5,ok?'#5dff7a':(f%2?'#ff5a3a':'#5a2a1a'));return contorno(c,'#0b0705');},
+  portinhola(ab){const c=cnv(26,30),g=ctx2(c);P.r(g,0,0,26,30,'#22252a');if(ab<1){const w=Math.round(22*(1-ab));P.r(g,2,2,w,26,'#5a606c');for(let y=4;y<28;y+=5)P.r(g,2,y,w,1,'#3a3f48');P.r(g,2+w-3,13,2,4,'#c8a030');}
+    else{P.r(g,2,2,22,26,'#0b0d10');P.r(g,6,22,14,4,'#c8a030');}return contorno(c,'#0b0705');},
   motor(f){const c=cnv(34,26),g=ctx2(c);P.r(g,2,6,30,18,'#4a505c');P.r(g,2,6,30,3,'#6a707c');for(let x=6;x<30;x+=6)P.r(g,x,2+(f%2&&x%12===0?1:0),3,5,'#3a3f48');P.circ(g,10,16,4,'#2a2d33');P.circ(g,10,16,1.5,'#9a968a');return contorno(c,'#0b0705');}
 });
 
@@ -113,9 +119,26 @@ CONSTRUIR.diesel=function(){
   objeto(A,SPR.get('montaCargas',0),21*16,12*16+8,{col:[-22,-10,22,0]}).desenho=(g,ob)=>blit(g,SPR.get('montaCargas',Math.round(mc.nivel*6)/6),ob.x,ob.y,24,64);
   const foco={x:14*16,y:9*16};A.focoPainel=foco;
   terminal(A,14,12,'diesel',foco,'console','Usar o console da oficina');
-  interacao(A,{x:14*16,y:7*16,r:30,label:()=>'Ler a placa dos contêineres',use:()=>{addDiary('oficina_diesel');toast('Cada contêiner tem um nome, aceita um tipo de dado e mostra o valor atual. As máquinas consultam o contêiner na hora de trabalhar.');}});
+  criarLume(A,17.5,11,'diesel');
+  tochasProgresso(A,'diesel',[[9,14],[10.5,14],[12,14],[17,14],[18.5,14],[20,14]],'#cfe8ff');
+  /* etapa dos quatro tipos: cada máquina reage ao valor da variável dela */
+  const maqEstado=()=>{const vis=PAINEL.aberto&&PAINEL.area===A?painelVis():null;
+    if(vis&&vis.cfg.id==='d1')return{on:true,m:vis.ws.maq||{}};
+    if(G.learn.d1)return{on:false,m:{energia:LV('bool',true),combustivel:LV('float',2.5),pecas:LV('int',5),senha:LV('str','ABRIR')}};return{on:false,m:{}};};
+  const ger=objeto(A,SPR.get('gerador',false,0),5*16+8,9*16+6,{col:[-14,-8,14,0]});
+  ger.desenho=(g,ob,t)=>{const e=maqEstado(),lig=e.m.energia&&e.m.energia.v===true;blit(g,SPR.get('gerador',lig,Math.floor(t*6)%2),ob.x,ob.y,14,28);if(e.on)etiqueta(g,ob.x,ob.y-34,lig?'ligado':'desligado',lig?'#5dff7a':'#ff9a7a');};
+  const tq=objeto(A,SPR.get('tanqueDiesel',0),24*16,9*16+6,{col:[-11,-8,11,0]});
+  tq.desenho=(g,ob)=>{const e=maqEstado(),v=e.m.combustivel?e.m.combustivel.v:0;blit(g,SPR.get('tanqueDiesel',Math.round(v*4)/4),ob.x,ob.y,11,36);if(e.on)etiqueta(g,ob.x,ob.y-42,LANG.fmt(e.m.combustivel||null)+(e.m.combustivel?' L':''),'#ffe080');};
+  const ps=objeto(A,SPR.get('painelSenha',false,0),19*16+8,7*16+14,{});
+  ps.desenho=(g,ob,t)=>{const e=maqEstado(),s=e.m.senha,ok=s&&s.v==='ABRIR';blit(g,SPR.get('painelSenha',ok,Math.floor(t*3)%2),ob.x,ob.y,15,26);
+    if(s){const x=Math.round(ob.x+R.ox),y=Math.round(ob.y-20+R.oy);FONTE.rotulo(g,s.v.slice(0,6),x,y,ok?'#5dff7a':'#ffd24a');}};
+  const pt=objeto(A,SPR.get('portinhola',0),22*16+8,7*16+14,{});const pst={a:0};
+  pt.desenho=(g,ob)=>{const e=maqEstado(),ok=e.m.senha&&e.m.senha.v==='ABRIR';pst.a+=((ok?1:0)-pst.a)*0.08;blit(g,SPR.get('portinhola',Math.round(pst.a*6)/6),ob.x,ob.y,13,30);};
+  A.luzGerador=()=>{const e=maqEstado();return e.m.energia&&e.m.energia.v===true;};
+  interacao(A,{x:14*16,y:7*16,r:30,label:()=>'Ler a placa dos contêineres',use:()=>{addDiary('oficina_diesel');toast('Cada contêiner é uma variável: tem um nome, aceita um tipo (int, float, string ou boolean) e mostra o valor atual. As máquinas leem a variável na hora de trabalhar.');}});
   A.luzesExtra=t=>{
     const f=A.facho();luz(f.x,f.y,10,1,'#fff6c0');
+    if(A.luzGerador()){luz(5*16+8,8*16,46+Math.sin(t*12)*2,1,'#ffe9a0');for(const x of[8,20])luz(x*16,7*16,30,0.8,'#ffe9a0');}
     if(PAINEL.aberto&&PAINEL.area===A){luz(14*16,9*16,96,1,'#cfe8ff');}else luz(14*16,9*16,40,0.6,'#cfe8ff');
     if(naTela(vg.x,vg.y,100))luz(vg.x+vg.dir*30,vg.y-4,26,0.9,'#fff2b0');
   };
@@ -136,9 +159,12 @@ CONSTRUIR.diesel=function(){
   };
   A.reiniciar=()=>{reiniciarGuardas(A);for(const pt of A.pontos)pt.aceso=false;holo.d=sensorLigado()?1:2;mc.nivel=G.learn.d5?1:0;addDiary('diesel_enter',true);};
   A.objetivo=()=>{if(!sensorLigado())return{t:'Saber: Dados e variáveis',s:'A porta da oficina está fechada. Gire o holofote até a luz alcançar o sensor da parede.'};return objetivoTumba('diesel','No console da oficina');};
-  A.aoEvento=(ev)=>{if(ev.anim&&ev.anim.lote){SFX.maquina();for(let i=0;i<Math.min(ev.anim.lote,12);i++)setTimeout(()=>faiscas(10*16,11*16,2,['#ffd24a','#d8a24a']),i*40);}
+  A.aoEvento=(ev)=>{
+    if(ev.anim&&ev.anim.maq){const m=ev.anim.maq;if(m==='energia'){if(ev.depois.v){SFX.maquina();faiscas(5*16+8,8*16,12,['#fff6c0','#ffd24a']);R.treme=0.2;}else SFX.deny();}
+      else if(m==='combustivel'){SFX.agua();gotas(24*16,7*16,6);}else if(m==='senha'){if(ev.depois.v==='ABRIR'){SFX.sensor();SFX.gate();}else SFX.deny();}else if(m==='pecas')SFX.click();}
+    if(ev.anim&&ev.anim.lote){SFX.maquina();for(let i=0;i<Math.min(ev.anim.lote,12);i++)setTimeout(()=>faiscas(10*16,11*16,2,['#ffd24a','#d8a24a']),i*40);}
     if(ev.anim&&ev.anim.mc)SFX.elev();if(ev.tipo==='set')faiscas(contPos(A,ev.nome).x,contPos(A,ev.nome).y-20,6,['#6fd3ff','#ffffff']);if(ev.tipo==='erro'){SFX.deny();R.treme=0.2;}};
-  A.aoConcluir=(cfg)=>{if(cfg.id==='d5'){setTimeout(()=>toast('O monta-cargas levou a carga e destravou o portão da câmara.','good'),600);}};
+  A.aoConcluir=(cfg)=>{if(saberOk('diesel')){setTimeout(()=>toast('O monta-cargas levou a carga e destravou o portão da câmara.','good'),600);}};
   return A;
 };
 /* contêineres no alto da oficina: um para cada variável da etapa */

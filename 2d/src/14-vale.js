@@ -34,6 +34,7 @@ function construirVale(){
     }
     A.set(tx,ty,k);
   }
+  leitoSeco(A);
   /* praça na frente da pirâmide e em volta do acampamento */
   for(let ty=40;ty<=44;ty++)for(let tx=83;tx<=97;tx++)A.set(tx,ty,'estrada');
   for(let ty=144;ty<=158;ty++)for(let tx=80;tx<=100;tx++)if(A.kind(tx,ty)==='duna')A.set(tx,ty,'areia');
@@ -41,7 +42,8 @@ function construirVale(){
 
   const avoid=[];const livre=(x,y,r)=>avoid.every(a=>Math.hypot(a[0]-x,a[1]-y)>a[2]+r);
   const pode=(x,y,r)=>{const tx=Math.floor(x),ty=Math.floor(y),k=A.kind(tx,ty);return(k==='areia'||k==='duna')&&livre(x,y,r)&&Math.hypot(x-VALE_C,y-VALE_C)<VALE_R-3;};
-  const por=(tx,ty,img,o)=>objeto(A,img,tx*16,ty*16,o);
+  /* objetos com altura ganham uma sombra no chão */
+  const por=(tx,ty,img,o)=>{o=o||{};if(o.sombra===undefined&&o.col&&img.width>=14&&img.height>=14)o.sombra=[Math.min(34,Math.round(img.width*0.42)),Math.max(2,Math.round(img.width*0.13)),0.2];return objeto(A,img,tx*16,ty*16,o);};
   const reserva=(x,y,r)=>avoid.push([x,y,r]);
 
   /* ---------- acampamento ---------- */
@@ -49,6 +51,10 @@ function construirVale(){
   const fog=por(91.5,150,SPR.get('fogueira',0),{col:[-6,-4,6,1]});fog.frames=[0,1,2].map(f=>SPR.get('fogueira',f));fog.fps=6;VALE.fogo.push(fog);
   por(87.6,149.6,SPR.get('mesa'),{col:[-10,-6,10,0]});por(86.5,152,SPR.get('bandeira'),{col:[-3,-3,3,0]});reserva(90,150,6);
   interacao(A,{x:87.6*16,y:150.6*16,r:20,label:()=>'Abrir o caderno de campo',use:()=>abrirDiario()});
+  /* o Lume fica no acampamento; a placa leva de volta ao pátio de treino */
+  criarLume(A,93.2,148,'vale');reserva(93.2,148,1.5);
+  por(84.2,148.6,SPR.get('placaTreino'),{col:[-3,-3,3,0]});reserva(84.2,148.6,1.5);
+  interacao(A,{x:84.2*16,y:148.6*16+6,r:18,label:()=>'Placa: Pátio de Treino',use:()=>entrarTreino()});
   /* ---------- oásis ---------- */
   for(let i=0;i<7;i++){const a=i/7*TAU+0.3,rr=5.2+R()*0.9,x=62+Math.cos(a)*rr*1.15,y=146+Math.sin(a)*rr*0.9;por(x,y,SPR.get('palmeira',i%3),{col:[-3,-3,3,1]});reserva(x,y,1.5);}
   por(53.5,141.5,SPR.get('estufa','#9fe8d0'),{col:[-22,-14,22,0]});reserva(53.5,141,4);reserva(62,146,6);
@@ -132,6 +138,8 @@ function construirVale(){
   /* beira da estrada */
   for(let ty=48;ty<150;ty+=2){const sd=R()<0.5?-1:1,x=90+sd*(5+R()*3);if(pode(x,ty,0.1))A.decalques.push({img:SPR.get('capim',(R()*3)|0),x:x*16,y:ty*16});if(R()<0.25)lugar(90-sd*(5.5+R()*3),ty,0.5,(x2,y2)=>por(x2,y2,SPR.get('arbusto',(R()*4)|0),{}));}
 
+  ambientarVale(A,{por,lugar,pode,reserva,R});
+  for(const o of VALE.braseiros)o.luz={r:34,cor:'#ff9a40',dy:-14};
   A.update=atualizarVale;A.desenharTopo=desenharTopoVale;
   return A;
 }
@@ -141,8 +149,10 @@ function atualizarVale(dt,t){
   if(Math.random()<dt*2.5)for(const o of VALE.fumaca)if(naTela(o.x,o.y,80)&&Math.random()<0.5)vapor(o.x,o.y-38,1,['#e8dccb','#cfc4b4','#a8a094']);
   const st=TOMBS.steam;if(Math.random()<dt*2&&naTela(st.door.x*16,st.door.y*16-100,120))vapor(st.door.x*16+8,st.door.y*16-118,1);
   for(const v of VALE.insc)v.o.img=noiteAgora()>0.5?v.o.noite:SPR.get('estela',40+INSC.indexOf(v.d),false);
+  ambienteVale(dt,t);
 }
 function desenharTopoVale(g,t){
+  nevoaVale(g,t);
   const nRel=saberesCount();
   for(const f of VALE.feixes){
     if(!naTela(f.x,f.y,160))continue;

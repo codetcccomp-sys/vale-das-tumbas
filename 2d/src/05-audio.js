@@ -1,6 +1,7 @@
 /* ====================== áudio (tudo sintetizado, sem arquivos) ======================
    Os mesmos sons do jogo 3D (vento, zumbido das tumbas, motor, reator, tumba viva, cidade e os efeitos), mais os sons do
-   painel de programação: encaixar placa, cada passo do programa, erro e sucesso. */
+   painel de programação: encaixar linha, cada passo do programa, erro e sucesso. Sons naturais do vale: pássaros de dia,
+   grilos à noite, rajadas de vento, o fogo estalando e a água do oásis quando se está perto; gotas e rangidos nas tumbas. */
 const AU={ctx:null,master:null,sfx:null,amb:null,mus:null,on:true,vol:0.8,noise:null,wind:null,hum:null,nextTick:0,flip:false,nextChord:2,last:{}};
 function auInit(){
   if(AU.ctx){if(AU.ctx.state==='suspended'){try{AU.ctx.resume();}catch(e){}}return;}
@@ -89,7 +90,10 @@ const SFX={
   sucesso:()=>{[523,659,784,1046].forEach((f,i)=>tone(f,0.35,'triangle',0.08,1,i*0.09));},
   maquina:()=>once('maquina',200,()=>{tone(110,0.25,'sawtooth',0.05,1.3);burst(0.3,'lowpass',600,0.1,0.02);}),
   rega:()=>{burst(0.35,'highpass',3000,0.06,0,0.5);tone(700,0.12,'sine',0.03,0.6,0.05);},
-  agua:()=>once('agua',300,()=>{burst(0.5,'lowpass',700,0.12,0,0.8);})
+  agua:()=>once('agua',300,()=>{burst(0.5,'lowpass',700,0.12,0,0.8);}),
+  /* Lume: dois bipes de latão */
+  poco:()=>{tone(620,0.08,'sine',0.05);tone(140,0.5,'sine',0.08,0.6,0.9);burst(0.5,'lowpass',600,0.12,0.9,0.8);tone(300,1.2,'sine',0.03,0.8,1.1);},
+  lumeOi:()=>once('lume',600,()=>{tone(880,0.08,'triangle',0.06);tone(1320,0.1,'triangle',0.05,1,0.09);tone(990,0.12,'sine',0.04,1,0.2);})
 };
 const SCALE=[293.66,329.63,369.99,440,493.88,587.33];
 function auUpdate(dt,inTomb,night,mode){
@@ -112,7 +116,16 @@ function auUpdate(dt,inTomb,night,mode){
     else if(AU.kind==='atom'){const rate=AU.geiger||1.2;if(Math.random()<rate*dt)burst(0.02,'highpass',3200,0.07,0,1);}
     else if(AU.kind==='diesel'){if(now>(AU.nextRadio||0)){AU.nextRadio=now+2.5+Math.random()*6;burst(0.18+Math.random()*0.5,'bandpass',1600+Math.random()*1800,0.05,0,5);if(Math.random()<0.5)tone(380+Math.random()*500,0.12,'sawtooth',0.012,0.7);}}
     else if(now>AU.nextTick){AU.nextTick=now+0.62;AU.flip=!AU.flip;tone(AU.flip?1250:980,0.025,'square',0.025,1,0,'amb');if(Math.random()<0.08)SFX.steam(0.06);}
+    /* gotas e rangidos de metal nas tumbas de pedra e aço */
+    if((AU.kind==='steam'||AU.kind==='diesel'||AU.kind==='atom')&&now>(AU.nextGota||0)){AU.nextGota=now+2+Math.random()*5;const f=900+Math.random()*900;tone(f,0.06,'sine',0.03,0.5,0,'amb');if(Math.random()<0.3)tone(70+Math.random()*30,0.6,'sawtooth',0.012,1.3,0.3,'amb');}
   }
-  else if(mode==='play'||mode==='menu'){ if(now>AU.nextChord){AU.nextChord=now+9+Math.random()*5;const base=night?0.5:1,i=Math.floor(Math.random()*4);[i,i+2,i+3].forEach((k,j)=>{const f=SCALE[k%SCALE.length]*base*(k>=SCALE.length?2:1)*0.5;
+  else if(mode==='play'||mode==='menu'||mode==='guia'||mode==='dialogo'){
+    /* natureza: pássaros de dia, grilos à noite, rajadas de vento; fogo e água conforme a distância */
+    if(!night&&now>(AU.nextPassaro||0)){AU.nextPassaro=now+2.5+Math.random()*6;const f=2500+Math.random()*1500;tone(f,0.06,'sine',0.022,1.3,0,'amb');tone(f*1.18,0.07,'sine',0.018,0.85,0.09,'amb');if(Math.random()<0.5)tone(f*0.92,0.05,'sine',0.016,1.2,0.22,'amb');}
+    if(night&&now>(AU.nextGrilo||0)){AU.nextGrilo=now+0.7+Math.random()*1.4;const f=4100+Math.random()*400;for(let i=0;i<3;i++)tone(f,0.025,'square',0.005,1,i*0.055,'amb');}
+    if(now>(AU.nextRajada||0)){AU.nextRajada=now+9+Math.random()*10;burst(2.4,'bandpass',380+Math.random()*200,0.05,0,0.5);}
+    if((AU.fogo||0)>0.05&&now>(AU.nextEstalo||0)){AU.nextEstalo=now+0.12+Math.random()*0.45;burst(0.035,'highpass',2400,0.07*AU.fogo,0,1.5);}
+    if((AU.agua||0)>0.05&&now>(AU.nextAgua||0)){AU.nextAgua=now+0.45+Math.random()*0.7;burst(0.5,'lowpass',850,0.05*AU.agua,0,0.7);tone(900+Math.random()*500,0.05,'sine',0.012*AU.agua,0.7,0.1,'amb');}
+    if(now>AU.nextChord){AU.nextChord=now+9+Math.random()*5;const base=night?0.5:1,i=Math.floor(Math.random()*4);[i,i+2,i+3].forEach((k,j)=>{const f=SCALE[k%SCALE.length]*base*(k>=SCALE.length?2:1)*0.5;
       const o=AU.ctx.createOscillator(),g=AU.ctx.createGain();o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(0.0001,now+j*0.4);g.gain.linearRampToValueAtTime(0.045,now+j*0.4+2.2);g.gain.linearRampToValueAtTime(0.0001,now+j*0.4+7);o.connect(g);g.connect(AU.mus);o.start(now+j*0.4);o.stop(now+j*0.4+7.2);});} }
 }

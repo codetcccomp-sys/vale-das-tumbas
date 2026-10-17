@@ -5,7 +5,7 @@ const t=suite('l2-save');
 const fs=require('fs'),path=require('path'),vm=require('vm');
 const SRC=path.resolve(__dirname,'..','src');
 const ctx=vm.createContext({console,JSON,Math,Object,Array,String,Number,Boolean,Error,Map,Set});
-vm.runInContext(['01-core.js','02-lang.js','03-learn.js','04-save.js'].map(f=>fs.readFileSync(path.join(SRC,f),'utf8')).join('\n;\n')+';this.S=SAVE2D;this.T=TOMBS;this.E=ENTRIES;this.D=DESAFIO;this.v3=v3;',ctx,{timeout:5000});
+vm.runInContext(['01-core.js','02-lang.js','03-learn.js','04-save.js'].map(f=>fs.readFileSync(path.join(SRC,f),'utf8')).join('\n;\n')+';this.S=SAVE2D;this.T=TOMBS;this.E=ENTRIES;this.D=DESAFIO;this.v3=v3;this.TP=TREINO_PASSOS;',ctx,{timeout:5000});
 const S=ctx.S,TOMBS=ctx.T;
 const livre=()=>true;
 /* save 3D válido */
@@ -46,4 +46,15 @@ const ids3d=['camp','steam_enter','steam_floor','automato','steam_relic','oasis'
   'insc_oasis','insc_automato','insc_steam','insc_diesel','insc_atom','insc_bio','sec_f_nw','sec_f_ne','sec_f_sw','sec_f_se','sec_c1','sec_c2','sec_c3','sec_c4','sec_c5','insc_d1','insc_d2','insc_d3'];
 const falta=ids3d.filter(id=>!ctx.E[id]);t.ok(!falta.length,'todas as '+ids3d.length+' anotações do diário 3D existem no 2D',falta);
 t.ok(['saber_seq','saber_dados','saber_decisoes','saber_automacao'].every(k=>ctx.E[k]&&ctx.E[k].cod),'cada saber tem explicação e exemplo de código no diário');
+/* save de antes das etapas novas (sem rev): tumba completa ganha as etapas novas; incompleta continua de onde parou */
+const velho=S.limpar({v:1,relics:{steam:true,diesel:false,atom:false,bio:false},learn:{s0:true,s1:true,s2:true,a0:true,a1:true,a2:true,b0:true},diary:['camp'],abertas:[],time:0.2});
+t.ok(velho&&velho.learn.s3&&velho.learn.a3&&velho.learn.a4&&!velho.learn.b1&&!velho.learn.t1&&velho.treino.feito,'save antigo: tumbas completas ganham as etapas novas e o treino conta como feito',velho&&{learn:Object.keys(velho.learn),treino:velho.treino});
+const meio=S.limpar({v:1,relics:{},learn:{s0:true,s1:true},diary:[]});t.ok(meio&&!meio.learn.s3&&!meio.learn.s2,'save antigo pela metade: as etapas que faltam continuam por fazer');
+/* save novo: não ganha etapas de graça */
+const nv=S.limpar(JSON.parse(JSON.stringify(S.montar({relics:{steam:false,diesel:false,atom:false,bio:false},learn:{a0:true,a1:true,a2:true},progs:{},diary:[],insc:{},sec:{},abertas:[],done:false,time:0.1,pos:null,tomb:null,
+  treino:{feito:false,passo:3,manivela:true},dicas:{s1:2,a3:3},poi:{poco:true},guia:true}))));
+t.ok(nv&&!nv.fixed&&!nv.learn.a3&&nv.treino.passo===3&&nv.treino.manivela&&!nv.treino.feito&&nv.dicas.s1===2&&nv.dicas.a3===3&&nv.poi.poco&&nv.guia,'save novo: treino, dicas do Lume, lugares visitados e guia voltam iguais (sem etapas de graça)',nv);
+const rv=S.limpar({v:1,rev:2,learn:{},treino:{feito:'x',passo:99},dicas:{s1:9,zz:1,s2:'a'},poi:{poco:true,nada:true},guia:'sim'});
+t.ok(rv&&rv.fixed&&rv.treino.passo===ctx.TP&&!rv.treino.feito&&!Object.keys(rv.dicas).length&&rv.poi.poco&&!rv.poi.nada&&!rv.guia,'campos novos estragados são limpos',rv&&{treino:rv.treino,dicas:rv.dicas,poi:rv.poi});
+t.ok(S.migrar(d3,livre).treino.feito,'quem vem do 3D não precisa do treino');
 t.done();

@@ -15,7 +15,7 @@ const inter=(a,b)=>a&&b&&a.w>0&&b.w>0&&a.x<b.x+b.w-1&&b.x<a.x+a.w-1&&a.y<b.y+b.h
     const m=await ev(()=>{
       const r=id=>{const e=document.getElementById(id);if(!e||e.hidden||e.offsetParent===null)return null;const b=e.getBoundingClientRect();return{x:b.x,y:b.y,w:b.width,h:b.height};};
       const es=__vt.escala();
-      return{es,iw:innerWidth,ih:innerHeight,hl:r('hl'),hr:r('hr'),prompt:r('prompt'),use:r('bUse'),msgs:[...document.querySelectorAll('#msgs .toast')].map(e=>{const b=e.getBoundingClientRect();return{x:b.x,y:b.y,w:b.width,h:b.height};}),
+      return{es,iw:innerWidth,ih:innerHeight,hl:r('hl'),hr:r('hr'),prompt:r('prompt'),use:r('bUse'),ver:r('bVer'),zona:r('zoneHint'),guia:r('btnGuia'),msgs:[...document.querySelectorAll('#msgs .toast')].map(e=>{const b=e.getBoundingClientRect();return{x:b.x,y:b.y,w:b.width,h:b.height};}),
         fontes:[...document.querySelectorAll('#hud *')].filter(e=>e.offsetParent!==null&&e.childNodes.length&&[...e.childNodes].some(n=>n.nodeType===3&&n.textContent.trim())).map(e=>parseFloat(getComputedStyle(e).fontSize))};
     });
     const k=m.es.k;
@@ -24,7 +24,10 @@ const inter=(a,b)=>a&&b&&a.w>0&&b.w>0&&a.x<b.x+b.w-1&&b.x<a.x+a.w-1&&a.y<b.y+b.h
     t.ok(!inter(m.hl,m.hr),nome+': vida/objetivo não encostam nos botões do alto',[m.hl,m.hr]);
     if(toque){t.ok(m.use&&m.use.w>=60&&m.use.h>=60,nome+': botão de ação grande',m.use);
       t.ok(!m.prompt||!inter(m.prompt,m.use),nome+': aviso de interação não cobre o botão',[m.prompt,m.use]);
-      t.ok(m.msgs.every(b=>!inter(b,m.use)&&!inter(b,m.prompt)),nome+': avisos não cobrem os botões nem a interação',m.msgs);}
+      t.ok(m.msgs.every(b=>!inter(b,m.use)&&!inter(b,m.prompt)),nome+': avisos não cobrem os botões nem a interação',m.msgs);
+      t.ok(m.ver&&m.ver.w>=44&&!inter(m.ver,m.use)&&!inter(m.ver,m.prompt)&&m.msgs.every(b=>!inter(b,m.ver)),nome+': botão VER (vista ampla) livre, sem cobrir ação nem avisos',[m.ver,m.prompt]);}
+    if(toque)t.ok(!m.zona||(!inter(m.zona,m.ver)&&!inter(m.zona,m.use)&&!inter(m.zona,m.prompt)),nome+': dica do lado de andar não cobre VER, AÇÃO nem o aviso de interação',[m.zona,m.ver,m.prompt]);
+    t.ok(m.guia&&m.guia.h>=40&&m.guia.x+m.guia.w<=w+1,nome+': botão Guia no alto, inteiro na tela',m.guia);
     t.ok(m.msgs.every(b=>!inter(b,m.hl)&&!inter(b,m.hr)),nome+': avisos não cobrem a vida, o objetivo nem os botões do alto',[m.msgs,m.hl]);
     t.ok(Math.min(...m.fontes)>=11,nome+': textos do HUD com pelo menos 11 px',Math.min(...m.fontes));
     await page.screenshot({path:path.join(__dirname,'shots','tela-'+w+'x'+h+'.png')});
@@ -52,6 +55,9 @@ const inter=(a,b)=>a&&b&&a.w>0&&b.w>0&&a.x<b.x+b.w-1&&b.x<a.x+a.w-1&&a.y<b.y+b.h
     t.ok(p.prog.h>=80,nome+': lista do programa com espaço ('+Math.round(p.prog.h)+' px)',p.prog);
     t.ok(p.fmin>=11,nome+': textos do painel com pelo menos 11 px',p.fmin);
     t.ok(p.ultimo,nome+': os controles do fim do painel são alcançáveis'+(p.rola?' (o painel rola)':''),p.rola);
+    const ve=await ev(()=>{document.getElementById('painel').scrollTop=0;mostrarErro({linha:3,titulo:'Erro de teste (TypeError): era esperado um número inteiro (int).',texto:'Explicação do erro de teste, com duas ou três linhas de texto para ocupar o espaço que uma explicação de verdade ocupa.'});
+      const b=document.getElementById('pErro').getBoundingClientRect(),f=document.getElementById('pRodape').getBoundingClientRect();return{topo:b.top,fim:b.bottom,rodape:f.top};});
+    t.ok(ve.topo>=0&&ve.fim<=ve.rodape+1,nome+': a área de erro aparece inteira, acima dos botões fixos do painel',ve);
     await page.screenshot({path:path.join(__dirname,'shots','painel-'+w+'x'+h+'.png')});
     t.ok(!logs.length,nome+': sem erros',logs.slice(0,2));
     await browser.close();

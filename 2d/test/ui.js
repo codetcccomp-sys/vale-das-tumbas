@@ -13,7 +13,23 @@ function ui(page){
       },[sel,txt,!!exato,n||0]);
       if(ok!==true)throw new Error(ok);
     },
-    pb:t=>U.clicar('#pPaleta .pb',t),
+    /* linha da paleta: pelo código exato (ex.: "if", "for … in range(n)"); demonstrações e Continuar, pelo texto */
+    async pb(t){
+      const ok=await ev(t=>{const l=[...document.querySelectorAll('#pPaleta .pb')].filter(e=>!e.disabled);const norm=s=>s.replace(/\s+/g,' ').trim();
+        const e=l.find(e=>e.querySelector('.cod')&&norm(e.querySelector('.cod').textContent)===t)||l.find(e=>norm(e.textContent).indexOf(t)>=0);
+        if(!e)return'sem linha na paleta '+t+' entre: '+l.map(e=>norm(e.textContent)).join(' | ');e.click();return true;},t);
+      if(ok!==true)throw new Error(ok);
+    },
+    /* modo Escrever: digita o código e toca em Pronto; devolve se o texto foi aceito e o erro mostrado */
+    async escrever(txt){
+      await ev(()=>{if(!PAINEL.texto)document.getElementById('pModo').click();});
+      await page.fill('#pTxt',txt);
+      await ev(()=>document.getElementById('pModo').click());
+      return ev(()=>({aceito:!PAINEL.texto,erro:document.getElementById('pErro').hidden?null:document.getElementById('pErro').textContent,prog:LANG.codigo(PAINEL.prog)}));
+    },
+    erro:()=>ev(()=>{const b=document.getElementById('pErro');return b.hidden?null:{onde:b.querySelector('.onde').textContent,tit:b.querySelector('.tit').textContent,txt:b.querySelector('.txt').textContent};}),
+    confirmar:()=>ev(()=>document.getElementById('cfYes').click()),
+    opcao:t=>U.clicar('#dOpcoes .btn',t),
     ch:(t,n)=>U.clicar('#pEdit .ch',t,true,n),
     linhaTipo:async(tipo,n)=>{const ok=await ev(([tipo,n])=>{const l=[...document.querySelectorAll('#pProg .ln')].filter(e=>e.dataset.tipo===tipo);const e=l[n||0];if(!e)return false;e.click();return true;},[tipo,n]);if(!ok)throw new Error('sem linha '+tipo);},
     linha:async n=>{const ok=await ev(n=>{const l=[...document.querySelectorAll('#pProg .ln')].filter(e=>!e.dataset.cursor);const e=l[n-1];if(!e)return false;e.click();return true;},n);if(!ok)throw new Error('sem linha '+n);},

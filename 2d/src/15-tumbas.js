@@ -96,6 +96,15 @@ function guardiao(A,o){
   A.ents.push(e);A.guardas.push(e);return e;
 }
 function reiniciarGuardas(A){for(const e of A.guardas)e.reiniciar();}
+/* tochas de progresso: uma por etapa da tumba, acesa quando a etapa é concluída (o código muda a sala) */
+function tochasProgresso(A,k,pos,cor){
+  A.tochas={};
+  desafiosDa(k).forEach((d,i)=>{const p=pos[i];if(!p)return;const x=p[0]*16+8,y=p[1]*16+14;A.tochas[d.id]={x,y};
+    const o=objeto(A,SPR.get('tocha',false,0,cor),x,y,{col:[-3,-2,3,0]});
+    o.desenho=(g,ob,t)=>blit(g,SPR.get('tocha',!!G.learn[d.id],Math.floor(t*8+i)%3,cor),ob.x,ob.y,6,30);
+    A.lampadas.push({x,y:y-26,get r(){return G.learn[d.id]?26:0;},cor});});
+}
+function acenderTochaProgresso(A,cid){const p=A&&A.tochas&&A.tochas[cid];if(!p)return;faiscas(p.x,p.y-26,10,['#fff6c0','#ffd24a','#ff9a3a']);SFX.lamp();}
 /* objetivo dentro de uma tumba: guia até o terminal, depois às etapas, depois à relíquia */
 function objetivoTumba(k,termNome){
   const l=desafiosDa(k),feitos=l.filter(d=>G.learn[d.id]).length;

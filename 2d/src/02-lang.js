@@ -1,30 +1,36 @@
 /* ====================== linguagem educativa (LANG) ======================
-   Valores tipados, programa em blocos (uma árvore), edição por toques e o interpretador passo a passo.
-   Não usa DOM nem canvas: os testes carregam este arquivo sozinho num vm do Node.
+   Um pedaço de Python: valores tipados, programa em árvore, edição por toques, leitura de código escrito e o
+   interpretador passo a passo. Não usa DOM nem canvas: os testes carregam este arquivo sozinho num vm do Node.
    Executar e Passo a passo chamam o mesmo LANG.passo(): cada chamada executa UMA instrução visível
-   (um comando, uma atribuição, um teste de SE, uma volta de REPETIR ou de ENQUANTO) e devolve o que aconteceu.
+   (uma chamada de função, uma atribuição, um teste de if/elif, uma volta de for ou de while) e devolve o que aconteceu.
 
-   Regras de tipo da linguagem do jogo (iguais às do Python, mais rígidas onde o Python esconderia diferenças):
-   - quatro tipos: inteiro (int) 5, decimal (float) 3.14, texto (str) "ABRIR", booleano (bool) True/False;
-   - cada contêiner (variável) aceita um tipo só; o jogo NUNCA converte sozinho: "5" (texto) não entra num contêiner de inteiro,
-     e 5 (inteiro) não entra num de decimal (escreve-se 5.0);
-   - uma variável sem valor fica "vazia", diferente de 0 e de False; ler uma variável vazia é erro;
-   - soma e subtração só entre números; inteiro com decimal dá decimal (o resultado aparece com ponto);
+   O código aparece como em Python:  avancar()   quantidade = 5   if energia >= 5:   elif …:   else:
+   for i in range(4):   while umidade < 3:   — o bloco é o que está com recuo (4 espaços) embaixo do cabeçalho.
+   Regras de tipo (as do Python, mais rígidas onde o Python esconderia diferenças):
+   - quatro tipos: int (inteiro) 5, float (decimal) 3.14, string (texto, str) "ABRIR", boolean (bool) True/False;
+   - cada variável da sala é ligada a um mecanismo e aceita um tipo só; o jogo NUNCA converte sozinho:
+     "5" (texto) não entra numa variável de inteiro, e 5 (inteiro) não entra numa de decimal (escreve-se 5.0);
+   - uma variável sem valor fica vazia, diferente de 0 e de False; ler uma variável vazia é erro (NameError);
+   - soma e subtração só entre números; inteiro com decimal dá decimal;
    - comparar número com texto é erro (não vira False escondido); texto e booleano só se comparam com == e !=;
-   - = guarda um valor (atribuição); == pergunta se dois valores são iguais (comparação).
+   - = guarda um valor (atribuição); == pergunta se dois valores são iguais (comparação);
+   - a condição de if, elif e while pode ser uma comparação (energia >= 5) ou um booleano (porta_aberta, not cheio).
    Decimais são guardados de forma aproximada, como em qualquer computador: o jogo mostra até 4 casas. */
 const LANG=(function(){
   const TIPOS={
-    int:{nome:'inteiro',py:'int',ex:'5'},
-    float:{nome:'decimal',py:'float',ex:'3.14'},
-    str:{nome:'texto',py:'str',ex:'"ABRIR"'},
-    bool:{nome:'booleano',py:'bool',ex:'True'}
+    int:{nome:'inteiro',py:'int',rot:'int',ex:'5',art:'um número inteiro',desc:'um número'},
+    float:{nome:'decimal',py:'float',rot:'float',ex:'3.14',art:'um número decimal',desc:'um número com ponto decimal'},
+    str:{nome:'texto',py:'str',rot:'string',ex:'"ABRIR"',art:'um texto',desc:'um texto entre aspas'},
+    bool:{nome:'verdadeiro ou falso',py:'bool',rot:'boolean',ex:'True',art:'um valor booleano',desc:'True ou False'}
   };
-  const OPS_CMP=['==','!=','<','>','<=','>='],OPS_ARIT=['+','-'];
+  /* "int (inteiro)", "string (texto)"… para rótulos e mensagens */
+  const rotulo=t=>TIPOS[t].rot+' ('+TIPOS[t].nome+')';
+  const OPS_CMP=['==','!=','<','>','<=','>='],OPS_ARIT=['+','-'],OPS_BOOL=['bool','not'];
   const OP_NOME={'==':'é igual a','!=':'é diferente de','<':'é menor que','>':'é maior que','<=':'é menor ou igual a','>=':'é maior ou igual a','+':'mais','-':'menos'};
   const LIM={num:999999,str:16,linhas:40,prof:3,rep:20,passos:400,voltas:30};
-  /* catálogo de comandos do mundo (preenchido por 03-learn.js): id → {nome, simbolo, ajuda} */
+  /* catálogo de funções do mundo (preenchido por 03-learn.js): id → {py, sim, ajuda} */
   const CMD={};
+  const nomeCmd=c=>(CMD[c]?CMD[c].py:c)+'()';
 
   /* ---------- valores ---------- */
   const val=(t,v)=>({t,v});
@@ -44,11 +50,12 @@ const LANG=(function(){
     if(x.t==='bool')return x.v?'True':'False';
     return'?';
   }
-  const tipoDe=x=>x?TIPOS[x.t].nome+' ('+TIPOS[x.t].py+')':'vazio';
+  const tipoDe=x=>x?TIPOS[x.t].art+' ('+TIPOS[x.t].rot+')':'vazio';
   const ehNum=x=>x&&(x.t==='int'||x.t==='float');
 
   /* ---------- expressões e condições ----------
-     expressão: {k:'lit',val} | {k:'var',nome} | {k:'op',op:'+'|'-',a,b}     condição: {a, op, b} (op de comparação) */
+     expressão: {k:'lit',val} | {k:'var',nome} | {k:'op',op:'+'|'-',a,b}
+     condição: {a, op, b} com op de comparação, ou {a, op:'bool'} (o próprio booleano) e {a, op:'not'} (o contrário) */
   function fmtExpr(e){
     if(!e)return'?';
     if(e.k==='lit')return fmt(e.val);
@@ -56,7 +63,12 @@ const LANG=(function(){
     if(e.k==='op')return fmtExpr(e.a)+' '+e.op+' '+fmtExpr(e.b);
     return'?';
   }
-  const fmtCond=c=>c?fmtExpr(c.a)+' '+(c.op||'?')+' '+fmtExpr(c.b):'?';
+  function fmtCond(c){
+    if(!c)return'?';
+    if(c.op==='bool')return fmtExpr(c.a);
+    if(c.op==='not')return'not '+fmtExpr(c.a);
+    return fmtExpr(c.a)+' '+(c.op||'?')+' '+fmtExpr(c.b);
+  }
   function avaliar(e,env){
     if(!e)return{erro:{tipo:'incompleta'}};
     if(e.k==='lit')return valValido(e.val)?{val:e.val}:{erro:{tipo:'incompleta'}};
@@ -72,145 +84,359 @@ const LANG=(function(){
     return{erro:{tipo:'incompleta'}};
   }
   function comparar(c,env){
-    if(!c||OPS_CMP.indexOf(c.op)<0)return{erro:{tipo:'incompleta'}};
+    if(!c)return{erro:{tipo:'incompleta'}};
+    if(c.op==='bool'||c.op==='not'){
+      const a=avaliar(c.a,env);if(a.erro)return a;
+      if(a.val.t!=='bool')return{erro:{tipo:'condNaoBool',val:a.val,expr:fmtExpr(c.a)}};
+      return{res:c.op==='bool'?a.val.v:!a.val.v,a:a.val,b:null,op:c.op,txt:fmtCond(c)};
+    }
+    if(OPS_CMP.indexOf(c.op)<0)return{erro:{tipo:'incompleta'}};
     const a=avaliar(c.a,env);if(a.erro)return a;const b=avaliar(c.b,env);if(b.erro)return b;
     const A=a.val,B=b.val;let r;
     if(ehNum(A)&&ehNum(B)){const x=A.v,y=B.v;r=c.op==='=='?x===y:c.op==='!='?x!==y:c.op==='<'?x<y:c.op==='>'?x>y:c.op==='<='?x<=y:x>=y;}
     else if(A.t===B.t){if(c.op!=='=='&&c.op!=='!=')return{erro:{tipo:'cmpOrdem',t:A.t,op:c.op}};r=c.op==='=='?A.v===B.v:A.v!==B.v;}
     else return{erro:{tipo:'cmpTipos',a:A,b:B}};
-    return{res:r,a:A,b:B,op:c.op,txt:fmtExpr(c.a)+' '+c.op+' '+fmtExpr(c.b)};
+    return{res:r,a:A,b:B,op:c.op,txt:fmtCond(c)};
   }
-  /* antes de guardar um objeto num contêiner: explica a incompatibilidade (null quando pode) */
+  /* antes de guardar um objeto numa variável: explica a incompatibilidade (null quando pode) */
   function compativel(tipoVar,v){
     if(!v)return'Escolha um valor para guardar.';
     if(v.t===tipoVar)return null;
-    const T=TIPOS[tipoVar];
-    let s='Este contêiner aceita '+T.nome+' ('+T.py+'), mas '+fmt(v)+' é '+tipoDe(v)+'.';
-    if(v.t==='str'&&(tipoVar==='int'||tipoVar==='float'))s+=' O que está entre aspas é texto, mesmo quando parece número: o jogo não converte sozinho.';
-    else if(v.t==='int'&&tipoVar==='float')s+=' Um decimal se escreve com ponto, como '+v.v+'.0.';
-    else if(v.t==='float'&&tipoVar==='int')s+=' Um inteiro não tem casas decimais.';
-    else if(v.t==='bool')s+=' True e False são valores booleanos: ligado ou desligado, sim ou não.';
+    let s='Era esperado '+TIPOS[tipoVar].art+' ('+TIPOS[tipoVar].rot+'), mas '+fmt(v)+' é '+tipoDe(v)+'.'+dicaTipo(tipoVar,v);
     return s+' O objeto continua disponível.';
+  }
+  function dicaTipo(tipoVar,v){
+    if(v.t==='str'&&(tipoVar==='int'||tipoVar==='float'))return' O que está entre aspas é texto, mesmo quando parece número: o jogo não converte sozinho.';
+    if(v.t==='int'&&tipoVar==='float')return' Um decimal se escreve com ponto, como '+v.v+'.0.';
+    if(v.t==='float'&&tipoVar==='int')return' Um inteiro não tem casas decimais.';
+    if(v.t==='bool')return' True e False são booleanos: ligado ou desligado, sim ou não.';
+    if(v.t==='str'&&tipoVar==='bool')return' "True" entre aspas é texto; o booleano se escreve sem aspas: True.';
+    if(tipoVar==='str')return' Um texto se escreve entre aspas, como "ABRIR".';
+    return'';
   }
 
   /* ---------- programa ----------
-     nós: {id,k:'cmd',cmd}  {id,k:'set',nome,expr}  {id,k:'se',cond,entao:[],senao:[]|null}
-          {id,k:'rep',n,corpo:[]}  {id,k:'enq',cond,corpo:[]} */
+     nós: {id,k:'cmd',cmd}  {id,k:'set',nome,expr}  {id,k:'se',cond,entao:[],elifs:[{id,k:'elif',cond,corpo:[]}],senao:[]|null}
+          {id,k:'rep',n,var,corpo:[]} (for var in range(n))  {id,k:'enq',cond,corpo:[]} (while)
+     ramos de um if: 'entao', 'elif0', 'elif1'…, 'senao'; de um for/while: 'corpo'. */
   const CONT={se:1,rep:1,enq:1};
-  function filhos(n){return n.k==='se'?(n.senao?[n.entao,n.senao]:[n.entao]):n.k==='rep'||n.k==='enq'?[n.corpo]:[];}
+  const elifsDe=n=>(n&&n.elifs)||[];
+  function ramos(n){
+    if(n.k==='se'){const r=[['entao',n.entao]];elifsDe(n).forEach((e,j)=>r.push(['elif'+j,e.corpo]));if(n.senao)r.push(['senao',n.senao]);return r;}
+    if(n.k==='rep'||n.k==='enq')return[['corpo',n.corpo]];
+    return[];
+  }
+  function ramoLista(n,ramo){if(!n||!ramo)return null;if(ramo.slice(0,4)==='elif'){const e=elifsDe(n)[+ramo.slice(4)];return e?e.corpo:null;}return Array.isArray(n[ramo])?n[ramo]:null;}
+  function filhos(n){return ramos(n).map(r=>r[1]);}
   function cada(prog,fn){(function w(l,nv){for(const n of l){fn(n,nv);for(const f of filhos(n))w(f,nv+1);}})(prog,0);}
-  function novoId(prog){let m=0;cada(prog,n=>{if(n.id>m)m=n.id;});return m+1;}
-  /* linhas como aparecem na tela: cabeçalho, SENÃO e FIM de cada bloco ocupam uma linha */
+  function novoId(prog){let m=0;cada(prog,n=>{if(n.id>m)m=n.id;for(const e of elifsDe(n))if(e.id>m)m=e.id;});return m+1;}
+  function renumerar(prog){let id=0;cada(prog,n=>{n.id=++id;for(const e of elifsDe(n))e.id=++id;});return prog;}
+  /* linhas como aparecem na tela: cabeçalhos, elif, else e, só na tela, um comentário marcando o fim de cada bloco */
   function linhas(prog){
     const out=[];
     (function w(l,nv,pai,ramo){l.forEach((n,i)=>{
       out.push({tipo:'no',no:n,nv,pai,ramo,i});
-      if(n.k==='se'){w(n.entao,nv+1,n,'entao');if(n.senao){out.push({tipo:'senao',no:n,nv});w(n.senao,nv+1,n,'senao');}out.push({tipo:'fim',no:n,nv});}
+      if(n.k==='se'){
+        w(n.entao,nv+1,n,'entao');
+        elifsDe(n).forEach((e,j)=>{out.push({tipo:'elif',no:n,el:e,j,nv});w(e.corpo,nv+1,n,'elif'+j);});
+        if(n.senao){out.push({tipo:'senao',no:n,nv});w(n.senao,nv+1,n,'senao');}
+        out.push({tipo:'fim',no:n,nv});
+      }
       else if(n.k==='rep'||n.k==='enq'){w(n.corpo,nv+1,n,'corpo');out.push({tipo:'fim',no:n,nv});}
     });})(prog,0,null,null);
     return out;
   }
-  const nLinhas=n=>n.k==='se'?2+(n.senao?1:0):CONT[n.k]?2:1;
+  const nLinhas=n=>n.k==='se'?1+elifsDe(n).length+(n.senao?1:0):1;
   function contarLinhas(prog){let c=0;cada(prog,n=>{c+=nLinhas(n);});return c;}
   function profundidade(prog){let m=0;cada(prog,(n,nv)=>{if(CONT[n.k])m=Math.max(m,nv+1);});return m;}
-  function numeroLinha(prog,id){const L=linhas(prog);for(let i=0;i<L.length;i++)if(L[i].tipo==='no'&&L[i].no.id===id)return i+1;return 0;}
-  /* acha um nó: a lista onde ele está, a posição, o pai e o ramo */
+  /* número da linha (o comentário de fim de bloco não conta, como no Python) */
+  function numeroLinha(prog,id){let k=0;for(const L of linhas(prog)){if(L.tipo==='fim')continue;k++;if((L.tipo==='no'&&L.no.id===id)||(L.tipo==='elif'&&L.el.id===id))return k;}return 0;}
+  /* acha um nó (ou um elif): a lista onde ele está, a posição, o pai e o ramo */
   function achar(prog,id){
     let r=null;
     (function w(l,pai,ramo,nv){for(let i=0;i<l.length&&!r;i++){const n=l[i];if(n.id===id){r={lista:l,i,no:n,pai,ramo,nv};return;}
-      if(n.k==='se'){w(n.entao,n,'entao',nv+1);if(n.senao)w(n.senao,n,'senao',nv+1);}else if(n.k==='rep'||n.k==='enq')w(n.corpo,n,'corpo',nv+1);}})(prog,null,null,0);
+      if(n.k==='se')elifsDe(n).forEach((e,j)=>{if(!r&&e.id===id)r={lista:n.elifs,i:j,no:e,pai:n,ramo:'elif',nv};});
+      for(const[rm,lst]of ramos(n))if(!r)w(lst,n,rm,nv+1);}})(prog,null,null,0);
     return r;
   }
-  function listaDe(prog,cur){if(!cur||cur.pai===null||cur.pai===undefined)return prog;const a=achar(prog,cur.pai);if(!a)return null;return a.no[cur.ramo]||null;}
+  function listaDe(prog,cur){if(!cur||cur.pai===null||cur.pai===undefined)return prog;const a=achar(prog,cur.pai);if(!a)return null;return ramoLista(a.no,cur.ramo);}
   function nivelDe(prog,cur){if(!cur||cur.pai===null||cur.pai===undefined)return 0;const a=achar(prog,cur.pai);return a?a.nv+1:0;}
   /* insere no cursor {pai,ramo,i}; respeita o limite de linhas e de blocos um dentro do outro.
      Devolve o cursor depois do nó inserido (ou dentro dele, se for um bloco) ou um texto explicando por que não coube. */
   function inserir(prog,cur,no,lim){
     lim=lim||{};const maxL=lim.linhas||LIM.linhas,maxP=lim.prof||LIM.prof;
-    const l=listaDe(prog,cur);if(!l)return'Escolha onde a placa vai entrar.';
-    if(contarLinhas(prog)+nLinhas(no)>maxL)return'O painel tem só '+maxL+' linhas. Remova uma placa ou use uma repetição.';
+    const l=listaDe(prog,cur);if(!l)return'Escolha onde a linha vai entrar.';
+    if(contarLinhas(prog)+nLinhas(no)>maxL)return'O painel tem só '+maxL+' linhas. Remova uma linha ou use uma repetição.';
     if(CONT[no.k]&&nivelDe(prog,cur)+1>maxP)return'Um bloco pode ficar dentro de outro só até '+maxP+' níveis.';
-    no.id=novoId(prog);const i=Math.max(0,Math.min(l.length,cur.i|0));l.splice(i,0,no);
+    no.id=novoId(prog);{let k=no.id;for(const e of elifsDe(no))e.id=++k;}
+    const i=Math.max(0,Math.min(l.length,cur.i|0));l.splice(i,0,no);
     if(CONT[no.k])return{pai:no.id,ramo:no.k==='se'?'entao':'corpo',i:0};
     return{pai:cur.pai===undefined?null:cur.pai,ramo:cur.ramo||null,i:i+1};
   }
-  function remover(prog,id){const a=achar(prog,id);if(!a)return null;a.lista.splice(a.i,1);return{pai:a.pai?a.pai.id:null,ramo:a.ramo,i:a.i};}
-  /* sobe ou desce uma placa (com o que estiver dentro dela). Encontrando um bloco vizinho, entra nele; no começo ou no fim
-     de um bloco, sai dele. Assim dá para levar qualquer placa a qualquer lugar só com toques. Devolve false se não mexeu. */
+  /* acrescenta um elif (antes do else) a um if; devolve o cursor dentro dele ou um texto explicando o limite */
+  function adicionarElif(prog,seId,cond,lim){
+    const a=achar(prog,seId);if(!a||a.no.k!=='se')return'Escolha uma linha if.';
+    const maxL=(lim&&lim.linhas)||LIM.linhas;if(contarLinhas(prog)+1>maxL)return'O painel tem só '+maxL+' linhas.';
+    const n=a.no;if(!n.elifs)n.elifs=[];const e={id:novoId(prog),k:'elif',cond:cond||null,corpo:[]};n.elifs.push(e);
+    return{pai:n.id,ramo:'elif'+(n.elifs.length-1),i:0,elif:e.id};
+  }
+  /* liga ou desliga o else de um if (desligar apaga as linhas de dentro) */
+  function alternarSenao(prog,seId,lim){
+    const a=achar(prog,seId);if(!a||a.no.k!=='se')return'Escolha uma linha if.';const n=a.no;
+    if(n.senao){n.senao=null;return{pai:a.pai?a.pai.id:null,ramo:a.ramo,i:a.i+1};}
+    const maxL=(lim&&lim.linhas)||LIM.linhas;if(contarLinhas(prog)+1>maxL)return'O painel tem só '+maxL+' linhas.';
+    n.senao=[];return{pai:n.id,ramo:'senao',i:0};
+  }
+  function remover(prog,id){const a=achar(prog,id);if(!a)return null;a.lista.splice(a.i,1);
+    if(a.ramo==='elif')return{pai:a.pai.id,ramo:'entao',i:a.pai.entao.length};
+    return{pai:a.pai?a.pai.id:null,ramo:a.ramo,i:a.i};}
+  /* sobe ou desce uma linha (com o que estiver dentro dela). Encontrando um bloco vizinho, entra nele; no começo ou no fim
+     de um ramo, passa para o ramo vizinho (if → elif → else) ou sai do bloco. Assim dá para levar qualquer linha a
+     qualquer lugar só com toques. Devolve false se não mexeu. */
   function mover(prog,id,dir,lim){
-    const a=achar(prog,id);if(!a)return false;const maxP=(lim&&lim.prof)||LIM.prof;
+    const a=achar(prog,id);if(!a||a.ramo==='elif')return false;const maxP=(lim&&lim.prof)||LIM.prof;
     const prof=n=>{let m=0;(function w(x,d){if(CONT[x.k]){m=Math.max(m,d);for(const f of filhos(x))for(const y of f)w(y,d+1);}})(n,1);return m;};
     const cabe=nv=>nv+prof(a.no)<=maxP;
     const l=a.lista,i=a.i,no=a.no;
     if(dir<0){
       if(i>0){
         const v=l[i-1];
-        if(CONT[v.k]&&cabe(a.nv+1)){l.splice(i,1);const alvo=v.k==='se'?(v.senao||v.entao):v.corpo;alvo.push(no);return true;}
+        if(CONT[v.k]&&cabe(a.nv+1)){l.splice(i,1);const rs=ramos(v);rs[rs.length-1][1].push(no);return true;}
         l[i]=v;l[i-1]=no;return true;
       }
       if(!a.pai)return false;
-      const p=achar(prog,a.pai.id);
-      if(a.ramo==='senao'){l.splice(i,1);a.pai.entao.push(no);return true;}
-      l.splice(i,1);p.lista.splice(p.i,0,no);return true;
+      const rs=ramos(a.pai),k=rs.findIndex(r=>r[0]===a.ramo);
+      if(k>0){l.splice(i,1);rs[k-1][1].push(no);return true;}
+      const p=achar(prog,a.pai.id);l.splice(i,1);p.lista.splice(p.i,0,no);return true;
     }else{
       if(i<l.length-1){
         const v=l[i+1];
-        if(CONT[v.k]&&cabe(a.nv+1)){l.splice(i,1);const alvo=v.k==='se'?v.entao:v.corpo;alvo.unshift(no);return true;}
+        if(CONT[v.k]&&cabe(a.nv+1)){l.splice(i,1);ramos(v)[0][1].unshift(no);return true;}
         l[i]=v;l[i+1]=no;return true;
       }
       if(!a.pai)return false;
-      const p=achar(prog,a.pai.id);
-      if(a.ramo==='entao'&&a.pai.senao){l.splice(i,1);a.pai.senao.unshift(no);return true;}
-      l.splice(i,1);p.lista.splice(p.i+1,0,no);return true;
+      const rs=ramos(a.pai),k=rs.findIndex(r=>r[0]===a.ramo);
+      if(k>=0&&k<rs.length-1){l.splice(i,1);rs[k+1][1].unshift(no);return true;}
+      const p=achar(prog,a.pai.id);l.splice(i,1);p.lista.splice(p.i+1,0,no);return true;
     }
   }
   const clonar=x=>JSON.parse(JSON.stringify(x));
   /* uma impressão do programa (para saber se as situações foram testadas com o mesmo programa) */
   function assinatura(prog){return JSON.stringify(prog,(k,v)=>k==='id'?undefined:v);}
 
-  /* confere um programa vindo do salvamento: descarta o que não existe neste desafio e refaz os números das placas */
+  /* o que cada desafio permite: funções, variáveis e estruturas (blocos: 'set','se','sese','elif','rep','enq' e funções) */
+  function permite(cfg,b){const bl=cfg.blocos||[];if(b==='se')return bl.indexOf('se')>=0||bl.indexOf('sese')>=0;if(b==='senao')return bl.indexOf('sese')>=0;return bl.indexOf(b)>=0;}
+  const NOME_OK=/^[a-z_][a-z0-9_]{0,15}$/;
+
+  /* confere um programa vindo do salvamento: descarta o que não existe neste desafio e refaz os números das linhas */
   function limpar(prog,cfg){
-    let fixed=false,id=0;const bad=()=>{fixed=true;};
+    let fixed=false;const bad=()=>{fixed=true;};
     const vars={};for(const d of cfg.vars||[])vars[d.nome]=d.t;for(const d of cfg.sensores||[])vars[d.nome]=d.t;
     const blocos=cfg.blocos||[];
-    const okExpr=e=>{if(e===null)return true;if(!e||typeof e!=='object')return false;
-      if(e.k==='lit')return valValido(e.val);if(e.k==='var')return typeof e.nome==='string'&&!!vars[e.nome];
-      if(e.k==='op')return OPS_ARIT.indexOf(e.op)>=0&&okExpr(e.a)&&okExpr(e.b);return false;};
-    const okCond=c=>c===null||(!!c&&typeof c==='object'&&(c.op===null||OPS_CMP.indexOf(c.op)>=0)&&okExpr(c.a===undefined?null:c.a)&&okExpr(c.b===undefined?null:c.b));
-    function lista(l,nv){
+    const okExpr=(e,loc)=>{if(e===null)return true;if(!e||typeof e!=='object')return false;
+      if(e.k==='lit')return valValido(e.val);if(e.k==='var')return typeof e.nome==='string'&&(!!vars[e.nome]||loc.indexOf(e.nome)>=0);
+      if(e.k==='op')return OPS_ARIT.indexOf(e.op)>=0&&okExpr(e.a,loc)&&okExpr(e.b,loc);return false;};
+    const okCond=(c,loc)=>{if(c===null)return true;if(!c||typeof c!=='object')return false;
+      if(c.op==='bool'||c.op==='not')return okExpr(c.a===undefined?null:c.a,loc)&&(c.b===undefined||c.b===null);
+      return(c.op===null||OPS_CMP.indexOf(c.op)>=0)&&okExpr(c.a===undefined?null:c.a,loc)&&okExpr(c.b===undefined?null:c.b,loc);};
+    function lista(l,nv,loc){
       const out=[];if(!Array.isArray(l)){bad();return out;}
       for(const n of l){
         if(!n||typeof n!=='object'){bad();continue;}
         let m=null;
         if(n.k==='cmd'&&blocos.indexOf(n.cmd)>=0)m={k:'cmd',cmd:n.cmd};
-        else if(n.k==='set'&&blocos.indexOf('set')>=0&&cfg.vars&&cfg.vars.some(d=>d.nome===n.nome)&&okExpr(n.expr===undefined?null:n.expr))m={k:'set',nome:n.nome,expr:n.expr||null,obj:typeof n.obj==='string'?n.obj:undefined};
-        else if(n.k==='se'&&(blocos.indexOf('se')>=0||blocos.indexOf('sese')>=0)&&okCond(n.cond===undefined?null:n.cond)&&nv<LIM.prof)m={k:'se',cond:n.cond||null,entao:lista(n.entao,nv+1),senao:n.senao===null||n.senao===undefined?null:lista(n.senao,nv+1)};
-        else if(n.k==='rep'&&blocos.indexOf('rep')>=0&&Number.isInteger(n.n)&&n.n>=0&&n.n<=LIM.rep&&nv<LIM.prof)m={k:'rep',n:n.n,corpo:lista(n.corpo,nv+1)};
-        else if(n.k==='enq'&&blocos.indexOf('enq')>=0&&okCond(n.cond===undefined?null:n.cond)&&nv<LIM.prof)m={k:'enq',cond:n.cond||null,corpo:lista(n.corpo,nv+1)};
+        else if(n.k==='set'&&blocos.indexOf('set')>=0&&cfg.vars&&cfg.vars.some(d=>d.nome===n.nome)&&okExpr(n.expr===undefined?null:n.expr,loc))m={k:'set',nome:n.nome,expr:n.expr||null,obj:typeof n.obj==='string'?n.obj:undefined};
+        else if(n.k==='se'&&permite(cfg,'se')&&okCond(n.cond===undefined?null:n.cond,loc)&&nv<LIM.prof){
+          m={k:'se',cond:n.cond||null,entao:lista(n.entao,nv+1,loc),senao:n.senao===null||n.senao===undefined?null:lista(n.senao,nv+1,loc)};
+          if(n.elifs!==undefined&&n.elifs!==null){if(!Array.isArray(n.elifs)||(n.elifs.length&&!permite(cfg,'elif')))bad();
+            else{const el=[];for(const e of n.elifs){if(e&&typeof e==='object'&&okCond(e.cond===undefined?null:e.cond,loc))el.push({k:'elif',cond:e.cond||null,corpo:lista(e.corpo,nv+1,loc)});else bad();}if(el.length)m.elifs=el;}}
+        }
+        else if(n.k==='rep'&&blocos.indexOf('rep')>=0&&Number.isInteger(n.n)&&n.n>=0&&n.n<=LIM.rep&&nv<LIM.prof){
+          const v=n.var===undefined?'i':n.var;if(typeof v!=='string'||!NOME_OK.test(v)||vars[v]){bad();continue;}
+          m={k:'rep',n:n.n,var:v,corpo:lista(n.corpo,nv+1,loc.concat([v]))};}
+        else if(n.k==='enq'&&blocos.indexOf('enq')>=0&&okCond(n.cond===undefined?null:n.cond,loc)&&nv<LIM.prof)m={k:'enq',cond:n.cond||null,corpo:lista(n.corpo,nv+1,loc)};
         if(!m){bad();continue;}
-        m.id=++id;out.push(m);
+        out.push(m);
       }
       return out;
     }
-    let p=lista(prog,0);
+    let p=lista(prog,0,[]);
     const maxL=cfg.maxLinhas||LIM.linhas;
     while(p.length&&contarLinhas(p)>maxL){p.pop();bad();}
-    if(p.length){id=0;cada(p,n=>{n.id=++id;});}
+    renumerar(p);
     return{prog:p,fixed};
   }
 
-  /* ---------- texto de cada linha ---------- */
+  /* ---------- texto de cada linha (como em Python) ---------- */
   function fmtNo(n){
-    if(n.k==='cmd')return(CMD[n.cmd]?CMD[n.cmd].nome:n.cmd);
+    if(n.k==='cmd')return nomeCmd(n.cmd);
     if(n.k==='set')return n.nome+' = '+fmtExpr(n.expr);
-    if(n.k==='se')return'SE '+fmtCond(n.cond)+' ENTÃO';
-    if(n.k==='rep')return'REPETIR '+n.n+(n.n===1?' VEZ':' VEZES');
-    if(n.k==='enq')return'ENQUANTO '+fmtCond(n.cond);
+    if(n.k==='se')return'if '+fmtCond(n.cond)+':';
+    if(n.k==='elif')return'elif '+fmtCond(n.cond)+':';
+    if(n.k==='rep')return'for '+(n.var||'i')+' in range('+n.n+'):';
+    if(n.k==='enq')return'while '+fmtCond(n.cond)+':';
     return'?';
   }
-  function fmtLinha(L){if(L.tipo==='senao')return'SENÃO';if(L.tipo==='fim')return L.no.k==='se'?'FIM SE':L.no.k==='rep'?'FIM REPETIR':'FIM ENQUANTO';return fmtNo(L.no);}
-  /* o programa inteiro como texto, com recuo (para o diário e os exemplos) */
-  function codigo(prog){return linhas(prog).map(L=>'  '.repeat(L.nv)+fmtLinha(L)).join('\n');}
+  const NOME_BLOCO={se:'if',rep:'for',enq:'while'};
+  function fmtLinha(L){if(L.tipo==='senao')return'else:';if(L.tipo==='elif')return fmtNo(L.el);if(L.tipo==='fim')return'# fim do '+NOME_BLOCO[L.no.k];return fmtNo(L.no);}
+  /* o programa inteiro como código Python, com recuo de 4 espaços (diário, exemplos e o modo Escrever) */
+  function codigo(prog){return linhas(prog).filter(L=>L.tipo!=='fim').map(L=>'    '.repeat(L.nv)+fmtLinha(L)).join('\n');}
+
+  /* ---------- leitura de código escrito (modo Escrever) ----------
+     Aceita o mesmo pedaço de Python que o painel mostra. Os erros dizem a linha, o nome do erro em Python e o que
+     fazer, em linguagem simples. Devolve {prog} ou {erro:{tipo:'sintaxe',linha,titulo,texto}}. */
+  function ler(txt,cfg){
+    const vars={},sens={};for(const d of cfg.vars||[])vars[d.nome]=d.t;for(const d of cfg.sensores||[])sens[d.nome]=d.t;
+    const funcs={};for(const b of cfg.blocos||[])if(CMD[b])funcs[CMD[b].py]=b;
+    const listaFuncs=Object.keys(funcs).map(f=>f+'()').join(', ')||'nenhuma';
+    const listaVars=(cfg.vars||[]).map(d=>d.nome).concat((cfg.sensores||[]).map(d=>d.nome+' (sensor)')).join(', ')||'nenhuma';
+    const E=(n,titulo,texto)=>({erro:{tipo:'sintaxe',linha:n,titulo,texto}});
+    /* linhas com conteúdo: recuo e texto sem comentário (# fora de aspas) */
+    const L=[];const cru=String(txt).replace(/\t/g,'    ').split(/\r?\n/);
+    for(let i=0;i<cru.length;i++){let s=cru[i],q=null,corte=s.length;for(let k=0;k<s.length;k++){const ch=s[k];if(q){if(ch===q)q=null;}else if(ch==='"'||ch==='\'')q=ch;else if(ch==='#'){corte=k;break;}}
+      s=s.slice(0,corte).replace(/\s+$/,'');if(!s.trim())continue;L.push({n:i+1,ind:s.match(/^ */)[0].length,s:s.trim()});}
+    let erro=null;
+    const nomeBloco={if:'if',elif:'elif',else:'else',for:'for',while:'while'};
+    /* ---- expressões ---- */
+    function tokens(s,n){
+      const out=[];let i=0;
+      while(i<s.length){const ch=s[i];
+        if(ch===' '){i++;continue;}
+        if(ch==='"'||ch==='\''){const j=s.indexOf(ch,i+1);if(j<0)return{erro:E(n,'Erro de sintaxe (SyntaxError): faltou fechar as aspas.','Um texto começa e termina com aspas: "ABRIR".')};out.push({t:'str',v:s.slice(i+1,j)});i=j+1;continue;}
+        const num=s.slice(i).match(/^\d+(\.\d+)?/);
+        if(num){if(s[i+num[0].length]===','&&/\d/.test(s[i+num[0].length+1]||''))return{erro:E(n,'Erro de sintaxe (SyntaxError): número decimal com vírgula.','Em Python o decimal usa ponto: escreva '+num[0]+'.'+s.slice(i+num[0].length+1).match(/^\d+/)[0]+' em vez de vírgula.')};
+          out.push({t:num[1]?'float':'int',v:Number(num[0])});i+=num[0].length;continue;}
+        const id=s.slice(i).match(/^[A-Za-z_À-ú][A-Za-z0-9_À-ú]*/);if(id){out.push({t:'id',v:id[0]});i+=id[0].length;continue;}
+        const op=s.slice(i).match(/^(==|!=|<=|>=|<|>|=|\+|-|\(|\))/);if(op){out.push({t:'op',v:op[0]});i+=op[0].length;continue;}
+        return{erro:E(n,'Erro de sintaxe (SyntaxError): o símbolo '+ch+' não é entendido aqui.','Use números, textos entre aspas, True/False, nomes de variáveis e os sinais + - == != < > <= >=.')};
+      }
+      return{t:out};
+    }
+    function expr(tk,n,loc){
+      if(!tk.length)return{erro:E(n,'Erro de sintaxe (SyntaxError): falta um valor.','Depois do sinal, escreva um valor: um número, um texto entre aspas, True/False ou o nome de uma variável.')};
+      let i=0;
+      const termo=()=>{
+        let t=tk[i];if(!t)return{erro:E(n,'Erro de sintaxe (SyntaxError): falta um valor no fim da conta.','Uma conta tem um valor dos dois lados: quantidade + 3.')};
+        let neg=false;if(t.t==='op'&&t.v==='-'&&tk[i+1]&&(tk[i+1].t==='int'||tk[i+1].t==='float')){neg=true;i++;t=tk[i];}
+        i++;
+        if(t.t==='int'||t.t==='float'){const v=val(t.t,neg?-t.v:t.v);if(!valValido(v))return{erro:E(n,'Número grande demais.','Os mecanismos aceitam números até '+LIM.num+'.')};return{e:{k:'lit',val:v}};}
+        if(t.t==='str'){if(!valValido(val('str',t.v)))return{erro:E(n,'Texto grande demais.','Os textos desta tumba têm até '+LIM.str+' letras.')};return{e:{k:'lit',val:val('str',t.v)}};}
+        if(t.t==='id'){
+          if(t.v==='True'||t.v==='False')return{e:{k:'lit',val:val('bool',t.v==='True')}};
+          if(t.v==='true'||t.v==='false'||t.v==='TRUE'||t.v==='FALSE')return{erro:E(n,'Erro de nome (NameError): '+t.v+' não existe.','Em Python, os booleanos começam com letra maiúscula: True e False.')};
+          if(vars[t.v]||sens[t.v]||loc.indexOf(t.v)>=0){if(tk[i]&&tk[i].v==='(')return{erro:E(n,'Erro de tipo (TypeError): '+t.v+' é uma variável, não uma função.','Variáveis não levam parênteses. Para ler o valor, escreva só '+t.v+'.')};return{e:{k:'var',nome:t.v}};}
+          if(funcs[t.v])return{erro:E(n,'Erro: '+t.v+'() é uma função, não um valor.','Uma função é chamada sozinha numa linha: '+t.v+'().')};
+          return{erro:E(n,'Erro de nome (NameError): "'+t.v+'" não existe nesta sala.','Variáveis disponíveis: '+listaVars+'. Um texto precisa de aspas: "'+t.v+'".')};
+        }
+        if(t.v==='(')return{erro:E(n,'Parênteses não são usados nas contas desta tumba.','Escreva a conta direto: quantidade + 3.')};
+        return{erro:E(n,'Erro de sintaxe (SyntaxError): faltou um valor antes de '+t.v+'.','Uma expressão começa com um valor: um número, um texto entre aspas, True/False ou uma variável.')};
+      };
+      let r=termo();if(r.erro)return r;let e=r.e;
+      while(i<tk.length){
+        const op=tk[i];if(op.t!=='op'||(op.v!=='+'&&op.v!=='-'))return{erro:E(n,'Erro de sintaxe (SyntaxError): '+(op.t==='op'?op.v:op.v)+' fora do lugar.',op.v==='='?'Um = sozinho só aparece na atribuição (variavel = valor). Para comparar, use ==.':'Entre dois valores vai um sinal: + ou -.')};
+        i++;const b=termo();if(b.erro)return b;e={k:'op',op:op.v,a:e,b:b.e};
+      }
+      return{e};
+    }
+    function cond(s,n,loc,kw){
+      const r=tokens(s,n);if(r.erro)return r.erro;const tk=r.t;
+      if(!tk.length)return E(n,'Erro de sintaxe (SyntaxError): falta a condição do '+kw+'.','Depois de '+kw+' vem uma pergunta: '+kw+' energia >= 5:');
+      if(tk.some(t=>t.t==='id'&&(t.v==='and'||t.v==='or')))return E(n,'and e or ainda não são usados nesta tumba.','Cada condição testa uma coisa só. Para testar duas, coloque um if dentro do outro.');
+      if(tk[0].t==='id'&&tk[0].v==='not'){const e=expr(tk.slice(1),n,loc);if(e.erro)return e.erro;return{c:{a:e.e,op:'not',b:null}};}
+      const k=tk.findIndex(t=>t.t==='op'&&OPS_CMP.indexOf(t.v)>=0),um=tk.findIndex(t=>t.t==='op'&&t.v==='=');
+      if(um>=0&&(k<0||um<k))return E(n,'Erro de sintaxe (SyntaxError): = dentro da condição.','Para comparar use ==. Um = sozinho guarda um valor numa variável (atribuição).');
+      if(k<0){const e=expr(tk,n,loc);if(e.erro)return e.erro;return{c:{a:e.e,op:'bool',b:null}};}
+      if(tk.slice(k+1).some(t=>t.t==='op'&&OPS_CMP.indexOf(t.v)>=0))return E(n,'Uma comparação de cada vez.','Escreva só um sinal de comparação na condição, por exemplo: nivel < limite.');
+      const a=expr(tk.slice(0,k),n,loc);if(a.erro)return a.erro;const b=expr(tk.slice(k+1),n,loc);if(b.erro)return b.erro;
+      return{c:{a:a.e,op:tk[k].v,b:b.e}};
+    }
+    /* ---- comandos e blocos ---- */
+    const proibido=(n,o)=>E(n,'Nesta etapa ainda não usamos '+o+'.','Use o que a etapa oferece. Funções: '+listaFuncs+'.');
+    function cabecalho(s,n){
+      const m=s.match(/^(if|elif|else|for|while)\b(.*)$/);if(!m)return null;
+      const kw=m[1];let resto=m[2].trim();
+      if(!resto.endsWith(':'))return{erro:E(n,'Erro de sintaxe (SyntaxError): faltaram os dois-pontos (:) no fim da linha do '+kw+'.','Toda linha que abre um bloco termina com dois-pontos: '+(kw==='else'?'else:':kw==='for'?'for i in range(4):':kw+' energia >= 5:'))};
+      resto=resto.slice(0,-1).trim();return{kw,resto};
+    }
+    function bloco(idx,ind,nv,loc){
+      const out=[];
+      while(idx<L.length&&!erro){
+        const ln=L[idx];
+        if(ln.ind<ind)break;
+        if(ln.ind>ind){erro=E(ln.n,'Erro de recuo (IndentationError): recuo inesperado.','Esta linha tem mais espaços na frente do que a anterior, mas não está dentro de nenhum bloco. Tire o recuo ou coloque-a embaixo de um if, for ou while.');break;}
+        const s=ln.s,n=ln.n;
+        if(/^(se|senao|senão|enquanto|repetir|para)\b/i.test(s)){erro=E(n,'Erro de sintaxe (SyntaxError): Python usa palavras em inglês.','Escreva if (se), else (senão), while (enquanto) e for (repetir).');break;}
+        if(/^(IF|If|ELIF|Elif|ELSE|Else|FOR|For|WHILE|While)\b/.test(s)){erro=E(n,'Erro de sintaxe (SyntaxError): Python diferencia maiúsculas de minúsculas.','As palavras do Python são escritas em minúsculas: if, elif, else, for, while.');break;}
+        if(/^else\s+if\b/.test(s)){erro=E(n,'Erro de sintaxe (SyntaxError): em Python se escreve elif.','Para testar outra condição depois de um if, use elif condição:');break;}
+        const cab=cabecalho(s,n);
+        if(cab&&cab.erro){erro=cab.erro;break;}
+        if(cab){
+          if(cab.kw==='elif'||cab.kw==='else'){erro=E(n,'Erro de sintaxe (SyntaxError): '+cab.kw+' sem if.','O '+cab.kw+' precisa vir logo depois do bloco de um if, com o mesmo recuo do if.');break;}
+          if(nv+1>LIM.prof){erro=E(n,'Blocos demais um dentro do outro.','Um bloco pode ficar dentro de outro só até '+LIM.prof+' níveis.');break;}
+          /* o bloco embaixo de um cabeçalho (if, elif, else, for, while) da linha nl */
+          const corpo=(i0,loc2,kw,nl)=>{const nx=L[i0];if(!nx||nx.ind<=ind){erro=E(nl||n,'Erro de recuo (IndentationError): o bloco do '+(kw||cab.kw)+' está vazio.','Escreva pelo menos uma linha embaixo dele, com 4 espaços a mais na frente.');return null;}
+            return bloco(i0,nx.ind,nv+1,loc2);};
+          if(cab.kw==='if'){
+            if(!permite(cfg,'se')){erro=proibido(n,'if');break;}
+            const c=cond(cab.resto,n,loc,'if');if(c.erro){erro=c;break;}
+            const no={k:'se',cond:c.c,entao:[],senao:null};const r=corpo(idx+1,loc);if(!r)break;no.entao=r.nos;idx=r.idx;
+            while(idx<L.length&&L[idx].ind===ind&&!erro){
+              const c2=cabecalho(L[idx].s,L[idx].n);if(!c2||c2.erro){if(c2&&c2.erro)erro=c2.erro;break;}
+              if(c2.kw==='elif'){if(!permite(cfg,'elif')){erro=proibido(L[idx].n,'elif');break;}if(no.senao){erro=E(L[idx].n,'Erro de sintaxe (SyntaxError): elif depois do else.','O else é sempre o último caminho: os elif vêm antes dele.');break;}
+                const cc=cond(c2.resto,L[idx].n,loc,'elif');if(cc.erro){erro=cc;break;}const r2=corpo(idx+1,loc,'elif',L[idx].n);if(!r2)break;(no.elifs=no.elifs||[]).push({k:'elif',cond:cc.c,corpo:r2.nos});idx=r2.idx;}
+              else if(c2.kw==='else'){if(!permite(cfg,'senao')){erro=proibido(L[idx].n,'else');break;}if(no.senao){erro=E(L[idx].n,'Erro de sintaxe (SyntaxError): dois else no mesmo if.','Cada if tem no máximo um else, no fim.');break;}
+                if(c2.resto){erro=E(L[idx].n,'Erro de sintaxe (SyntaxError): else não tem condição.','O else pega todos os outros casos: escreva só else:');break;}const r2=corpo(idx+1,loc,'else',L[idx].n);if(!r2)break;no.senao=r2.nos;idx=r2.idx;}
+              else break;
+            }
+            out.push(no);continue;
+          }
+          if(cab.kw==='while'){
+            if(!permite(cfg,'enq')){erro=proibido(n,'while');break;}
+            const c=cond(cab.resto,n,loc,'while');if(c.erro){erro=c;break;}const r=corpo(idx+1,loc);if(!r)break;out.push({k:'enq',cond:c.c,corpo:r.nos});idx=r.idx;continue;
+          }
+          if(cab.kw==='for'){
+            if(!permite(cfg,'rep')){erro=proibido(n,'for');break;}
+            const m=cab.resto.match(/^([A-Za-z_][A-Za-z0-9_]*)\s+in\s+range\s*\((.*)\)$/);
+            if(!m){erro=E(n,'Erro de sintaxe (SyntaxError): o for não está completo.','O for desta tumba se escreve assim: for i in range(4):  (repete 4 vezes; i vale 0, 1, 2 e 3).');break;}
+            const vn=m[1],arg=m[2].trim();
+            if(!NOME_OK.test(vn)){erro=E(n,'Nome de variável do for inválido.','Use letras minúsculas, como i ou volta.');break;}
+            if(vars[vn]||sens[vn]){erro=E(n,'O for não pode usar a variável '+vn+'.','Ela já guarda um dado da sala. Use outro nome, como i.');break;}
+            if(!/^\d+$/.test(arg)){erro=E(n,'range() recebe um número inteiro.',arg.indexOf(',')>=0?'Nesta tumba o range tem um número só: range(4) repete 4 vezes.':'Escreva quantas vezes repetir, por exemplo range(4).');break;}
+            const k=+arg,mx=cfg.repMax||LIM.rep;if(k>mx){erro=E(n,'Repetição grande demais.','Aqui o for repete no máximo '+mx+' vezes.');break;}
+            const r=corpo(idx+1,loc.concat([vn]));if(!r)break;out.push({k:'rep',n:k,var:vn,corpo:r.nos});idx=r.idx;continue;
+          }
+        }
+        /* chamada de função */
+        const ch=s.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*\((.*)\)$/);
+        if(ch){const f=ch[1];
+          if(!funcs[f]){if(vars[f]||sens[f]){erro=E(n,'Erro de tipo (TypeError): '+f+' é uma variável, não uma função.','Para guardar um valor, escreva '+f+' = valor.');break;}
+            erro=E(n,'Erro de nome (NameError): a função '+f+'() não existe nesta sala.','Funções disponíveis: '+listaFuncs+'.');break;}
+          if(ch[2].trim()){erro=E(n,'Erro de tipo (TypeError): '+f+'() não recebe valores.','Deixe os parênteses vazios: '+f+'(). A máquina lê o que precisar das variáveis.');break;}
+          out.push({k:'cmd',cmd:funcs[f]});idx++;continue;}
+        if(funcs[s]){erro=E(n,'Faltaram os parênteses para chamar a função.','Para a máquina executar, escreva '+s+'() com parênteses.');break;}
+        /* atribuição */
+        const at=s.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*(==|=)(.*)$/);
+        if(at){const nome=at[1];
+          if(at[2]==='=='){erro=E(n,'== compara, não guarda.','Para guardar um valor numa variável use um = só: '+nome+' = valor. O == é usado nas condições.');break;}
+          if(!permite(cfg,'set')){erro=proibido(n,'atribuição (=)');break;}
+          if(sens[nome]){erro=E(n,'"'+nome+'" é um sensor (só leitura).','O programa pode ler o valor de um sensor, mas não guardar outro nele.');break;}
+          if(loc.indexOf(nome)>=0){erro=E(n,'"'+nome+'" é a variável do for.','Ela muda sozinha a cada volta. Guarde valores nas variáveis da sala: '+listaVars+'.');break;}
+          if(!vars[nome]){erro=E(n,'Erro de nome (NameError): não há variável "'+nome+'" nesta sala.','Cada variável aqui é ligada a um mecanismo. Use uma destas: '+listaVars+'.');break;}
+          const r=tokens(at[3],n);if(r.erro){erro=r.erro;break;}const e=expr(r.t,n,loc);if(e.erro){erro=e.erro;break;}
+          out.push({k:'set',nome,expr:e.e});idx++;continue;}
+        if(/^[a-z_][a-z0-9_]*$/i.test(s)){erro=E(n,'Erro de nome (NameError): "'+s+'" sozinho não faz nada.','Chame uma função com parênteses ('+listaFuncs+') ou guarde um valor: variavel = valor.');break;}
+        erro=E(n,'Erro de sintaxe (SyntaxError): esta linha não foi entendida.','Uma linha pode chamar uma função, como avancar(); guardar um valor, como x = 5; ou abrir um bloco com if, elif, else, for ou while.');break;
+      }
+      return{nos:out,idx};
+    }
+    if(L.length&&L[0].ind>0)return E(L[0].n,'Erro de recuo (IndentationError): recuo inesperado.','A primeira linha do programa começa sem espaços na frente.');
+    const r=bloco(0,0,0,[]);
+    if(erro)return erro;
+    const prog=renumerar(r.nos);
+    const maxL=cfg.maxLinhas||LIM.linhas,n=contarLinhas(prog);
+    if(n>maxL)return E(L[L.length-1].n,'O programa tem '+n+' linhas, e este painel aceita '+maxL+'.','Encurte o programa: uma repetição pode substituir linhas iguais.');
+    return{prog};
+  }
 
   /* ---------- interpretador ---------- */
   function iniciar(cfg,mundo,sit,prog){
@@ -224,24 +450,25 @@ const LANG=(function(){
   function ev(s,e){s.ultimo=e;e.passo=s.passos;return e;}
   function falha(s,erro,linha,extra){s.fim=true;s.erro=Object.assign({},erro,{linha:linha===undefined?null:linha});return ev(s,Object.assign({tipo:'erro',linha:s.erro.linha,erro:s.erro},extra||{}));}
   /* blocos ativos (para mostrar o contador de cada repetição) */
-  function contadores(s){return s.pilha.filter(f=>f.k==='rep'||f.k==='enq').map(f=>({id:f.no.id,k:f.k,volta:f.volta,n:f.no.n}));}
+  function contadores(s){return s.pilha.filter(f=>f.k==='rep'||f.k==='enq').map(f=>({id:f.no.id,k:f.k,volta:f.volta,n:f.no.n,var:f.no.var||'i'}));}
+  const laco=(s,no,volta)=>{s.env[no.var||'i']={t:'int',val:val('int',volta-1),ro:true,laco:true,unid:''};};
   function passo(s){
     if(s.fim)return null;
     if(!s.prog.length)return falha(s,{tipo:'vazio'},null);
     if(s.passos>=(s.cfg.maxPassos||LIM.passos))return falha(s,{tipo:'limitePassos',n:s.passos},null);
     s.passos++;
-    /* fecha os blocos que terminaram: o fim de um SE não gasta passo; o fim de uma volta testa a repetição de novo */
+    /* fecha os blocos que terminaram: o fim de um if não gasta passo; o fim de uma volta testa a repetição de novo */
     for(;;){
       const f=s.pilha[s.pilha.length-1];
-      if(f.i<f.lista.length)break;
+      if(f.k==='cadeia'||f.i<f.lista.length)break;
       if(f.k==='raiz'){
         const r=s.mundo.fim?s.mundo.fim(s.ws,s):{ok:true};s.fim=true;
         if(r.ok){s.ok=true;return ev(s,{tipo:'fim',ok:true,msg:r.msg||''});}
         s.erro=Object.assign({linha:null},r.erro);return ev(s,{tipo:'fim',ok:false,erro:s.erro});
       }
-      if(f.k==='entao'||f.k==='senao'){s.pilha.pop();continue;}
+      if(f.k==='entao'||f.k==='senao'||f.k==='elif'){s.pilha.pop();continue;}
       if(f.k==='rep'){
-        if(f.volta<f.no.n){f.volta++;f.i=0;return ev(s,{tipo:'rep',linha:f.no.id,volta:f.volta,n:f.no.n});}
+        if(f.volta<f.no.n){f.volta++;f.i=0;laco(s,f.no,f.volta);return ev(s,{tipo:'rep',linha:f.no.id,volta:f.volta,n:f.no.n,var:f.no.var||'i'});}
         s.pilha.pop();return ev(s,{tipo:'repFim',linha:f.no.id,n:f.no.n});
       }
       if(f.k==='enq'){
@@ -251,41 +478,53 @@ const LANG=(function(){
         f.volta++;f.i=0;return ev(s,{tipo:'enq',linha:f.no.id,res:true,volta:f.volta,cmp:c});
       }
     }
-    const f=s.pilha[s.pilha.length-1],no=f.lista[f.i];
+    const f=s.pilha[s.pilha.length-1];
+    /* elif: cada condição testada é um passo, na ordem, até uma dar True (ou cair no else) */
+    if(f.k==='cadeia'){
+      const els=elifsDe(f.no),e=els[f.j],c=comparar(e.cond,s.env);if(c.erro)return falha(s,c.erro,e.id);
+      s.pilha.pop();
+      if(c.res){s.pilha.push({k:'elif',lista:e.corpo,i:0,no:f.no});return ev(s,{tipo:'se',elif:true,linha:e.id,res:true,cmp:c,ramo:'elif'+f.j});}
+      if(f.j+1<els.length){s.pilha.push({k:'cadeia',no:f.no,j:f.j+1,lista:[],i:0});return ev(s,{tipo:'se',elif:true,linha:e.id,res:false,cmp:c,ramo:'elif'});}
+      if(f.no.senao)s.pilha.push({k:'senao',lista:f.no.senao,i:0,no:f.no});
+      return ev(s,{tipo:'se',elif:true,linha:e.id,res:false,cmp:c,ramo:f.no.senao?'senao':null});
+    }
+    const no=f.lista[f.i];
     if(no.k==='cmd'){
       const r=s.mundo.cmd(s.ws,no.cmd,s)||{};
       if(r.erro)return falha(s,r.erro,no.id,{cmd:no.cmd,anim:r.anim});
       f.i++;sensores(s);
       const e=Object.assign({tipo:'cmd',linha:no.id,cmd:no.cmd},r);
       if(r.fimOk){s.fim=true;s.ok=true;
-        const resto=s.pilha.some(q=>q.i<q.lista.length)||s.pilha.some(q=>q.k==='rep'&&q.volta<q.no.n);
-        if(resto)s.aviso='As placas depois de '+(CMD[no.cmd]?CMD[no.cmd].nome:no.cmd)+' não foram executadas: o mecanismo já tinha sido acionado.';
+        const resto=s.pilha.some(q=>q.i<q.lista.length||q.k==='cadeia')||s.pilha.some(q=>q.k==='rep'&&q.volta<q.no.n);
+        if(resto)s.aviso='As linhas depois de '+nomeCmd(no.cmd)+' não foram executadas: o mecanismo já tinha sido acionado.';
       }
       return ev(s,e);
     }
     if(no.k==='set'){
       const d=s.env[no.nome];
       if(!d)return falha(s,{tipo:'naoExiste',nome:no.nome},no.id);
-      if(d.ro)return falha(s,{tipo:'somenteLeitura',nome:no.nome},no.id);
+      if(d.ro)return falha(s,{tipo:d.laco?'variavelFor':'somenteLeitura',nome:no.nome},no.id);
       const r=avaliar(no.expr,s.env);if(r.erro)return falha(s,r.erro,no.id);
       if(r.val.t!==d.t)return falha(s,{tipo:'tipoIncompativel',nome:no.nome,esperado:d.t,val:r.val},no.id);
       const antes=d.val;d.val=r.val;f.i++;
-      if(s.mundo.atribuiu)s.mundo.atribuiu(s.ws,no.nome,r.val,s);
+      const mr=s.mundo.atribuiu?s.mundo.atribuiu(s.ws,no.nome,r.val,s):null;
+      if(mr&&mr.erro)return falha(s,mr.erro,no.id,{anim:mr.anim});
       sensores(s);
-      return ev(s,{tipo:'set',linha:no.id,nome:no.nome,antes,depois:r.val,conta:no.expr&&no.expr.k==='op'});
+      return ev(s,Object.assign({tipo:'set',linha:no.id,nome:no.nome,antes,depois:r.val,conta:no.expr&&no.expr.k==='op'},mr||{}));
     }
     if(no.k==='se'){
       const c=comparar(no.cond,s.env);if(c.erro)return falha(s,c.erro,no.id);
       f.i++;
-      if(c.res)s.pilha.push({k:'entao',lista:no.entao,i:0,no});
-      else if(no.senao)s.pilha.push({k:'senao',lista:no.senao,i:0,no});
-      return ev(s,{tipo:'se',linha:no.id,res:c.res,cmp:c,ramo:c.res?'entao':no.senao?'senao':null});
+      if(c.res){s.pilha.push({k:'entao',lista:no.entao,i:0,no});return ev(s,{tipo:'se',linha:no.id,res:true,cmp:c,ramo:'entao'});}
+      if(elifsDe(no).length){s.pilha.push({k:'cadeia',no,j:0,lista:[],i:0});return ev(s,{tipo:'se',linha:no.id,res:false,cmp:c,ramo:'elif'});}
+      if(no.senao)s.pilha.push({k:'senao',lista:no.senao,i:0,no});
+      return ev(s,{tipo:'se',linha:no.id,res:false,cmp:c,ramo:no.senao?'senao':null});
     }
     if(no.k==='rep'){
       f.i++;
       if(!(no.n>=1))return ev(s,{tipo:'repFim',linha:no.id,n:no.n,zero:true});
-      s.pilha.push({k:'rep',lista:no.corpo,i:0,no,volta:1});
-      return ev(s,{tipo:'rep',linha:no.id,volta:1,n:no.n});
+      s.pilha.push({k:'rep',lista:no.corpo,i:0,no,volta:1});laco(s,no,1);
+      return ev(s,{tipo:'rep',linha:no.id,volta:1,n:no.n,var:no.var||'i'});
     }
     if(no.k==='enq'){
       const c=comparar(no.cond,s.env);if(c.erro)return falha(s,c.erro,no.id);
@@ -298,41 +537,52 @@ const LANG=(function(){
   /* roda tudo com o mesmo passo() (testes e conferência) */
   function executar(cfg,mundo,sit,prog){const s=iniciar(cfg,mundo,sit,prog),eventos=[];let e;while((e=passo(s)))eventos.push(e);return{s,eventos};}
 
-  /* ---------- explicações em linguagem simples ---------- */
-  function explicar(s){
-    const e=s.erro;if(!e)return s.ok?'':'';
-    const n=e.linha?numeroLinha(s.prog,e.linha):0,ln=n?'Linha '+n+': ':'';
-    if(e.msg)return ln+e.msg;
+  /* ---------- erros explicados para quem nunca programou ----------
+     Cada erro tem um título curto (com o nome que o Python daria, quando existe) e uma explicação do que fazer. */
+  const mai=t=>t?t[0].toUpperCase()+t.slice(1):t;
+  function explicarErro(s){
+    const e=s.erro;if(!e)return null;
+    const n=e.linha?(e.tipo==='sintaxe'?e.linha:numeroLinha(s.prog,e.linha)):0;
+    const R=(titulo,texto)=>({linha:n,titulo,texto});
+    if(e.tipo==='sintaxe')return R(e.titulo,e.texto);
+    if(e.msg)return R(e.titulo||'O mecanismo não funcionou.',mai(e.msg));
+    const vs=((s.cfg&&s.cfg.vars)||[]).map(d=>d.nome).concat(((s.cfg&&s.cfg.sensores)||[]).map(d=>d.nome)).join(', ');
     switch(e.tipo){
-      case'vazio':return'Coloque pelo menos uma placa no painel antes de executar.';
-      case'incompleta':return ln+'esta placa ainda não está completa. Toque nela e escolha o que falta.';
-      case'semValor':return ln+'a variável "'+e.nome+'" ainda está vazia. Guarde um valor nela antes de usá-la (por exemplo, '+e.nome+' = …).';
-      case'naoExiste':return ln+'não existe um contêiner chamado "'+e.nome+'" aqui.';
-      case'somenteLeitura':return ln+'"'+e.nome+'" é um sensor: o programa pode ler o valor dele, mas não guardar outro.';
-      case'tipoIncompativel':{const T=TIPOS[e.esperado];return ln+'o contêiner "'+e.nome+'" aceita '+T.nome+' ('+T.py+'), mas o resultado foi '+fmt(e.val)+', que é '+tipoDe(e.val)+'. O jogo não converte um tipo no outro.';}
-      case'tipoOp':return ln+'a conta '+fmt(e.a)+' '+e.op+' '+fmt(e.b)+' não existe: soma e subtração só funcionam entre números.';
-      case'cmpTipos':return ln+'a comparação junta '+fmt(e.a)+' ('+TIPOS[e.a.t].nome+') e '+fmt(e.b)+' ('+TIPOS[e.b.t].nome+'). São tipos diferentes, e o jogo não converte um no outro.';
-      case'cmpOrdem':return ln+'textos e booleanos só podem ser comparados com == ou !=.';
-      case'grande':return ln+'o número ficou grande demais para o contêiner.';
-      case'semParada':return ln+'a condição "'+e.cond+'" continuou verdadeira por '+e.voltas+' voltas, então a repetição foi interrompida. Alguma placa dentro do ENQUANTO precisa mudar o valor consultado até a condição ficar falsa.';
-      case'limitePassos':return'O programa passou de '+e.n+' passos e foi interrompido. Confira se alguma repetição está grande demais.';
-      default:return ln+'esta placa não pôde ser executada.';
+      case'vazio':return R('O programa está vazio.','Coloque pelo menos uma linha de código antes de executar.');
+      case'incompleta':return R('Linha incompleta.','Esta linha ainda tem um espaço vazio (?). Toque nela e escolha o que falta.');
+      case'semValor':return R('Erro de nome (NameError): a variável "'+e.nome+'" ainda está vazia.','Antes de ler uma variável, guarde um valor nela, por exemplo: '+e.nome+' = … . Vazia é diferente de 0 e de False.');
+      case'naoExiste':return R('Erro de nome (NameError): "'+e.nome+'" não existe aqui.','Variáveis desta sala: '+(vs||'nenhuma')+'.');
+      case'somenteLeitura':return R('"'+e.nome+'" é um sensor (só leitura).','O programa pode ler o valor de um sensor, mas não guardar outro nele.');
+      case'variavelFor':return R('"'+e.nome+'" é a variável do for.','Ela muda sozinha a cada volta: 0, 1, 2… Não guarde valores nela.');
+      case'tipoIncompativel':{const T=TIPOS[e.esperado];
+        return R('Erro de tipo (TypeError): era esperado '+T.art+' ('+T.rot+').','Você tentou guardar '+fmt(e.val)+', que é '+tipoDe(e.val)+', na variável '+e.nome+', mas o mecanismo dela precisa receber '+T.desc+'.'+dicaTipo(e.esperado,e.val));}
+      case'tipoOp':return R('Erro de tipo (TypeError): a conta '+fmt(e.a)+' '+e.op+' '+fmt(e.b)+' mistura tipos.','Soma e subtração só funcionam entre números.'+(e.a.t==='str'||e.b.t==='str'?' Um texto entre aspas não vira número sozinho.':''));
+      case'cmpTipos':return R('Erro de tipo (TypeError): comparação entre tipos diferentes.',fmt(e.a)+' é '+tipoDe(e.a)+' e '+fmt(e.b)+' é '+tipoDe(e.b)+'. O jogo não converte um no outro: compare valores do mesmo tipo.');
+      case'cmpOrdem':return R('Erro de tipo (TypeError): < e > servem só para números.','Textos e booleanos são comparados apenas com == (igual) ou != (diferente).');
+      case'condNaoBool':return R('A condição precisa dar True ou False.','"'+e.expr+'" vale '+fmt(e.val)+', que é '+tipoDe(e.val)+'. Faça uma pergunta com ele, por exemplo: '+e.expr+' > 0.');
+      case'grande':return R('Número grande demais.','O resultado passou do que o mecanismo aguenta ('+LIM.num+').');
+      case'semParada':return R('Repetição sem fim: o while não parou.','A condição "'+e.cond+'" continuou verdadeira por '+e.voltas+' voltas, então a repetição foi interrompida. Alguma linha dentro do while precisa mudar o valor testado até a condição ficar falsa.');
+      case'limitePassos':return R('O programa ficou longo demais.','Passou de '+e.n+' passos e foi interrompido. Confira se alguma repetição está grande demais.');
+      default:return R('Esta linha não pôde ser executada.','Confira o que ela pede e tente de novo.');
     }
   }
+  /* a explicação numa frase só (avisos, diário e testes) */
+  function explicar(s){const r=explicarErro(s);if(!r)return'';return(r.linha?'Linha '+r.linha+': ':'')+r.titulo+' '+r.texto;}
   /* o que aconteceu em um passo, numa frase curta (painel durante a execução) */
   function narrar(e,s){
     if(!e)return'';
-    if(e.tipo==='set')return e.nome+' agora vale '+fmt(e.depois)+(e.antes?' (antes: '+fmt(e.antes)+')':' (estava vazio)')+'.';
-    if(e.tipo==='se')return'Teste: '+e.cmp.txt+' → '+fmt(e.cmp.a)+' '+e.cmp.op+' '+fmt(e.cmp.b)+' é '+(e.res?'Verdadeiro':'Falso')+'. '+(e.ramo==='entao'?'Executa o ENTÃO.':e.ramo==='senao'?'Executa o SENÃO.':'Pula o bloco.');
-    if(e.tipo==='rep')return'Repetição: volta '+e.volta+' de '+e.n+'.';
-    if(e.tipo==='repFim')return e.zero?'REPETIR 0 vezes: o bloco não executa.':'Repetição terminada: '+e.n+(e.n===1?' volta.':' voltas.');
-    if(e.tipo==='enq')return'Condição: '+e.cmp.txt+' → '+fmt(e.cmp.a)+' '+e.cmp.op+' '+fmt(e.cmp.b)+' é '+(e.res?'Verdadeiro':'Falso')+'. '+(e.res?'Volta '+e.volta+'.':(e.volta===0?'O bloco não executa nenhuma vez.':'A repetição para depois de '+e.volta+(e.volta===1?' volta.':' voltas.')));
-    if(e.tipo==='cmd')return e.msg||((CMD[e.cmd]?CMD[e.cmd].nome:e.cmd)+'.');
+    const verdade=c=>c.op==='bool'||c.op==='not'?c.txt+' → '+(c.res?'True':'False'):c.txt+' → '+fmt(c.a)+' '+c.op+' '+fmt(c.b)+' é '+(c.res?'True':'False');
+    if(e.tipo==='set')return e.nome+' agora vale '+fmt(e.depois)+(e.antes?' (antes: '+fmt(e.antes)+')':' (estava vazia)')+'.'+(e.msg?' '+e.msg:'');
+    if(e.tipo==='se'){const kw=e.elif?'elif':'if';return kw+': '+verdade(e.cmp)+'. '+(e.res?'Executa o bloco do '+kw+'.':e.ramo==='elif'?'Testa o próximo elif.':e.ramo==='senao'?'Executa o else.':'Pula o bloco.');}
+    if(e.tipo==='rep')return'for: volta '+e.volta+' de '+e.n+' ('+e.var+' = '+(e.volta-1)+').';
+    if(e.tipo==='repFim')return e.zero?'range(0): o bloco do for não executa.':'for terminado: '+e.n+(e.n===1?' volta.':' voltas.');
+    if(e.tipo==='enq')return'while: '+verdade(e.cmp)+'. '+(e.res?'Volta '+e.volta+'.':(e.volta===0?'O bloco não executa nenhuma vez.':'A repetição para depois de '+e.volta+(e.volta===1?' volta.':' voltas.')));
+    if(e.tipo==='cmd')return e.msg||(nomeCmd(e.cmd)+' executada.');
     if(e.tipo==='fim')return e.ok?(e.msg||'Programa concluído.'):'';
     return'';
   }
 
-  return{TIPOS,OPS_CMP,OPS_ARIT,OP_NOME,LIM,CMD,val,valValido,fmt,fmtDec,tipoDe,fmtExpr,fmtCond,avaliar,comparar,compativel,
-    filhos,cada,novoId,linhas,contarLinhas,profundidade,numeroLinha,achar,listaDe,nivelDe,inserir,remover,mover,clonar,assinatura,limpar,
-    fmtNo,fmtLinha,codigo,iniciar,passo,executar,contadores,explicar,narrar};
+  return{TIPOS,OPS_CMP,OPS_ARIT,OPS_BOOL,OP_NOME,LIM,CMD,rotulo,nomeCmd,val,valValido,fmt,fmtDec,tipoDe,fmtExpr,fmtCond,avaliar,comparar,compativel,
+    elifsDe,ramos,ramoLista,filhos,cada,novoId,renumerar,linhas,contarLinhas,profundidade,numeroLinha,achar,listaDe,nivelDe,inserir,adicionarElif,alternarSenao,remover,mover,clonar,assinatura,permite,limpar,
+    fmtNo,fmtLinha,codigo,ler,iniciar,passo,executar,contadores,explicarErro,explicar,narrar};
 })();
