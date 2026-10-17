@@ -1,7 +1,7 @@
 # Vale das Tumbas 2D
 
 Aventura em pixel art vista de cima, no estilo dos RPGs de 16 bits, para quem está começando em lógica de programação.
-O explorador cruza o vale, entra em quatro tumbas e recupera os conhecimentos de uma civilização que controlava máquinas,
+De proteção de cabeça com óculos, roupa ocre e dourada e uma bengala alta, o personagem cruza o vale, entra em quatro tumbas e recupera os conhecimentos de uma civilização que controlava máquinas,
 geradores, portais e organismos artificiais com instruções, dados e regras lógicas. Cada relíquia é um saber: só desperta
 quando o jogador monta, executa e corrige programas que fazem o mecanismo da sala funcionar.
 
@@ -62,7 +62,8 @@ Os arquivos de `src/` são concatenados nesta ordem pelo `build.sh`:
 | `05-audio.js` | sons sintetizados (os do 3D e os do painel) |
 | `06-input.js` | teclado, toque (joystick e botões) e controle |
 | `07-pixel.js` | ferramentas de pixel art: sprites de texto, contorno, círculos, linhas e a fonte de pixels 3×5 |
-| `08-sprites.js` | **personagens**: explorador (4 direções; repouso, caminhada, interação), guardiões e autômatos |
+| `08-sprites.js` | guardiões e autômatos |
+| `08b-heroi.js` | **personagem principal**: 4 direções; repouso, caminhada (passos com a bengala), interação e dano; folha de sprites e configuração das animações |
 | `09-tiles.js` | tiles de cada tema e paredes em visão 3/4 que se montam sozinhas |
 | `10-objetos.js` | objetos do vale (tendas, palmeiras, ruínas de cada era, entradas, pirâmide, ícones dos valores) |
 | `11-render.js` | **renderização**: resolução interna, escala inteira, câmera em pixel inteiro, chão em pedaços, luz, partículas |
@@ -72,16 +73,37 @@ Os arquivos de `src/` são concatenados nesta ordem pelo `build.sh`:
 | `15-tumbas.js` | peças comuns das tumbas: pontos de energia, saída, pedestal, terminal, portões, guardiões |
 | `16-steam.js` … `20-city.js` | as quatro tumbas e a Cidade-Jardim (mapa, perigos, guardião, mecanismo do desafio) |
 | `21-segredos.js` | os 12 segredos e o mapa do diário |
-| `22-game.js` | estado, explorador, HUD, avisos, diário, transições, menus, salvamento no navegador, laço principal |
+| `22-game.js` | estado, personagem (movimento e quadro de animação), HUD, avisos, diário, transições, menus, salvamento no navegador, laço principal |
 | `23-teste.js` | gancho de teste (`window.__vt`), só com `#vt` no endereço |
 
 `recursos/` tem folhas PNG de todos os sprites e tiles, exportadas do código (`node test/ferramentas/exportar-sprites.js`),
+entre elas a folha do personagem (`heroi.png`, `heroi_4x.png`) e a configuração das animações (`heroi.json`),
 e `capturas/` tem imagens representativas (`node test/ferramentas/capturas.js`).
 
 ### Pixels nítidos
 O mundo é desenhado num canvas pequeno (cerca de 250 pixels de jogo no lado menor da tela) e ampliado por um fator **inteiro**
 para o canvas do tamanho real da tela, sem suavização. A câmera anda em subpixels, mas o desenho usa a posição arredondada:
-nada treme nem deforma. Tiles de 16×16, explorador de 16×24, contorno escuro de 1 px em tudo.
+nada treme nem deforma. Tiles de 16×16, personagem em células de 40×46 (cerca de 32 px de altura, a bengala com 37 px),
+contorno escuro de 1 px em tudo.
+
+### Personagem principal
+Desenhado a partir da imagem de referência oficial (poses laterais): proteção de cabeça com óculos de lentes verdes sobre o
+cabelo preso em coque, roupa ocre e dourada, faixa roxo-azulada no peito, lenço e cartucheira vermelhos, bolsinha, babado
+amarelo, botas escuras e a bengala com ponta, anel verde, mecanismo, empunhadura ocre e pé largo. As vistas de frente e de
+costas foram criadas com as mesmas proporções; a lateral esquerda é o espelho exato da direita.
+- **Folha de sprites:** `recursos/heroi.png` (fundo transparente, células de 40×46, 8 colunas, uma linha por direção e
+  animação) e `recursos/heroi.json` (ordem das linhas, âncora, colisão e tempos). O jogo monta os mesmos quadros por código
+  (`folhaHeroi()`), então a folha nunca fica diferente do que aparece na tela (há teste para isso).
+- **Ponto de referência:** (20, 44) na célula, o centro da linha de contato das botas com o chão; é ele que vai na posição
+  do personagem. Em todo quadro pelo menos uma bota está apoiada nessa linha.
+- **Animações:** repouso (4 quadros, respiração e reflexo nos óculos), caminhada (8 quadros por ciclo de dois passos; a
+  bengala fica apoiada no primeiro passo e é levada à frente no segundo, e a mão acompanha a empunhadura), interação (3
+  quadros: a mão livre alcança o objeto na direção em que o personagem olha) e dano (2 quadros com clarão, depois pisca
+  enquanto está protegido). A caminhada avança com a distância andada, então não escorrega nem corre à toa.
+- **Colisão:** só a caixa dos pés (12×6 px, centrada na referência). A bengala e a cabeça não entram na colisão: o
+  personagem passa por portas e corredores de 1 tile.
+- **Ordenação visual:** entra na fila de desenho pela linha dos pés, como todo objeto do cenário pela sua base; fica atrás
+  do que está mais embaixo na tela e na frente do que está mais em cima.
 
 ## Salvamento e migração do 3D
 - Chave própria: `vale_das_tumbas_2d` (versão 1). Guarda relíquias, etapas concluídas, programas de cada etapa, diário,
@@ -106,6 +128,7 @@ Precisam de `node` e do pacote `playwright` com o Chromium: `npm install` e `npx
 | `b3-save.js` | navegador | migração real a partir do save 3D no `localStorage`, save 3D intacto, relíquia que desperta, save dentro de tumba, save 2D estragado, posição dentro de obstáculo, save ilegível |
 | `b4-telas.js` | navegador | 10 tamanhos de tela (em pé, deitado, tablet, computador): escala inteira, HUD e avisos sem sobreposição, botões grandes, textos legíveis, painel inteiro alcançável |
 | `b5-perigos.js` | navegador | pistões, placas com e sem olho, Autômato, Robô-vigia e pilares, canal, radiação, bomba, canção errada, derrota, oásis, inscrições, segredos e mapa |
+| `b6-personagem.js` | navegador | quadros de todas as direções e animações, linha do chão e altura coerentes, espelho, colisão nos pés, passagem de 1 tile, porta da tumba, atrás/na frente do pilar, transições repouso → caminhada → repouso, interação e dano, folha exportada igual à do jogo |
 
 ## Publicar na Vercel (projeto novo, separado do 3D)
 O 3D continua no projeto que já existe. Para o 2D, crie **outro projeto** na Vercel apontando para o mesmo repositório:

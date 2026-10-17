@@ -1,0 +1,149 @@
+{
+  "celula": {
+    "largura": 40,
+    "altura": 46
+  },
+  "ancora": {
+    "x": 20,
+    "y": 44,
+    "descricao": "centro da base dos pés"
+  },
+  "colisao": {
+    "largura": 12,
+    "altura": 6,
+    "descricao": "caixa nos pés, centrada na âncora; a bengala não entra na colisão"
+  },
+  "direcoes": [
+    "baixo",
+    "cima",
+    "esquerda",
+    "direita"
+  ],
+  "animacoes": {
+    "parado": {
+      "quadros": 4,
+      "fps": 3,
+      "repete": true
+    },
+    "andar": {
+      "quadros": 8,
+      "porPixel": 0.18,
+      "correndoPorPixel": 0.15,
+      "repete": true,
+      "nota": "avança com a distância andada (quadros por pixel); 8 quadros = dois passos, com a bengala apoiada no primeiro e levada à frente no segundo"
+    },
+    "usar": {
+      "quadros": 3,
+      "duracao": 0.32,
+      "repete": false
+    },
+    "dano": {
+      "quadros": 2,
+      "fps": 12,
+      "duracao": 0.4,
+      "repete": true
+    }
+  },
+  "folha": {
+    "colunas": 8,
+    "linhas": 16,
+    "ordem": [
+      {
+        "direcao": "baixo",
+        "animacao": "parado",
+        "linha": 0,
+        "quadros": 4
+      },
+      {
+        "direcao": "baixo",
+        "animacao": "andar",
+        "linha": 1,
+        "quadros": 8
+      },
+      {
+        "direcao": "baixo",
+        "animacao": "usar",
+        "linha": 2,
+        "quadros": 3
+      },
+      {
+        "direcao": "baixo",
+        "animacao": "dano",
+        "linha": 3,
+        "quadros": 2
+      },
+      {
+        "direcao": "cima",
+        "animacao": "parado",
+        "linha": 4,
+        "quadros": 4
+      },
+      {
+        "direcao": "cima",
+        "animacao": "andar",
+        "linha": 5,
+        "quadros": 8
+      },
+      {
+        "direcao": "cima",
+        "animacao": "usar",
+        "linha": 6,
+        "quadros": 3
+      },
+      {
+        "direcao": "cima",
+        "animacao": "dano",
+        "linha": 7,
+        "quadros": 2
+      },
+      {
+        "direcao": "esquerda",
+        "animacao": "parado",
+        "linha": 8,
+        "quadros": 4
+      },
+      {
+        "direcao": "esquerda",
+        "animacao": "andar",
+        "linha": 9,
+        "quadros": 8
+      },
+      {
+        "direcao": "esquerda",
+        "animacao": "usar",
+        "linha": 10,
+        "quadros": 3
+      },
+      {
+        "direcao": "esquerda",
+        "animacao": "dano",
+        "linha": 11,
+        "quadros": 2
+      },
+      {
+        "direcao": "direita",
+        "animacao": "parado",
+        "linha": 12,
+        "quadros": 4
+      },
+      {
+        "direcao": "direita",
+        "animacao": "andar",
+        "linha": 13,
+        "quadros": 8
+      },
+      {
+        "direcao": "direita",
+        "animacao": "usar",
+        "linha": 14,
+        "quadros": 3
+      },
+      {
+        "direcao": "direita",
+        "animacao": "dano",
+        "linha": 15,
+        "quadros": 2
+      }
+    ]
+  }
+}

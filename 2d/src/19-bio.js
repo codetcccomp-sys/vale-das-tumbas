@@ -104,7 +104,7 @@ CONSTRUIR.bio=function(){
   };
   A.dreno=()=>{const y=G.p.y/16;return y>15&&y<23?1.6:1;};
   A.luzesExtra=t=>{
-    const p=G.p,y=p.y/16;if(y>15.5&&y<23)LUZES.forEach(L=>{if(Math.abs(L.x-p.x)<1&&Math.abs(L.y-(p.y-10))<1)L.r*=0.6;});
+    const p=G.p,y=p.y/16;if(y>15.5&&y<23)LUZES.forEach(L=>{if(Math.abs(L.x-p.x)<1&&Math.abs(L.y-(p.y-14))<1)L.r*=0.6;});
     for(let ty=16;ty<=22;ty++){const x=14+Math.round(Math.sin(ty*0.9)*3);luz(x*16+16,ty*16+8,12,0.8,'#5dff7a');}
     luz(14*16,10*16,PAINEL.aberto&&PAINEL.area===A?120:50,1,'#e8d0ff');
   };

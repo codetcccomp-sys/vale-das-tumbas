@@ -11,7 +11,7 @@ const TILE=16;
 
 /* ====================== textos (pt-BR) ====================== */
 const TXT={
-  welcome:'Bem-vindo ao Vale das Tumbas. Os sistemas da cidade antiga dormem: recupere os conhecimentos guardados nas quatro tumbas.',
+  welcome:'Boas-vindas ao Vale das Tumbas. Os sistemas da cidade antiga dormem: recupere os conhecimentos guardados nas quatro tumbas.',
   saved:'Progresso salvo: relíquias, saberes, programas, diário, segredos e posição no vale.',
   saveFixed:'Parte do salvamento estava danificada. O que pôde ser aproveitado foi recuperado.',
   saveFail:'Não foi possível salvar o progresso neste navegador.',

@@ -12,9 +12,10 @@ const path=require('path'),fs=require('fs');const {chromium}=require('playwright
     const folha=(nome,itens,col,cel,esc)=>{esc=esc||3;const linhas=Math.ceil(itens.length/col);const c=cnv(col*cel.w,linhas*cel.h),g=ctx2(c);g.fillStyle='#6a5a48';g.fillRect(0,0,c.width,c.height);
       itens.forEach((im,i)=>{const x=(i%col)*cel.w,y=Math.floor(i/col)*cel.h;g.fillStyle=(i+Math.floor(i/col))%2?'#7a6a58':'#6a5a48';g.fillRect(x,y,cel.w,cel.h);if(im)g.drawImage(im,x+Math.floor((cel.w-im.width)/2),y+cel.h-im.height-1);});
       out[nome]=escalar(c,esc).toDataURL('image/png');};
-    const E=montarExplorador(),dirs=['baixo','cima','esquerda','direita'];
-    const exp=[];for(const d of dirs){exp.push(...E[d].parado,...E[d].andar,E[d].usar);}
-    folha('explorador',exp,7,{w:18,h:26},4);
+    /* personagem principal: a folha de verdade (1 px = 1 px, fundo transparente, células de 40×46, referência nos pés),
+       uma cópia ampliada 4× para ver os detalhes e a configuração das animações em JSON */
+    const H=folhaHeroi();out.heroi=H.canvas.toDataURL('image/png');out.heroi_4x=escalar(H.canvas,4).toDataURL('image/png');
+    out['heroi.json']=JSON.stringify(H.config,null,2);
     folha('guardioes',[sprAutomato(false,0),sprAutomato(true,1),sprVigia(0),sprVigia(1),sprRoboAtom(false,0),sprRoboAtom(true,1),sprClone(false,0),sprClone(true,1),sprMiniAutomato(0),sprMiniAutomato(1),sprMiniAutomato(2),sprMiniAutomato(3),sprPolinizador(0),sprPolinizador(1),sprJardineiro(0),sprJardineiro(1)],8,{w:20,h:26},4);
     const S=(n,...a)=>SPR.get(n,...a);
     folha('vale',[S('tenda','#d7c39a'),S('tenda','#b9533a'),S('fogueira',0),S('mesa'),S('bandeira'),S('palmeira',1),S('arbusto',0),S('arbusto',3),S('capim',1),S('cacto',1),S('pedra',0,0),S('pedra',1,1),S('pedra',2,2),
@@ -38,6 +39,6 @@ const path=require('path'),fs=require('fs');const {chromium}=require('playwright
     }
     return out;
   });
-  for(const k in folhas){fs.writeFileSync(path.join(OUT,k+'.png'),Buffer.from(folhas[k].split(',')[1],'base64'));}
+  for(const k in folhas){if(k.endsWith('.json'))fs.writeFileSync(path.join(OUT,k),folhas[k]+'\n');else fs.writeFileSync(path.join(OUT,k+'.png'),Buffer.from(folhas[k].split(',')[1],'base64'));}
   console.log('folhas:',Object.keys(folhas).join(', '));await b.close();
 })();
