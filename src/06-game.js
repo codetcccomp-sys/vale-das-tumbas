@@ -201,7 +201,7 @@ function updateGoal(){
 const explorer=buildExplorer();scene.add(explorer.group);
 scene.fog=new THREE.Fog(0xe9c48c,40,380);
 function setArea(a){
-  G.area=a;const tomb_=a!==valeArea;perfHold(2.5);
+  G.area=a;const tomb_=a!==valeArea;perfHold(2.5);if(camera.view)camera.clearViewOffset();camera.fov=camera.aspect<1?74:62;
   valeArea.group.visible=!tomb_;for(const k in TOMB_AREAS)TOMB_AREAS[k].group.visible=(TOMB_AREAS[k]===a);
   document.body.classList.toggle('intomb',tomb_);document.body.classList.toggle('incity',a.key==='final');document.body.classList.remove('cine');$('endTxt').hidden=true;$('spore').style.opacity='0';camera.far=tomb_?52:900;camera.updateProjectionMatrix();
   sky.visible=!tomb_;stars.visible=!tomb_;if(tomb_){sunSpr.visible=false;moonSpr.visible=false;}

@@ -304,15 +304,33 @@ function beginEnding(){
   G.mode='ending';G.lanternOn=false;clearPress();
   document.body.classList.add('cine');
   camera.far=420;camera.updateProjectionMatrix();
-  cty.end={t:0,ct:0,line:-1,c0:camera.position.clone(),skip:false};
+  const fw=new THREE.Vector3();camera.getWorldDirection(fw);
+  cty.end={t:0,ct:0,line:-1,c0:camera.position.clone(),l0:camera.position.clone().addScaledVector(fw,6),skip:false};
+  /* o explorador vira para a árvore */
+  G.p.face=Math.atan2(END_TREE.x-G.p.x,END_TREE.z-G.p.z);G.p.vx=G.p.vz=0;
   const el=$('endTxt');el.hidden=false;$('endLine').textContent='';
   addDiary('city_end',true);SFX.relic();
 }
+/* câmera da cena final: sai da câmera do jogo em 2,5 s e faz um arco lento por cima da escada, entre as paredes do
+   terraço (que sobem até y=22), de frente para a árvore. Chega mais perto e sobe aos poucos; o explorador fica sempre
+   no quadro, sob a copa, com o céu aberto em cima. A última frase termina enquadrada nos dois. */
+const END_TREE={x:0,y:8,z:-172.5},END_SZ=new THREE.Vector2();
+function endingShot(ct,p){
+  const k=smooth(0,1,clamp(ct/21,0,1)),ang=-0.36+0.72*k,R=20-4*k;
+  const pos={x:END_TREE.x+Math.sin(ang)*R,y:12.5+5*k,z:END_TREE.z+Math.cos(ang)*R};
+  /* mira entre a cabeça do explorador e o meio da copa: os dois cabem no quadro */
+  const look={x:lerp(p.x,END_TREE.x,0.55),y:lerp(p.y+1.4,END_TREE.y+9,0.55),z:lerp(p.z,END_TREE.z,0.55)};
+  return{pos,look};
+}
 function cityEndingCamera(dt){
   const e=cty.end;if(!e)return;
-  const u=smooth(0,1,clamp(e.ct/17,0,1)),p=G.p,a=e.ct*0.05;
-  camera.position.set(lerp(e.c0.x,14+Math.sin(a)*5,u),lerp(e.c0.y,64,u),lerp(e.c0.z,-66,u));
-  camera.lookAt(lerp(p.x,0,u),lerp(p.y+1.4,6,u),lerp(p.z,-146,u));
+  const p=G.p,s=endingShot(e.ct,p),u=smooth(0,1,clamp(e.ct/2.5,0,1));
+  camera.position.set(lerp(e.c0.x,s.pos.x,u),lerp(e.c0.y,s.pos.y,u),lerp(e.c0.z,s.pos.z,u));
+  camera.lookAt(lerp(e.l0.x,s.look.x,u),lerp(e.l0.y,s.look.y,u),lerp(e.l0.z,s.look.z,u));
+  /* tela deitada: o texto ocupa a faixa de baixo, então o quadro sobe um pouco para o explorador não ficar atrás dele */
+  renderer.getSize(END_SZ);
+  if(camera.aspect>1.2){camera.fov=lerp(62,74,u);camera.setViewOffset(END_SZ.x,END_SZ.y,0,END_SZ.y*0.17*u,END_SZ.x,END_SZ.y);}
+  else if(camera.view)camera.clearViewOffset();
   if(cty.ground)cty.ground.visible=true;
   scene.fog.near=60;scene.fog.far=380;
 }
@@ -380,7 +398,8 @@ function cUpdate(dt,t){
   const lv=cty.lvl;
   for(const s of cty.slabs){
     const tg=cty.done[Math.min(s.k,3)]?1:0;s.open+=clamp(tg-s.open,-dt*0.35,dt*0.35);
-    const a=smooth(0,1,s.open)*1.4;s.gl.rotation.z=a;s.gr.rotation.z=-a;
+    /* teto que recolhe: cada metade encolhe em direção à parede e some dentro dela (nada fica pendurado do lado de fora) */
+    const sc=1-0.97*smooth(0,1,s.open);s.gl.scale.x=sc;s.gr.scale.x=sc;s.gl.visible=s.gr.visible=sc>0.035;
   }
   for(let i=0;i<3;i++)LEAF_MATS[i].color.copy(LEAF_DRY[i]).lerp(LEAF_LIVE[i],smooth(0,1,lv));
   sun.color.setHex(0xfff2d0);sun.position.set(30,80,40);sun.intensity=0.18+0.34*lv;
@@ -418,7 +437,7 @@ function cReset(){
   for(const s of cty.sensors){s.lit=false;s.mat.color.setHex(0x6a3a10);s.glow.visible=false;s.idle.visible=true;}
   const r=cty.room;r.solved=false;for(const n of r.nodes)n.stay=false;r.heart.mat.color.setHex(0xffd24a);r.heart.halo.material.color.setHex(0xffd24a);
   cty.done=[false,false,false,false];cty.lvl=0;cty.hints={};cty.end=null;cty.beamT=0;
-  for(const s of cty.slabs){s.open=0;s.gl.rotation.z=0;s.gr.rotation.z=0;}
+  for(const s of cty.slabs){s.open=0;s.gl.scale.x=1;s.gr.scale.x=1;s.gl.visible=s.gr.visible=true;}
   cResetVisit();
 }
 cityArea.onEnter=function(){G.lantern=130;G.lanternOn=false;cty.end=null;cty.lvl=cityLevel();if(cty.ground)cty.ground.visible=false;};

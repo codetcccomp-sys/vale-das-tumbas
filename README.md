@@ -55,6 +55,7 @@ Os testes abrem `build/index.html#vt`; o `#vt` liga um gancho de teste (`window.
 | `v4-celular.js` | HUD sem sobreposição em 6 tamanhos de tela (em pé e deitado, até 300 px), textos legíveis, três dedos ao mesmo tempo, instruções por entrada |
 | `v4-resolucao.js` | lado menor da imagem ≥ 720 px no modo normal (ou o que a tela tiver), ajuste automático que desce só até esse piso e volta a subir, modo leve em ~540 px |
 | `v4-orientacao.js` | percorre cada trilha andando até a porta; placas, marcos, mapa, feixes e bússola |
+| `v6-final.js` | tampas do teto recolhendo para dentro das paredes; câmera da cena final entre as paredes, a 12-24 m da árvore, com explorador e árvore no quadro e acima do texto (em pé e deitado) |
 | `v5-regressao.js` | roda os roteiros de `test/exploratorios/` que resolvem as tumbas e confere os resultados |
 
 `test/exploratorios/` guarda roteiros antigos que só imprimem o que acontece; servem para investigar.
