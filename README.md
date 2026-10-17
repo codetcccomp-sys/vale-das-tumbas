@@ -53,6 +53,7 @@ Os testes abrem `build/index.html#vt`; o `#vt` liga um gancho de teste (`window.
 | `v2-save.js` | saves válidos antigos, campos estragados recuperados, lixo recusado, save dentro de tumba, mensagens |
 | `v3-avisos.js` | avisos repetidos, limite, prioridade, tempo de leitura, causa de cada falha, porta bloqueada, bordas, sombra, objetivo |
 | `v4-celular.js` | HUD sem sobreposição em 6 tamanhos de tela (em pé e deitado, até 300 px), textos legíveis, três dedos ao mesmo tempo, instruções por entrada |
+| `v4-resolucao.js` | lado menor da imagem ≥ 720 px no modo normal (ou o que a tela tiver), ajuste automático que desce só até esse piso e volta a subir, modo leve em ~540 px |
 | `v4-orientacao.js` | percorre cada trilha andando até a porta; placas, marcos, mapa, feixes e bússola |
 | `v5-regressao.js` | roda os roteiros de `test/exploratorios/` que resolvem as tumbas e confere os resultados |
 

@@ -5,6 +5,8 @@ const {open,ROOT}=require('../lib');
   await ev(()=>{__vt.start(true);__vt.sim(5);__vt.G.relics.steam=true;__vt.G.relics.diesel=true;__vt.G.relics.atom=true;__vt.tp(0,-128.4);__vt.saveNow();});
   await page.reload();await page.waitForFunction(()=>window.__vt);
   await page.click('#btnContinue');await page.waitForFunction(()=>__vt.G.mode==='play');
+  /* o contador do HUD é redesenhado no quadro seguinte: espera por ele em vez de ler na hora */
+  await page.waitForFunction(()=>document.getElementById('relicCount').textContent!=='0/4',null,{timeout:8000}).catch(()=>{});
   P('HUD após continuar: '+await ev(()=>document.getElementById('relicCount').textContent)+' relíquias='+JSON.stringify(await ev(()=>__vt.G.relics)));
   await ev(()=>{__vt.G.cam;__vt.cam.yaw=0;__vt.cam.pitch=0.55;__vt.tp(0,-128.4);__vt.sim(20);__vt.renderOnce();});
   await page.screenshot({path:ROOT+'/test/shots/60-encaixes.png'});

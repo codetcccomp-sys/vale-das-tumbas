@@ -13,7 +13,9 @@ const HUD=['hearts','relics','goal','compass','lantern','btnDiary','btnMenu','pr
         if(where!=='vale'){__vt.enter(where);let n=0;while(__vt.G.mode!=='play'&&n<300){__vt.sim(1);n++;}}
         toastClear();toast('Você caiu no vão. Voltando à entrada: use um ponto de energia para salvar mais perto.','warn');toast('Diário atualizado: Tumba das Engrenagens');toast('Gerador ligado. Ponto de controle salvo e lanterna recarregada.','good');
         /* um aviso de interação visível */
-        const it=__vt.G.area.interact[0];__vt.tp(it.x,it.z+(where==='vale'?0:-0.5));__vt.sim(2);__vt.renderOnce();},[where,HUD]);
+        const it=__vt.G.area.interact[0];__vt.tp(it.x,it.z+(where==='vale'?0:-0.5));__vt.sim(2);__vt.renderOnce();
+        /* o mesmo toastTick do laço de quadros (libera espaço quando a pilha passa do limite), sem depender do ritmo dos quadros */
+        toastTick(performance.now());},[where,HUD]);
       await page.waitForTimeout(700);
       const r=await ev(([where,HUD])=>{
         const W=innerWidth,H=innerHeight,R={},small=[];

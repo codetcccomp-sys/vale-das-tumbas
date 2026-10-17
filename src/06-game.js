@@ -201,7 +201,7 @@ function updateGoal(){
 const explorer=buildExplorer();scene.add(explorer.group);
 scene.fog=new THREE.Fog(0xe9c48c,40,380);
 function setArea(a){
-  G.area=a;const tomb_=a!==valeArea;
+  G.area=a;const tomb_=a!==valeArea;perfHold(2.5);
   valeArea.group.visible=!tomb_;for(const k in TOMB_AREAS)TOMB_AREAS[k].group.visible=(TOMB_AREAS[k]===a);
   document.body.classList.toggle('intomb',tomb_);document.body.classList.toggle('incity',a.key==='final');document.body.classList.remove('cine');$('endTxt').hidden=true;$('spore').style.opacity='0';camera.far=tomb_?52:900;camera.updateProjectionMatrix();
   sky.visible=!tomb_;stars.visible=!tomb_;if(tomb_){sunSpr.visible=false;moonSpr.visible=false;}
@@ -430,7 +430,7 @@ $('btnNew').onclick=()=>{if(readSave())askConfirm('Começar de novo?','Isso apag
 $('pResume').onclick=resumeGame;
 $('pFull').onclick=toggleFull;$('btnFull').onclick=toggleFull;
 $('pCam').onclick=()=>{CFG.autoCam=!CFG.autoCam;writeCfg();$('pCam').textContent=CFG.autoCam?TXT.camAuto:TXT.camManual;};
-$('pGfx').onclick=()=>{CFG.gfx=CFG.gfx==='leve'?'normal':'leve';pixelRatio=pixelCap();resize();writeCfg();$('pGfx').textContent=CFG.gfx==='leve'?TXT.gfxLow:TXT.gfxNorm;};
+$('pGfx').onclick=()=>{CFG.gfx=CFG.gfx==='leve'?'normal':'leve';pixelRatio=pixelCap();perfHold(2);resize();writeCfg();$('pGfx').textContent=CFG.gfx==='leve'?TXT.gfxLow:TXT.gfxNorm;};
 $('pSound').onclick=()=>{auInit();auSetOn(!AU.on);writeCfg();$('pSound').textContent=AU.on?TXT.soundOn:TXT.soundOff;};
 $('pDiary').onclick=()=>{hideScreens();G.mode='play';openDiary();};
 $('pErase').onclick=()=>askConfirm('Apagar o progresso?','Isso apaga as relíquias, o diário e a posição salva.','Apagar',()=>{lsDel(SAVE_KEY);startGame(true);});
@@ -466,7 +466,18 @@ function menuNav(){
 
 /* ====================== laço principal ====================== */
 const tmpV=new THREE.Vector3(),tmpC=new THREE.Color();
-let saveTimer=0,perfN=0,perfT=0,lastNightFlag=false;
+let saveTimer=0,lastNightFlag=false;
+/* ajuste automático da resolução: a cada 2 s compara o tempo médio dos quadros; lento, desce 10% (nunca abaixo do piso
+   de 720p); folgado por 4 s seguidos, sobe 10% até o teto. Ignora os primeiros segundos depois de carregar, trocar de
+   área ou voltar ao jogo, e quadros de engasgo isolados (compilação de shader, troca de aba). */
+const PERF={t:0,n:0,good:0,hold:3};
+function perfHold(s){PERF.hold=Math.max(PERF.hold,s);PERF.t=PERF.n=0;PERF.good=0;}
+function adaptResolution(avg){
+  const r=pixelRange();
+  if(avg>1/40&&pixelRatio>r[0]+0.01){pixelRatio=Math.max(r[0],pixelRatio*0.9);PERF.good=0;resize();}
+  else if(avg<1/55&&pixelRatio<r[1]-0.01){if(++PERF.good>=2){pixelRatio=Math.min(r[1],pixelRatio*1.1);PERF.good=0;resize();}}
+  else PERF.good=0;
+}
 function handleGlobalInput(){
   if(take('pause')){if(G.mode==='play')pauseGame();else if(G.mode==='paused')resumeGame();else if(G.mode==='diary')closeDiary();}
   if(take('diary')){if(G.mode==='play')openDiary();else if(G.mode==='diary')closeDiary();}
@@ -545,12 +556,11 @@ function render(dt){
 let last=performance.now(),acc=0;
 function frame(now){
   requestAnimationFrame(frame);
-  let dt=(now-last)/1000;last=now;if(!(dt>0))dt=1/60;dt=Math.min(dt,0.1);
+  let dt=(now-last)/1000;last=now;if(!(dt>0))dt=1/60;const raw=dt;dt=Math.min(dt,0.1);
   pollPad();handleGlobalInput();toastTick(now);
   acc+=dt;let n=0;while(acc>=1/60&&n<6){update(1/60);acc-=1/60;n++;}if(n===6)acc=0;
   render(dt);
-  perfT+=dt;perfN++;
-  if(perfN>=90){const avg=perfT/perfN;perfN=0;perfT=0;if(avg>1/36&&pixelRatio>0.8){pixelRatio=Math.max(0.75,pixelRatio*0.85);resize();}}
+  if(PERF.hold>0)PERF.hold-=raw;else if(raw<0.25){PERF.t+=raw;PERF.n++;if(PERF.n>=120){const avg=PERF.t/PERF.n;PERF.t=PERF.n=0;adaptResolution(avg);}}
 }
 
 /* ====================== início ====================== */
@@ -565,7 +575,7 @@ function frame(now){
   resize();updateFinalSlots();refreshStart();focusFirst('scStart');
   document.addEventListener('visibilitychange',()=>{
     if(document.hidden){if(G.mode==='play')pauseGame();writeSave(false);if(AU.ctx)try{AU.ctx.suspend();}catch(e){}}
-    else if(AU.ctx&&AU.on)try{AU.ctx.resume();}catch(e){}
+    else{perfHold(2);if(AU.ctx&&AU.on)try{AU.ctx.resume();}catch(e){}}
   });
   addEventListener('pagehide',()=>writeSave(false));
   canvas.addEventListener('webglcontextlost',()=>toast('Os gráficos foram interrompidos pelo navegador. Tentando restaurar...','warn'));

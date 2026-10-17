@@ -4,7 +4,7 @@ const ROOT=path.resolve(__dirname,'..');
 async function open(opts){
   opts=opts||{};
   const browser=await chromium.launch({headless:true,args:['--use-angle=swiftshader','--use-gl=angle','--enable-unsafe-swiftshader','--ignore-gpu-blocklist','--enable-webgl']});
-  const ctx=await browser.newContext({viewport:opts.viewport||{width:412,height:860},deviceScaleFactor:1,hasTouch:opts.touch!==false,isMobile:opts.touch!==false});
+  const ctx=await browser.newContext({viewport:opts.viewport||{width:412,height:860},deviceScaleFactor:opts.dpr||1,hasTouch:opts.touch!==false,isMobile:opts.touch!==false});
   const page=await ctx.newPage();
   await page.addInitScript(()=>{document.addEventListener('DOMContentLoaded',()=>{const m=document.createElement('meta');m.name='viewport';m.content='width=device-width, initial-scale=1';document.head.appendChild(m);});});
   const logs=[];

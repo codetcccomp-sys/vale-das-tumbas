@@ -45,7 +45,14 @@ let renderer;
 try{renderer=new THREE.WebGLRenderer({canvas,antialias:!isTouchDevice,powerPreference:'high-performance'});}
 catch(err){document.body.innerHTML='<p style="padding:24px;font:18px sans-serif;color:#ecdcb4">Este navegador não conseguiu iniciar o gráfico 3D (WebGL).</p>';throw err;}
 const CFG={gfx:'normal',autoCam:true};
-const pixelCap=()=>CFG.gfx==='leve'?Math.min(0.8,window.devicePixelRatio||1):Math.min(window.devicePixelRatio||1,isTouchDevice?1.5:2);
+/* resolução: no modo normal o lado menor da imagem nunca fica abaixo de 720 pixels reais (só a tela do aparelho limita);
+   no modo leve fica fixa em 540. O ajuste automático (06-game.js) anda só dentro desta faixa. */
+function pixelRange(){
+  const dpr=window.devicePixelRatio||1,short=Math.max(1,Math.min(window.innerWidth||1,window.innerHeight||1));
+  if(CFG.gfx==='leve'){const r=Math.min(dpr,Math.max(1,540/short));return[r,r];}
+  const lo=Math.min(dpr,Math.max(1,720/short));return[lo,Math.min(dpr,Math.max(lo,2))];
+}
+const pixelCap=()=>pixelRange()[1];
 let pixelRatio=pixelCap();
 renderer.setPixelRatio(pixelRatio);
 let glLost=false;
@@ -53,7 +60,7 @@ canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();glLost=true;})
 canvas.addEventListener('webglcontextrestored',()=>{glLost=false;resize();});
 const scene=new THREE.Scene();
 const camera=new THREE.PerspectiveCamera(62,1,0.1,900);
-function resize(){const w=Math.max(1,app.clientWidth),h=Math.max(1,app.clientHeight);renderer.setPixelRatio(pixelRatio);renderer.setSize(w,h,false);camera.aspect=w/h;camera.fov=camera.aspect<1?74:62;camera.updateProjectionMatrix();}
+function resize(){const w=Math.max(1,app.clientWidth),h=Math.max(1,app.clientHeight),r=pixelRange();pixelRatio=clamp(pixelRatio,r[0],r[1]);renderer.setPixelRatio(pixelRatio);renderer.setSize(w,h,false);camera.aspect=w/h;camera.fov=camera.aspect<1?74:62;camera.updateProjectionMatrix();}
 window.addEventListener('resize',resize);
 const cam={yaw:0,pitch:0.34,want:5.6,cur:5.6};
 
