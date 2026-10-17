@@ -324,7 +324,7 @@ function resetTombWorld(){for(const k in TOMB_AREAS)TOMB_AREAS[k].reset();resetV
    guarda só qual era ela: ao continuar, o jogador volta à porta dela (os pontos de energia valem só por visita). */
 function snapshot(){
   const inT=G.area!==valeArea&&G.curTomb&&TOMBS[G.curTomb]?G.curTomb:undefined;
-  return{v:SAVE_VER,relics:G.relics,diary:G.diary,insc:G.insc,sec:G.sec,done:!!G.finished,time:G.time,pos:{x:G.valePos.x,z:G.valePos.z},yaw:inT?undefined:cam.yaw,tomb:inT};
+  return{v:SAVE_VER,relics:G.relics,diary:G.diary,insc:G.insc,sec:G.sec,done:!!G.finished,time:G.time,pos:{x:G.valePos.x,z:G.valePos.z},yaw:inT?undefined:wrapPi(cam.yaw),tomb:inT};
 }
 /* confere cada campo do save. Um campo estragado vira o valor neutro (e marca fixed) em vez de invalidar tudo;
    relíquias perdidas são deduzidas do diário, porque a anotação de cada uma só existe depois de pegá-la. */
@@ -347,7 +347,10 @@ function cleanSave(d){
   const insc=pick(d.insc,INSC.map(i=>i.id),1),sec=pick(d.sec,SEC_IDS,true);
   let pos;if(obj(d.pos)&&num(d.pos.x)&&num(d.pos.z))pos={x:d.pos.x,z:d.pos.z};else{bad();pos={x:valeArea.spawn.x,z:valeArea.spawn.z};}
   let time=0.12;if(num(d.time))time=((d.time%1)+1)%1;else bad();
-  const yaw=num(d.yaw)?wrapPi(d.yaw):null,tomb=typeof d.tomb==='string'&&TOMBS[d.tomb]&&TOMBS[d.tomb].entry?d.tomb:null;
+  /* direção da câmera (opcional): saves antigos guardavam o ângulo sem normalizar, então um valor válido é normalizado;
+     um valor estragado (não número, não finito ou tão grande que já não tem precisão) volta à direção padrão */
+  let yaw=null;if(d.yaw!==undefined){if(num(d.yaw)&&Math.abs(d.yaw)<=1e6)yaw=wrapPi(d.yaw);else bad();}
+  const tomb=typeof d.tomb==='string'&&TOMBS[d.tomb]&&TOMBS[d.tomb].entry?d.tomb:null;
   return{v:SAVE_VER,relics,diary,insc,sec,done,time,pos,yaw,tomb,fixed};
 }
 function writeSave(show){

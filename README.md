@@ -50,6 +50,7 @@ Os testes abrem `build/index.html#vt`; o `#vt` liga um gancho de teste (`window.
 |---|---|
 | `v1-camera.js` | caso da parede (x=8,62, z=-50); câmera fora de colisores e abaixo do teto nas 5 áreas; visibilidade do personagem; transparência gradual; olhar sobre o vão; recuperação da distância; câmera ao renascer |
 | `v2-checkpoint.js` | ativar, sair, voltar, reusar e cair em todas as tumbas; retorno seguro de todos os pontos de energia |
+| `v2-angulos.js` | `wrapPi()` em tempo constante: ângulos comuns, limites em ±π, voltas inteiras, simetria, valores extremos (±1e20, ±1e300), entradas não numéricas e infinitas; saves com direção estragada carregam rápido e preservam o progresso. Roda a função num `vm` do Node com limite de tempo e vigia o navegador, então um travamento reprova em vez de prender o teste |
 | `v2-save.js` | saves válidos antigos, campos estragados recuperados, lixo recusado, save dentro de tumba, mensagens |
 | `v3-avisos.js` | avisos repetidos, limite, prioridade, tempo de leitura, causa de cada falha, porta bloqueada, bordas, sombra, objetivo |
 | `v4-celular.js` | HUD sem sobreposição em 6 tamanhos de tela (em pé e deitado, até 300 px), textos legíveis, três dedos ao mesmo tempo, instruções por entrada |
