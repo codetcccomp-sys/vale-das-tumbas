@@ -32,6 +32,7 @@ html,body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none;backgrou
 .btn.main{background:#7a4a1c;box-shadow:inset 0 -3px 0 #4a2c10,inset 0 2px 0 #b07a3a;color:#fff6dc}
 .btn.verde{background:#2e5a2c;box-shadow:inset 0 -3px 0 #1a3a1a,inset 0 2px 0 #4a8a44}
 .btn.vermelho{background:#6a2a1c;box-shadow:inset 0 -3px 0 #3a140c,inset 0 2px 0 #9a4a34}
+.btn.azul{background:#22465a;box-shadow:inset 0 -3px 0 #102838,inset 0 2px 0 #3a6a84}.btn.ambar{background:#5a4418;box-shadow:inset 0 -3px 0 #34260a,inset 0 2px 0 #8a6a2a}
 
 /* ---------- HUD ---------- */
 #hud{position:absolute;inset:0;z-index:3;pointer-events:none}
@@ -131,7 +132,7 @@ body.painel.pAmplo #painel{height:76%}
 .etp{flex:none;font:700 12px var(--f);padding:6px 8px;min-height:34px;border:2px solid #0b0705;background:#2a1e14;color:var(--paper2);cursor:pointer}
 .etp.ok{color:var(--ok)}.etp.atual{background:#4a3420;color:#fff2cc;box-shadow:inset 0 0 0 2px var(--brass)}.etp:disabled{opacity:.45;cursor:default}
 .sit{flex:none;font:700 13px var(--f);padding:6px 10px;min-height:38px;border:2px solid #0b0705;background:#2a1e14;color:var(--paper);cursor:pointer}
-.sit.atual{box-shadow:inset 0 0 0 2px var(--ice);background:#20303a}.sit.ok::before{content:'✔ ';color:var(--ok)}.sit.erro::before{content:'✖ ';color:var(--alert)}
+.sit.atual{box-shadow:inset 0 0 0 2px var(--ice);background:#20303a}.sit.ok::before{content:'✔ ';color:var(--ok)}.sit.erro::before{content:'✖ ';color:var(--alert)}.sit.velho{border-style:dashed;border-color:#8a7a4a}
 #pVars{display:flex;gap:6px;overflow-x:auto;flex:none;scrollbar-width:none}#pVars::-webkit-scrollbar{display:none}
 .var{flex:none;display:flex;flex-direction:column;gap:1px;padding:4px 8px;border:2px solid #0b0705;background:#24303a;min-width:86px}
 .var .nm{font:700 13px var(--mono);color:#fff}.var .tp{font:700 10px var(--f);letter-spacing:.06em;color:var(--ice);text-transform:uppercase}
@@ -140,6 +141,7 @@ body.painel.pAmplo #painel{height:76%}
 #pMsg{flex:none;font:600 14px/1.35 var(--f);padding:6px 10px;background:#2a1e14;border-left:4px solid var(--brass);max-height:5.6em;overflow:auto;user-select:text;-webkit-user-select:text}
 #pMsg.erro{border-left-color:var(--alert);background:#2e1610;color:#ffe0d6}#pMsg.ok{border-left-color:var(--ok);background:#16261a;color:#e2ffe4}#pMsg.passo{border-left-color:var(--ice);background:#16222a}
 #pMsg.lume{border-left-color:var(--gold);background:#2e2610;color:#fff2c8}
+#pTarefa{flex:none;font:800 14px/1.3 var(--f);color:#ffe9a0;padding:5px 10px;background:#1e160c;border:2px solid #0b0705;box-shadow:inset 0 0 0 1px #6a4a1c}#pTarefa:empty{display:none}@media (max-height:760px){#painel.erroTexto #pTarefa{display:none}}#pTarefa .rot{font:800 11px var(--f);letter-spacing:.08em;color:var(--brass);margin-right:6px}#pTarefa.feita{color:#c8f0c8}
 /* enunciado longo: aberto quando cabe; senão recolhido, com esmaecido no corte e o botão para ler o resto */
 #pMsg.aberto{max-height:none}#pMsg.longo:not(.aberto){-webkit-mask-image:linear-gradient(#000 70%,transparent);mask-image:linear-gradient(#000 70%,transparent)}
 #pMsgMais{align-self:flex-end;min-height:34px;margin-top:-4px;padding:2px 12px;font-size:13px}
@@ -148,7 +150,7 @@ body.painel.pAmplo #painel{height:76%}
 /* previsão antes de executar: pensar no resultado, depois conferir */
 #pPrev{flex:none;padding:8px 10px;background:#1a2a36;border:2px solid #0b0705;box-shadow:inset 0 0 0 2px #4a8aaa}
 #pPrev .q{margin:0 0 6px;font:700 14px/1.35 var(--f);color:#e6f6ff}#pPrev .ops{display:flex;flex-wrap:wrap;gap:5px}#pPrev .btn{min-height:42px;font-size:14px;flex:1 1 auto}
-#pPrev .pular{flex:0 0 auto;opacity:.8}
+#pPrev .pular{flex:0 0 auto;opacity:.8}#pPrev .cod{margin:0 0 6px;padding:6px 8px;background:#0e0a08;border:1px solid #4a8aaa;color:#ffe9b0;font:13px/1.4 var(--mono);white-space:pre-wrap}
 /* área de erro: onde, o nome do erro e a explicação */
 #pErro{flex:none;padding:7px 10px;background:#3a140e;border:2px solid #0b0705;box-shadow:inset 0 0 0 2px #9a3a2a;color:#ffe6dc;max-height:9em;overflow:auto;user-select:text;-webkit-user-select:text}
 #pErro .onde{display:block;font:800 11px var(--f);letter-spacing:.1em;text-transform:uppercase;color:#ff9a7a}
@@ -184,11 +186,11 @@ body.painel.pAmplo #painel{height:76%}
 .pb{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:76px;min-height:52px;padding:4px 8px;font:800 12px/1.1 var(--f);color:#fff2cc;cursor:pointer;
   background:#4a3420;border:3px solid #0b0705;box-shadow:inset 0 -3px 0 #2a1a0e,inset 0 2px 0 #7a5a3a;text-align:center}
 .pb .sim{font-size:18px;line-height:1;color:var(--gold)}.pb.estr{background:#3a2a4a;box-shadow:inset 0 -3px 0 #24162e,inset 0 2px 0 #5a4a7a}
-.pb.sug{animation:sug 1.1s infinite}@keyframes sug{50%{box-shadow:inset 0 0 0 3px var(--gold)}}
+.pb.sug,#pDica.chama{animation:sug 1.1s infinite}@keyframes sug{50%{box-shadow:inset 0 0 0 3px var(--gold)}}
 .pb:disabled{opacity:.45}
 #pCtl{flex:none;display:flex;gap:5px;flex-wrap:wrap}
 #pRodape{flex:none;display:flex;flex-direction:column;gap:5px;position:sticky;bottom:calc(-1 * var(--sb));background:#1b130d;padding:4px 0 var(--sb);margin-bottom:calc(-1 * var(--sb));z-index:1;box-shadow:0 -5px 6px #1b130d}
-#pCtl .btn{flex:1 1 auto;min-width:60px;min-height:44px;padding:5px 7px;font-size:14px}
+#pCtl .btn{flex:1 1 auto;min-width:0;min-height:44px;padding:5px 5px;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#pCtl .btn.ex{font-weight:800;font-size:15px}@media (max-width:400px){#pCtl .btn{font-size:13px;padding:5px 3px}#pCtl .btn.ex{font-size:13px}}#pCtl .btn.ex:disabled{opacity:.45}#pCtl .quebra{flex-basis:100%;height:0}#pClear{flex:0 1 auto}
 #pVel{min-width:52px!important;flex:0 0 auto!important;order:1}#pDica,#pGuia,#pModo,#pClear{order:2}
 body.painel #hud,body.painel #toqueUi{display:none}
 /* teclado virtual aberto (celular): o painel fica inteiro na parte visível, acima do teclado */
@@ -209,7 +211,9 @@ body.teclado #painel{bottom:var(--kb,0px);top:auto;height:auto;max-height:calc(1
   #pCorpo{grid-column:2;grid-row:2;min-height:0;overflow-y:auto}#pCorpo>*{flex-shrink:0}#pProg,#pTxt{max-height:none}#pProg{min-height:5.5em}#pTxt{min-height:6em;flex:1}#pTexto{flex:1}
   #pRefC{max-height:30vh}
   #pRodape{grid-column:2;grid-row:3;position:static;margin:0;padding:0;box-shadow:none}
-  #pCtl{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}#pCtl .btn{min-height:40px;min-width:0;padding:3px 4px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+  #pCtl{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}#pCtl .quebra{display:none}#pCtl .btn.ex{font-size:13px}#pCtl .btn{min-height:40px;min-width:0;padding:3px 4px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+/* celular pequeno deitado: os botões do painel ficam só com a palavra (sem o ícone) para caber inteiros */
+@media (orientation:landscape) and (max-height:560px) and (max-width:720px){#pCtl .ic{display:none}#pCtl{gap:2px}#pCtl .btn,#pCtl .btn.ex{padding:3px 0;font-size:12.5px}#painel{grid-template-columns:minmax(0,0.75fr) minmax(0,1.3fr)}}
 @media (max-height:420px){#pCtl .btn{min-height:40px;padding:3px 6px}.pb{min-height:46px}}
 
 /* volumes da pausa: música e efeitos separados */
@@ -225,7 +229,8 @@ body.teclado #painel{bottom:var(--kb,0px);top:auto;height:auto;max-height:calc(1
 #logo{width:min(420px,100%);align-self:center}
 .ctl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font:600 13px var(--f);color:var(--paper2)}.ctl b{color:var(--paper);font-weight:800}
 #diario .caixa{width:min(720px,100%);height:min(720px,100%)}
-.abas{display:flex;gap:5px;flex-wrap:wrap}.aba{flex:1}.aba.on{background:#5a3e22;box-shadow:inset 0 0 0 2px var(--brass)}
+.abas{display:flex;gap:5px;flex-wrap:wrap}.aba{flex:1;white-space:nowrap}.aba.on{background:#5a3e22;box-shadow:inset 0 0 0 2px var(--brass)}
+.relBar{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 8px}.relBar .btn{flex:1 1 auto;min-height:44px}
 #dLista{flex:1;overflow:auto;display:flex;flex-direction:column;gap:10px;padding-right:4px;user-select:text;-webkit-user-select:text}
 .entry{padding:10px 12px;background:#e9d8ae;color:#2a1a0e;border:2px solid #0b0705;box-shadow:inset 0 0 0 2px #c8b080}
 .entry h3{margin:0 0 4px;font:800 16px var(--f);display:flex;gap:8px;align-items:center}
@@ -311,7 +316,7 @@ body.modal #toqueUi{display:none}
     <div id="pFixas" hidden></div>
     <div id="pSits"></div>
     <div id="pVars"></div>
-    <div id="pPrev" hidden><p class="q"></p><div class="ops"></div></div><div id="pMsg" role="status" aria-live="polite"></div><button class="btn" id="pMsgMais" type="button" hidden></button>
+    <div id="pTarefa" role="note"></div><div id="pPrev" hidden><p class="q"></p><pre class="cod" hidden></pre><div class="ops"></div></div><div id="pMsg" role="status" aria-live="polite"></div><button class="btn" id="pMsgMais" type="button" hidden></button>
     <div id="pErro" hidden role="alert"><b class="onde"></b><p class="tit"></p><p class="txt"></p><p class="dica"></p><button class="btn gbtn" type="button"></button></div>
     </div>
     <div id="pCorpo">
@@ -322,8 +327,8 @@ body.modal #toqueUi{display:none}
     </div>
     <div id="pRodape"><div id="pPaleta"></div>
     <div id="pCtl">
-      <button class="btn verde" id="pRun" title="Uma tentativa inteira: roda todas as instruções">▶ Executar</button><button class="btn" id="pStep" title="Roda uma instrução por toque; na última, mostra o resultado">⏭ Passo</button><button class="btn vermelho" id="pStop" title="Interrompe a tentativa">■ Parar</button>
-      <button class="btn" id="pReset" title="Nova tentativa: o mecanismo volta ao começo e o programa continua igual">↺ Reiniciar</button><button class="btn" id="pDica" title="Uma dica do Lume por vez: conceito, caminho, quase a solução">💡 Dica</button><button class="btn" id="pGuia" title="Abre o Guia no assunto desta etapa; o programa não se perde">📖 Guia</button><button class="btn" id="pModo" title="Escrever o programa como texto Python">✎ Escrever</button><button class="btn" id="pClear" title="Apaga as linhas do programa (pede confirmação)">Limpar</button><button class="btn" id="pVel" title="Velocidade">1×</button>
+      <button class="btn verde ex" id="pRun" title="Uma tentativa inteira: roda todas as instruções (Ctrl+Enter)"><span class="ic">▶</span> Executar</button><button class="btn azul ex" id="pStep" title="Roda uma instrução por toque; na última, mostra o resultado (Ctrl+Shift+Enter)"><span class="ic">⏭</span> Passo</button><button class="btn vermelho ex" id="pStop" title="Interrompe a tentativa (Ctrl+.)"><span class="ic">■</span> Parar</button><button class="btn ambar ex" id="pReset" title="Nova tentativa: o mecanismo volta ao começo e o programa continua igual (Alt+R)"><span class="ic">↺</span> Reiniciar</button><span class="quebra" aria-hidden="true"></span>
+      <button class="btn" id="pDica" title="Uma dica do Lume por vez: conceito, caminho, quase a solução"><span class="ic">💡</span> Dica</button><button class="btn" id="pGuia" title="Abre o Guia no assunto desta etapa; o programa não se perde"><span class="ic">📖</span> Guia</button><button class="btn" id="pModo" title="Escrever o programa como texto Python"><span class="ic">✎</span> Escrever</button><button class="btn" id="pClear" title="Apaga as linhas do programa (pede confirmação)">Limpar</button><button class="btn" id="pVel" title="Velocidade">1×</button>
     </div></div>
   </div>
 
@@ -348,7 +353,7 @@ body.modal #toqueUi{display:none}
   </div></section>
   <section class="tela" id="scPause" hidden><div class="caixa moldura">
     <h2>Pausa</h2><p class="sub" id="saveInfo"></p>
-    <button class="btn main" id="pResume">Continuar</button><button class="btn" id="pGuiaPausa">📖 Guia de Programação</button><button class="btn" id="pDiary">Diário</button>
+    <button class="btn main" id="pResume">Continuar</button><button class="btn" id="pGuiaPausa">📖 Guia de Programação</button><button class="btn" id="pDiary">Diário</button><button class="btn" id="pRelat">📊 Relatório de aprendizagem</button>
     <button class="btn" id="pSound"></button><button class="btn" id="pFull">Tela cheia</button>
     <div class="vols"><label for="pMus">Música</label><input type="range" id="pMus" min="0" max="100" step="5"><label for="pEfx">Efeitos</label><input type="range" id="pEfx" min="0" max="100" step="5"></div>
     <button class="btn" id="pHome">Voltar ao início</button><button class="btn vermelho" id="pErase">Apagar progresso</button>
@@ -359,7 +364,7 @@ body.modal #toqueUi{display:none}
   </div></section>
   <section class="tela" id="diario" hidden><div class="caixa moldura">
     <div style="display:flex;gap:8px;align-items:center"><h2 style="flex:1">Diário</h2><button class="btn" id="dFechar">✕ Fechar</button></div>
-    <div class="abas"><button class="btn aba" data-aba="notas">Notas</button><button class="btn aba" data-aba="saberes">Saberes</button><button class="btn aba" data-aba="exemplos">Exemplos</button><button class="btn aba" data-aba="pistas">Pistas</button><button class="btn aba" data-aba="mapa">Mapa</button></div>
+    <div class="abas"><button class="btn aba" data-aba="notas">Notas</button><button class="btn aba" data-aba="saberes">Saberes</button><button class="btn aba" data-aba="exemplos">Exemplos</button><button class="btn aba" data-aba="pistas">Pistas</button><button class="btn aba" data-aba="mapa">Mapa</button><button class="btn aba" data-aba="relatorio">📊 Relatório</button></div>
     <p class="sub" id="dInfo"></p>
     <div id="dLista"></div>
     <canvas id="mapCv" width="180" height="180" hidden></canvas>

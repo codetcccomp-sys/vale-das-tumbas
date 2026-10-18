@@ -68,6 +68,10 @@ que pensa."* Não ajude; se a pessoa travar mais de 5 minutos, anote e só entã
 | Aparelho usado (código do Formulário 1) | D__ |
 | Data · observador | |
 
+> Dica para o observador: no fim da sessão, abra **Diário › 📊 Relatório** e baixe o CSV. Ele traz, por etapa, tentativas,
+> tentativas com erro, dicas e a resposta da previsão registradas pelo próprio jogo (sem nome). Use-o para conferir as
+> anotações abaixo, não para substituí-las.
+
 ### Durante o jogo
 
 | Campo | Anotação |
@@ -100,6 +104,7 @@ que pensa."* Não ajude; se a pessoa travar mais de 5 minutos, anote e só entã
 | a2 · portão (aplicação) | | | | | — |
 | a3 · três caminhos | | | | | — |
 | a4 · corrija a ordem | | | | | |
+| a5 · painel de segurança (aplicação) | | | | | — |
 | b0 · quatro tochas | | | | | — |
 | b1 · regar 4 | | | | | — |
 | b2 · corrija | | | | | |

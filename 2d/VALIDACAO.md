@@ -117,6 +117,21 @@ em `l1-linguagem`.
 | C04 · Relatório exportável | **Pendente** (P3). |
 | Fase 1 · Conferir a compilação e rodar os testes | **Feito**: suíte inteira passando (seção 4). |
 
+### K — Pedido "Melhorias do jogo Vale das Tumbas 2D" (10 seções)
+Feito sobre a versão atual, sem refazer nada do zero: protagonista, sprites, história, as quatro eras, o save e a Vercel
+continuam. Testes novos: `l3-relatorio` e `b16-melhorias`; `l1`, `l2`, `b1`, `b7` e `b15` ganharam verificações.
+| Seção | O que foi feito | Situação |
+|---|---|---|
+| 1 · Previsões | **Bug corrigido:** as previsões guiadas falavam de um código fixo (ex.: "if energia >= 5 … else") mesmo quando o jogador tinha escrito outra solução correta; e as de corrigir comparavam a resposta com a situação que estivesse escolhida, não com a da pergunta (a4 pergunta sobre 95 graus). Agora a resposta certa é calculada **executando o programa do jogador** (a1, b3) ou uma variação dele, mostrada por escrito (d3); s1 é rotulada como pergunta de conceito; as de corrigir falam do "programa como está agora" e escolhem a situação da pergunta. O feedback mostra a resposta certa e o caminho da execução, linha por linha. No Passo a passo, tudo o que muda (variável, sensor, `i`) fica marcado "antes → depois". Situação que passou com outro programa vira ↻. | Feito e testado (l1, b15, b16) |
+| 2 · Equilíbrio das tumbas | O Reator terminava numa etapa de corrigir: ganhou a **aplicação final** a5 (dois sensores, limite numa variável, prioridade das regras, caso de fronteira em 80 graus). Agora as quatro tumbas terminam com uma etapa de aplicação (s2, d6, a5, b4). Alternativas plausíveis na paleta (a1, b3, a5 com cinco operadores). Saves antigos: quem já tinha terminado o Reator ganha a a5 (revisão 4 do save). | Feito (l1, l2, b1). **Não feito:** novas interações físicas (alavancas, válvulas) nas Engrenagens, Reator e Viva no modelo do pátio dos Motores — o plano anterior pede validar a tumba-piloto com iniciantes antes de replicar. |
+| 3 · Interface | Fileira própria e cores para Executar (verde), Passo (azul), Parar (vermelho) e Reiniciar (âmbar), sem rótulos cortados nos 10 tamanhos de tela testados (no celular pequeno deitado, só a palavra, sem o ícone); atalhos Ctrl+Enter, Ctrl+Shift+Enter, Ctrl+. e Alt+R; a tarefa some no celular pequeno quando o erro do modo Escrever precisa do espaço. | Feito (b4, b14, b16). Toque real: pendente. |
+| 4 · Textos | **🎯 TAREFA** em uma frase em cada uma das 26 etapas, separada do enunciado e das respostas; enunciados de d0, d1, a0, b3 e c1 mais curtos; Dica sugerida depois de três erros seguidos (sem dar a resposta). | Feito. Revisão com iniciantes: pendente. |
+| 5 · Orientação | Lembrete gentil quando o objetivo não muda por ~2,5 min (no máximo dois por objetivo, sem resolver); concluídas e pendentes no relatório. Bússola, ◆ e trilhas já existiam. | Feito (b16) |
+| 6 · Python | Painel separa "🎮 funções das máquinas (só no jogo)" de "🐍 estruturas do Python"; Guia ganhou "Do jogo para o Python de verdade" (o que é Python, o que é do jogo, print/def/input, exemplo com print). Interpretador **não** foi ampliado. | Feito (b16) |
+| 7 · Relatório | Aba **📊 Relatório** no Diário e botão na pausa: concluídas/pendentes, conceito, tentativas, erros, dicas, previsão e data; **TXT, CSV e Copiar**. Só dados novos (save revisão 4); nada inventado; sem nome. PDF: não (sem biblioteca externa; o TXT imprime). | Feito (l3, l2, b16) |
+| 8 · Preservação | Personagem, sprites, história e eras intactos; save antigo compatível; gancho fora da versão pública; sem bibliotecas novas; mesmo `vercel.json`. | Conferido (l2, b3, b6, b15) |
+| 9 · Testes | Os 12 itens pedidos têm teste automático (movimento e colisões: b6/b8; objetos: b5/b8; comandos certos e errados: l1/b1/b2; reinício: b2; previsões e alternativas: l1/b15/b16; quatro ambientes e história até a Cidade-Jardim: b1; save: l2/b3; resoluções: b4/b14; editor no celular: b9/b14; exportação: l3/b16; versão pública sem ferramentas: b15). | 847 verificações passando |
+
 ## 1. O documento, item por item
 
 ### P1 — Relação entre o jogo e o Python
@@ -224,4 +239,4 @@ Anote o aparelho, o navegador e o que falhou (com captura de tela).
 ## 4. Testes automáticos executados
 `2d/test/rodar.sh` (Node + Chromium sem janela): l1-linguagem, l2-save, b1-percurso, b2-painel, b3-save, b4-telas,
 b5-perigos, b6-personagem, b7-ajuda, b8-leitura, b9-validacoes e, nesta atualização, b10-recompensa, b11-terminal,
-b12-vale-som, b13-tela, b14-mvp e b15-plano: **799 verificações, todas passando**. O README lista o que cada um confere.
+b12-vale-som, b13-tela, b14-mvp, b15-plano e, nesta atualização, l3-relatorio e b16-melhorias: **847 verificações, todas passando**. O README lista o que cada um confere.

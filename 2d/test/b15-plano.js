@@ -30,10 +30,10 @@ const t=suite('b15-plano');
     await U.escrever('if energia >= 5:\n    abrir_comporta()\nelse:\n    ligar_carregador()');await U.sit(1);
     await ev(()=>document.getElementById('pRun').click());
     let r=await ev(()=>({vis:!document.getElementById('pPrev').hidden,q:document.querySelector('#pPrev .q').textContent,n:document.querySelectorAll('#pPrev .ops .btn').length}));
-    t.ok(r.vis&&/situação B/.test(r.q)&&r.n===4,'a1: Executar pede antes uma previsão (3 respostas + Pular)',r);
+    t.ok(r.vis&&/SEU programa/.test(r.q)&&/situação B/.test(r.q)&&r.n===5,'a1: Executar pede antes uma previsão sobre o programa do jogador (4 respostas + Pular)',r);
     await U.prever(0);
     r=await ev(()=>({msg:$('pMsg').textContent,cls:$('pMsg').className,run:!!PAINEL.run,vis:!document.getElementById('pPrev').hidden}));
-    t.ok(!r.vis&&!r.run&&/Não é bem isso/.test(r.msg)&&/3 >= 5 dá False/.test(r.msg)&&/Execute/.test(r.msg),'resposta errada: a explicação aparece na hora e nada executa até o próximo toque',r);
+    t.ok(!r.vis&&!r.run&&/Não é bem isso: a resposta é «ligar_carregador\(\)»/.test(r.msg)&&/3 >= 5 é False/.test(r.msg)&&/Executar/.test(r.msg),'resposta errada: a resposta certa e o caminho do programa aparecem na hora, e nada executa até o próximo toque',r);
     const e=await U.executar();
     t.ok(e.ok&&!(await ev(()=>!document.getElementById('pPrev').hidden)),'Executar de novo roda o programa (situação B certa) e não pergunta outra vez',e.msg);
     /* acertar: mensagem de acerto */
@@ -43,7 +43,7 @@ const t=suite('b15-plano');
     t.ok(/Você acertou/.test(r.msg)&&/\bok\b/.test(r.cls),'resposta certa: "Você acertou!" com a explicação',r);
     /* Pular: executa direto */
     await ev(()=>{PAINEL.previsao={};escolherDesafio(__vt.DESAFIO.a1);});await U.escrever('if energia >= 5:\n    abrir_comporta()\nelse:\n    ligar_carregador()');
-    await ev(()=>document.getElementById('pRun').click());await U.prever(3);await page.waitForTimeout(30);
+    await ev(()=>document.getElementById('pRun').click());await U.prever(4);await page.waitForTimeout(30);
     r=await ev(()=>({run:!!PAINEL.run}));await U.esperarFim();
     t.ok(r.run,'Pular: a execução começa no mesmo toque',r);
     /* if sem else: a paleta oferece, mas não resolve a situação B */

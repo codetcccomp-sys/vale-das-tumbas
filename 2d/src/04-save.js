@@ -12,7 +12,7 @@
    - solucoes guarda o último programa que resolveu cada etapa (o diário mostra o programa do jogador).
    - pistas guarda as placas com ! já lidas; fixadas, as pistas que o jogador fixou no alto do painel (no máximo 3);
      marcas, as marcas de luz encontradas com a lanterna. */
-const SAVE2D_KEY='vale_das_tumbas_2d',CFG2D_KEY='vale_das_tumbas_2d_cfg',SAVE3D_KEY='vale_das_tumbas_save',SAVE2D_VER=1,SAVE2D_REV=3;
+const SAVE2D_KEY='vale_das_tumbas_2d',CFG2D_KEY='vale_das_tumbas_2d_cfg',SAVE3D_KEY='vale_das_tumbas_save',SAVE2D_VER=1,SAVE2D_REV=4;
 for(const k in SABERES)ENTRIES[SABER_ENTRY[k]]={t:'Saber: '+SABERES[k].nome,s:SABERES[k].resumo,cod:SABERES[k].exemplo};
 for(const k in PISTAS)ENTRIES['pista_'+k]={t:'Pista: '+PISTAS[k].nome,s:PISTAS[k].texto};
 for(const k in MARCAS)ENTRIES['marca_'+k]={t:'Marca de luz: '+MARCAS[k].t,s:MARCAS[k].s};
@@ -24,7 +24,17 @@ const SAVE2D=(function(){
   const INSC_IDS=INSC.map(i=>i.id);
   /* save novo, vazio */
   function novo(){return{v:SAVE2D_VER,rev:SAVE2D_REV,relics:{steam:false,diesel:false,atom:false,bio:false},learn:{},progs:{},diary:[],insc:{},sec:{},abertas:[],done:false,time:0.12,pos:null,tomb:null,migr:null,
-    treino:{feito:false,passo:0,manivela:false},dicas:{},poi:{},guia:false,solucoes:{},pistas:{},fixadas:[],marcas:{}};}
+    treino:{feito:false,passo:0,manivela:false},dicas:{},poi:{},guia:false,solucoes:{},pistas:{},fixadas:[],marcas:{},reg:{},regDesde:null};}
+  /* registro de aprendizagem (revisão 4): por etapa, tentativas (t), tentativas com erro (e), resposta da previsão
+     (p: c certa, e errada, p pulou) e o dia da conclusão (d). Só existe o que foi jogado desde esta versão. */
+  const DIA=/^\d{4}-\d\d-\d\d$/;
+  function limparReg(src,bad){const o={};if(src===undefined)return o;if(!obj(src)){bad();return o;}
+    for(const k in src){const r=src[k];if(!DESAFIO[k]||!obj(r)){bad();continue;}const x={};
+      for(const f of['t','e']){if(r[f]===undefined)continue;if(Number.isInteger(r[f])&&r[f]>=0&&r[f]<=99999)x[f]=r[f];else bad();}
+      if(r.p!==undefined){if(['c','e','p'].indexOf(r.p)>=0)x.p=r.p;else bad();}
+      if(r.d!==undefined){if(typeof r.d==='string'&&DIA.test(r.d))x.d=r.d;else bad();}
+      o[k]=x;}
+    return o;}
   /* confere um save 2D. Devolve null quando não há nada aproveitável. */
   function limpar(d){
     if(!obj(d)||d.v!==SAVE2D_VER)return null;
@@ -64,6 +74,9 @@ const SAVE2D=(function(){
       if(desafiosDa('diesel').every(c=>c.id===ETAPAS_REV3.diesel||s.learn[c.id]))s.learn[ETAPAS_REV3.diesel]=true;
       if(desafiosDa('bio').some(c=>s.learn[c.id]))s.learn[ETAPAS_REV3.bio]=true;
     }
+    s.reg=limparReg(d.reg,bad);
+    if(d.regDesde!==undefined&&d.regDesde!==null){if(typeof d.regDesde==='string'&&DIA.test(d.regDesde))s.regDesde=d.regDesde;else bad();}
+    if(rev<4&&desafiosDa('atom').every(c=>c.id===ETAPAS_REV4.atom||s.learn[c.id]))s.learn[ETAPAS_REV4.atom]=true;
     s.fixed=fixed;
     return s;
   }
@@ -111,7 +124,7 @@ const SAVE2D=(function(){
     return{v:SAVE2D_VER,rev:SAVE2D_REV,relics:Object.assign({},st.relics),learn:Object.assign({},st.learn),progs:st.progs,diary:st.diary.slice(),insc:st.insc,sec:st.sec,
       abertas:st.abertas.slice(),done:!!st.done,time:st.time,pos:st.pos?{x:st.pos.x,y:st.pos.y}:null,tomb:st.tomb||null,migr:st.migr||null,
       treino:{feito:!!tr.feito,passo:tr.passo|0,manivela:!!tr.manivela},dicas:Object.assign({},st.dicas||{}),poi:Object.assign({},st.poi||{}),guia:!!st.guia,solucoes:st.solucoes||{},
-      pistas:Object.assign({},st.pistas||{}),fixadas:(st.fixadas||[]).slice(),marcas:Object.assign({},st.marcas||{})};
+      pistas:Object.assign({},st.pistas||{}),fixadas:(st.fixadas||[]).slice(),marcas:Object.assign({},st.marcas||{}),reg:st.reg||{},regDesde:st.regDesde||null};
   }
   return{novo,limpar,ler3d,migrar,posSegura,montar};
 })();

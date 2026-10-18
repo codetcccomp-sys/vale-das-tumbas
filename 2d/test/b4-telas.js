@@ -40,7 +40,7 @@ const inter=(a,b)=>a&&b&&a.w>0&&b.w>0&&a.x<b.x+b.w-1&&b.x<a.x+a.w-1&&a.y<b.y+b.h
       const rolam=b=>!!b.closest('#pEtapas,#pSits,#pPaleta,#pVars');   // fileiras que rolam de lado: basta a parte visível
       const fora=vis.filter(b=>{const r=b.getBoundingClientRect();return!rolam(b)&&(r.right>innerWidth+1||r.left<-1);}).map(b=>b.textContent);
       const at=document.querySelector('#pEtapas .atual').getBoundingClientRect();if(at.right>innerWidth+1||at.left<-1)fora.push('etapa atual fora da vista');
-      const ctl=[...document.querySelectorAll('#pCtl .btn')].filter(b=>b.offsetParent!==null).map(b=>{const r=b.getBoundingClientRect();return{t:b.textContent,h:r.height,w:r.width};});
+      const ctl=[...document.querySelectorAll('#pCtl .btn')].filter(b=>b.offsetParent!==null).map(b=>{const r=b.getBoundingClientRect();return{t:b.textContent,h:r.height,w:r.width,cortado:b.scrollWidth>b.clientWidth+1};});
       const pal=[...document.querySelectorAll('#pPaleta .pb')].map(b=>b.getBoundingClientRect().height);
       const prog=document.getElementById('pProg').getBoundingClientRect();
       const fontes=[...document.querySelectorAll('#painel .ln, #painel .btn, #painel .pb, #pMsg, .ch')].filter(e=>e.offsetParent!==null).map(e=>parseFloat(getComputedStyle(e).fontSize));
@@ -54,6 +54,7 @@ const inter=(a,b)=>a&&b&&a.w>0&&b.w>0&&a.x<b.x+b.w-1&&b.x<a.x+a.w-1&&a.y<b.y+b.h
     t.ok(mundo>=0.2&&dentro,nome+': editor amplo: o mecanismo fica à vista na faixa da sala ('+Math.round(mundo*100)+'% da tela)',{pn:p.pn,fv});
     t.ok(!p.fora.length,nome+': nenhum botão do painel sai da tela',p.fora);
     t.ok(p.ctl.every(b=>b.h>=40),nome+': controles do painel com pelo menos 40 px de altura',p.ctl.map(b=>Math.round(b.h)));
+    t.ok(p.ctl.every(b=>!b.cortado),nome+': nenhum rótulo dos controles do painel cortado (Executar, Passo, Parar, Reiniciar…)',p.ctl.filter(b=>b.cortado).map(b=>b.t));
     t.ok(p.pal.every(x=>x>=46),nome+': placas da paleta com pelo menos 46 px',p.pal.map(Math.round));
     t.ok(p.prog.h>=80,nome+': lista do programa com espaço ('+Math.round(p.prog.h)+' px)',p.prog);
     t.ok(p.fmin>=11,nome+': textos do painel com pelo menos 11 px',p.fmin);

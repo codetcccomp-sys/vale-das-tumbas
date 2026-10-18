@@ -146,6 +146,23 @@ function mostrarAba(a){
     $('dInfo').textContent='Os exemplos das etapas que você já concluiu. Eles também ficam no Guia, em Ajuda › Seus exemplos.';
     const ex=exemplosVistos();if(!ex.length)card('Nenhum exemplo ainda','Os exemplos aparecem depois das demonstrações e de cada etapa concluída.');
     for(const e of ex)card(e.titulo,e.de,e.codigo,'saber');
+  }else if(a==='relatorio'){
+    /* relatório de aprendizagem: o que foi feito, com os números registrados neste aparelho; exportar é opcional */
+    const st={learn:G.learn,reg:G.reg,dicas:G.dicas,regDesde:G.regDesde},D=relatorioDados(st);
+    $('dInfo').textContent='Etapas concluídas: '+D.feitas+' de '+D.total+' · tentativas: '+D.tentativas+' (com erro: '+D.erros+') · dicas: '+D.dicas+' · previsões certas: '+D.previsoes.acertou+'. '+
+      (D.desde?'Registros desde '+D.desde+'.':'Os números começam a ser registrados a partir da próxima tentativa.')+' Fica só neste aparelho; o arquivo exportado não tem nome nem dados pessoais.';
+    const bar=document.createElement('div');bar.className='relBar';
+    const baixar=(nome,tipo,txt)=>{try{const u=URL.createObjectURL(new Blob([txt],{type:tipo}));const l=document.createElement('a');l.href=u;l.download=nome;document.body.appendChild(l);l.click();setTimeout(()=>{URL.revokeObjectURL(u);l.remove();},500);toast('Relatório salvo: '+nome);}catch(e){toast('Não foi possível salvar o arquivo neste navegador. Use Copiar.','warn');}};
+    const bt=(t,f)=>{const b=document.createElement('button');b.className='btn';b.textContent=t;b.onclick=f;bar.appendChild(b);};
+    const dia=hojeISO();
+    bt('⬇ Baixar TXT',()=>baixar('vale-das-tumbas-relatorio-'+dia+'.txt','text/plain;charset=utf-8',relatorioTXT(st,dia)));
+    bt('⬇ Baixar CSV',()=>baixar('vale-das-tumbas-relatorio-'+dia+'.csv','text/csv;charset=utf-8','\ufeff'+relatorioCSV(st)));
+    bt('📋 Copiar',()=>{const t=relatorioTXT(st,dia);(navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('Relatório copiado.'),()=>toast('Não foi possível copiar neste navegador.','warn'));});
+    L.appendChild(bar);
+    for(const l of D.lugares){
+      const linhas=l.etapas.map(e=>(e.feita?'✔ ':'○ ')+e.titulo+(e.demo?'':' — tentativas: '+relNum(e.tentativas)+(e.erros?' (com erro: '+e.erros+')':'')+' · dicas: '+e.dicas)+(e.previsao&&e.previsao!=='—'?' · previsão: '+e.previsao:'')).join('\n');
+      card(l.nome+' · '+l.conceito+' ('+l.feitas+'/'+l.total+')',l.completo?(l.resumo||'Concluído.'):'Pendentes: '+l.etapas.filter(e=>!e.feita).map(e=>e.titulo).join('; ')+'.',linhas,l.completo?'saber':'');
+    }
   }else{
     $('dInfo').textContent=(secFragCount()>=4?'O mapa completo do vale.':'Reúna os fragmentos de mapa escondidos pelo vale: cada um revela um quarto ('+secFragCount()+'/4).')+' As trilhas coloridas saem da estrada e levam a cada tumba.';
     desenharMapaVale(mapa);
@@ -274,7 +291,7 @@ function salvar(mostrar){
   if(G.mode==='menu')return false;
   const naTumba=G.area&&G.area.id!=='vale';
   const st={relics:G.relics,learn:G.learn,progs:G.progs,diary:G.diary,insc:G.insc,sec:G.sec,abertas:G.abertas,done:G.done,time:G.time,migr:G.migr,
-    pos:naTumba?null:{x:G.p.x/16,y:G.p.y/16},tomb:naTumba?G.curTomb:null,treino:G.treino,dicas:G.dicas,poi:G.poi,guia:G.guia,solucoes:G.solucoes,pistas:G.pistas,fixadas:G.fixadas,marcas:G.marcas};
+    pos:naTumba?null:{x:G.p.x/16,y:G.p.y/16},tomb:naTumba?G.curTomb:null,treino:G.treino,dicas:G.dicas,poi:G.poi,guia:G.guia,solucoes:G.solucoes,pistas:G.pistas,fixadas:G.fixadas,marcas:G.marcas,reg:G.reg,regDesde:G.regDesde};
   const ok=lsSet(SAVE2D_KEY,JSON.stringify(SAVE2D.montar(st)));
   if(!ok&&!saveAvisou){saveAvisou=true;toast(TXT.saveFail,'warn');}else if(ok&&mostrar)toast(TXT.saved);
   G.salvoEm=G.t;return ok;
@@ -284,11 +301,12 @@ function aplicarSave(s){
   G.done=s.done;G.time=s.time;G.migr=s.migr;
   G.treino=Object.assign({},s.treino);G.dicas=Object.assign({},s.dicas);G.poi=Object.assign({},s.poi);G.guia=!!s.guia;G.lumeFalou=G.treino.passo>1;G.solucoes=s.solucoes||{};
   G.pistas=Object.assign({},s.pistas||{});G.fixadas=(s.fixadas||[]).slice();G.marcas=Object.assign({},s.marcas||{});
+  G.reg=JSON.parse(JSON.stringify(s.reg||{}));G.regDesde=s.regDesde||null;
 }
 function resetEstado(){
   G.hearts=3;G.invuln=0;G.danoT=0;G.lantern=100;G.lanternOn=false;G.relics={steam:false,diesel:false,atom:false,bio:false};G.learn={};G.progs={};G.diary=[];G.diaryNew=0;
   G.insc={};G.sec={};G.abertas=[];G.done=false;G.time=0.12;G.migr=null;G.checkpoint=null;G.curTomb=null;G.nightSeen=false;$('btnDiary').classList.remove('new');
-  G.treino={feito:false,passo:0,manivela:false};G.dicas={};G.poi={};G.guia=false;G.lumeFalou=false;G.solucoes={};G.pistas={};G.fixadas=[];G.marcas={};
+  G.treino={feito:false,passo:0,manivela:false};G.dicas={};G.poi={};G.guia=false;G.lumeFalou=false;G.solucoes={};G.pistas={};G.fixadas=[];G.marcas={};G.reg={};G.regDesde=null;
 }
 /* começa: novo jogo, continuar o save 2D ou migrar o save do 3D (sem mexer nele) */
 function iniciarJogo(modo){
@@ -358,6 +376,7 @@ function ligarBotoes(){
   $('pMus').oninput=e=>{auInit();auVolumes(e.target.value/100,null);cfgGravar({mus:AU.volMus});};
   $('pEfx').oninput=e=>{auInit();auVolumes(null,e.target.value/100);cfgGravar({efx:AU.volEfx});SFX.click();};
   $('pDiary').onclick=()=>{esconderTelas();G.mode='play';abrirDiario();};
+  $('pRelat').onclick=()=>{esconderTelas();G.mode='play';abrirDiario('relatorio');};
   $('pErase').onclick=()=>confirmar('Apagar o progresso?','Isso apaga o progresso da versão 2D: relíquias, saberes, programas, diário e segredos. O save do jogo 3D não é tocado.','Apagar',()=>{lsDel(SAVE2D_KEY);iniciarJogo('novo');});
   $('pHome').onclick=irMenu;
   $('cfYes').onclick=()=>{const a=acaoConfirma;acaoConfirma=null;esconderTelas();if(a)a();};
@@ -382,11 +401,25 @@ function quadro(now){
   const dt=Math.min(0.05,Math.max(0,(now-ultimo)/1000)||0.016);ultimo=now;
   try{passoJogo(dt,now);desenharJogo();}catch(e){console.error(e);}
 }
+/* sem progresso: se o objetivo fica igual por muito tempo andando pelo jogo, um lembrete gentil diz onde olhar
+   (o objetivo, a bússola, o ◆ do terminal, o Lume) sem resolver nada. No máximo dois por objetivo. */
+const SEMPROG={gk:'',t:0,n:0,primeiro:150,depois:240};
+function ajudaSemProgresso(dt){
+  const go=objetivo();if(!go)return;const gk=go.t+'|'+go.s+'|'+(G.area&&G.area.id);
+  if(gk!==SEMPROG.gk){SEMPROG.gk=gk;SEMPROG.t=0;SEMPROG.n=0;return;}
+  SEMPROG.t+=dt;if(SEMPROG.n>=2||SEMPROG.t<(SEMPROG.n?SEMPROG.depois:SEMPROG.primeiro))return;
+  SEMPROG.t=0;SEMPROG.n++;
+  const naTumba=G.area&&G.area.id!=='vale';
+  toast(SEMPROG.n===1?'Sem rumo? O objetivo, no alto, diz o próximo passo: '+go.s+(go.alvo?' A seta no título aponta para lá.':'')
+    :naTumba?'Os desafios desta tumba ficam no terminal: chegue perto do marcador ◆ e use AÇÃO. As placas com ! guardam pistas, e o 📖 Guia explica cada comando.'
+    :'Siga a trilha colorida que sai da estrada até a tumba da vez. No acampamento, o Lume ajuda; no 📖 Guia, "Objetivo, bússola e atalhos" explica a navegação.');
+}
 function passoJogo(dt,now){
   lerControle();
   G.t+=dt;R.treme=Math.max(0,R.treme-dt*2);
   const A=G.area;
   if(G.mode==='play'){
+    ajudaSemProgresso(dt);
     if(take('pausa')){pausar();return;}
     if(take('diario')){abrirDiario();return;}
     if(take('mapa')){abrirDiario('mapa');return;}

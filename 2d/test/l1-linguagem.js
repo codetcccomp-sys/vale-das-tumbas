@@ -184,6 +184,7 @@ const SOL={
   a2:[set('limite',lit(L('int',4))),se(vr('nivel'),'<',vr('limite'),[cmd('portao')],[cmd('drenar')])],
   a3:[se(vr('temperatura'),'>=',lit(L('int',80)),[cmd('resfriar')],[cmd('manter')],[[vr('temperatura'),'>=',lit(L('int',50)),[cmd('ventilar')]]])],
   a4:[se(vr('temperatura'),'>=',lit(L('int',80)),[cmd('resfriar')],[cmd('manter')],[[vr('temperatura'),'>=',lit(L('int',50)),[cmd('ventilar')]]])],
+  a5:[set('limite',lit(L('int',80))),se(vr('temperatura'),'>',vr('limite'),[cmd('resfriar')],[cmd('manter')],[[vr('energia'),'<',lit(L('int',5)),[cmd('carregar')]]])],
   b0:[rep(4,[cmd('tocha')])],
   b1:[rep(4,[cmd('irrigar'),cmd('avancar')])],
   b2:[rep(3,[cmd('irrigar'),cmd('avancar'),cmd('avancar')])],
@@ -292,9 +293,20 @@ let okObj=true;for(const d of DESAFIOS){for(const o of(d.objetos||[]))if(!OBJ[o]
 t.ok(okObj,'objetos, situações e funções dos desafios bem definidos');
 t.ok(Object.keys(LANG.CMD).every(k=>/^[a-z_]+$/.test(LANG.CMD[k].py)),'nomes de função em estilo Python (minúsculas e _)');
 /* plano de melhorias A04: menos resolução por imitação */
-{const sem=['seq','dados','decisoes','automacao'].filter(sb=>!DESAFIOS.some(d=>d.saber===sb&&d.etapa==='guiada'&&d.previsao&&d.previsao.explica&&
-    d.previsao.opcoes.filter(o=>o.ok).length===1&&d.previsao.opcoes.filter(o=>!o.ok).length>=2));
-  t.ok(!sem.length,'cada conceito tem uma previsão numa prática guiada (s1, d3, a1, b3), com uma resposta certa e duas alternativas plausíveis',sem);}
+{const sem=['seq','dados','decisoes','automacao'].filter(sb=>!DESAFIOS.some(d=>d.saber===sb&&d.etapa==='guiada'&&d.previsao&&d.previsao.tipo));
+  t.ok(!sem.length,'cada conceito tem uma previsão numa prática guiada (s1, d3, a1, b3)',sem);
+  /* a resposta certa sai do programa do jogador: duas soluções diferentes e corretas nunca viram "erro" */
+  const P=X.perguntaPrevisao,c5=lit(L('int',5)),c3=lit(L('int',3)),certa=q=>q&&q.opcoes.filter(o=>o.ok).map(o=>o.t);
+  const a=P(DESAFIO.a1,ids([se(vr('energia'),'>=',c5,[cmd('abrir')],[cmd('carregar')])])),b=P(DESAFIO.a1,ids([se(vr('energia'),'<',c5,[cmd('carregar')],[cmd('abrir')])])),
+    c=P(DESAFIO.a1,ids([se(vr('energia'),'>=',c5,[cmd('abrir')])])),z=P(DESAFIO.a1,[]);
+  t.ok(certa(a)[0]==='ligar_carregador()'&&certa(b)[0]==='ligar_carregador()'&&certa(c)[0]==='Nenhuma das duas.'&&z===null&&a.sit===1&&/linha 1: if: energia >= 5 → 3 >= 5 é False/.test(a.explica)&&!/\.\./.test(a.explica),
+    'a1: a previsão roda o programa do jogador (>= e < invertido dão a mesma resposta; o if sem else, "nenhuma"), explica o caminho e escolhe a situação B; sem programa, espera',[certa(a),certa(b),certa(c),a&&a.explica]);
+  const w=P(DESAFIO.b3,ids([enq(vr('umidade'),'<',c3,[cmd('irrigar')])])),r1=P(DESAFIO.b3,ids([rep(1,[cmd('irrigar')])]));
+  t.ok(certa(w)[0]==='Nenhuma vez.'&&certa(r1)[0]==='Uma vez.'&&/nenhuma vez/.test(w.explica)&&/encharcou/.test(r1.explica),'b3: quantas regas na situação A sai do programa do jogador (while: nenhuma; for de 1 volta: uma)',[certa(w),certa(r1)]);
+  const v=P(DESAFIO.d3,ids([set('quantidade',lit(L('int',5))),cmd('separar')])),vn=P(DESAFIO.d3,ids([cmd('separar')]));
+  t.ok(v&&/^separar_lote\(\)\nquantidade = 5$/.test(v.codigo)&&certa(v)[0]==='Pararia: a variável ainda estaria vazia.'&&vn===null,'d3: a variação é o programa do jogador com a ordem trocada, mostrada e executada de verdade',v&&v.codigo);
+  const s1=P(DESAFIO.s1,[]),cr=P(DESAFIO.a4,[]);
+  t.ok(s1&&/Conceito/.test(s1.rotulo)&&cr&&cr.conferir&&cr.sit===0&&/como está agora/.test(cr.pergunta),'s1 é pergunta de conceito (vale para qualquer programa); as de corrigir falam do programa "como está agora", numa situação definida',[s1&&s1.rotulo,cr&&cr.pergunta]);}
 {const passa=(id,p)=>rodarTodas(DESAFIO[id],ids(p)).every(x=>x.ok),c5=lit(L('int',5)),c3=lit(L('int',3));
   const a1=DESAFIO.a1,b3=DESAFIO.b3;
   t.ok(a1.blocos.indexOf('se')>=0&&a1.ops.length>=3&&!passa('a1',[se(vr('energia'),'>=',c5,[cmd('abrir')])])&&!passa('a1',[se(vr('energia'),'==',c5,[cmd('abrir')],[cmd('carregar')])])&&

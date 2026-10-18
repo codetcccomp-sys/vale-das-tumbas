@@ -41,6 +41,14 @@ portão do pátio leva ao vale. Logo na entrada, a primeira **placa com !** ensi
 ao pátio a qualquer momento (numa visita depois do treino, o portão já está aberto).
 
 ## Ajuda ao jogador
+- **Relatório de aprendizagem** — na aba **📊 Relatório** do Diário (ou no menu de pausa): etapas concluídas e pendentes por
+  lugar, o conceito de cada um, tentativas (cada execução que chegou ao fim), tentativas com erro, dicas pedidas, a resposta da
+  previsão e o dia da conclusão. **⬇ Baixar TXT**, **⬇ Baixar CSV** (para planilha) ou **📋 Copiar**. Nada é inventado: as
+  etapas concluídas antes desta versão aparecem como "sem registro". Fica só no aparelho, e o arquivo não tem nome nem dado
+  pessoal.
+- **Sem rumo?** Quando o objetivo fica igual por uns 2 minutos e meio, um lembrete aponta o objetivo e a bússola; se
+  continuar, outro lembra do terminal ◆ (nas tumbas) ou da trilha colorida e do Lume (no vale). No máximo dois por objetivo,
+  e nenhum resolve o desafio.
 - **Lume** — um pequeno autômato-lanterna que fica no pátio, no acampamento e dentro de cada tumba. Explica os controles, como
   interagir, como funciona a programação e como ler um desafio. Não entrega a solução: dá **dicas progressivas** da etapa da
   vez — a 1ª fala do conceito, a 2ª do caminho e a 3ª chega perto da solução. Dá para conversar de novo quantas vezes quiser;
@@ -50,7 +58,7 @@ ao pátio a qualquer momento (numa visita depois do treino, o portão já está 
   painel, da área de erro, da linha selecionada no editor e pelo Lume) e volta para onde estava, sem perder o programa. O
   índice é compacto e agrupado — **Sequência** (comandos, sequência), **Dados** (variáveis, os quatro tipos, regras das
   máquinas, int, float, str, bool), **Decisões** (comparações, if, else, elif), **Repetições** (for, while) e **Ajuda**
-  (recuo, tipos de erro, o que o editor aceita, palavras do jogo, seus exemplos) — e o grupo da tumba atual vem marcado
+  (recuo, tipos de erro, o que o editor aceita, **do jogo para o Python de verdade**, palavras do jogo, seus exemplos) — e o grupo da tumba atual vem marcado
   com ★ e aberto; tocar num grupo abre o primeiro assunto dele, e no celular os assuntos ficam numa fileira que rola para o
   lado, para o texto ficar com a maior parte da altura. Em **Ajuda** também ficam as mecânicas do jogo (saberes e relíquias,
   objetivo, bússola e atalhos, diário e pistas, lanterna e marcas de luz). Cada
@@ -102,24 +110,35 @@ ao pátio a qualquer momento (numa visita depois do treino, o portão já está 
 Primeiro comando → sequência e lógica de execução → variáveis e tipos → if, elif e else → for e while → tudo junto. Cada tumba
 só abre depois do saber da anterior, e o objetivo no alto da tela sempre mostra a próxima etapa. Em todas as etapas o ciclo é
 o mesmo: **programar → executar → observar → corrigir**. Não há múltipla escolha: o jogador escreve (ou monta por toques),
-completa, reorganiza ou corrige código, e o código mexe no cenário. São 25 etapas. Cada tumba tem os três momentos —
+completa, reorganiza ou corrige código, e o código mexe no cenário. São 26 etapas. Cada tumba tem os três momentos —
 **demonstração**, **prática com ajuda** e um **desafio independente** (aplicação, sem guia, numa situação nova) — e o jogo
 confere o resultado no mecanismo, não uma resposta única: soluções alternativas que cumprem as regras são aceitas.
 
-Para não dar para resolver só imitando, cada conceito tem uma **prática guiada com previsão** (🔮): antes de executar, o
-jogador responde o que acontece numa situação ou numa variação do programa (s1: `virar_direita()` anda ou só gira?; d3: e se
-`separar_lote()` viesse antes da atribuição?; a1: o que roda com energia 3?; b3: quantas regas com umidade 3?). A resposta e o
-porquê aparecem na hora, e a execução seguinte confere. Nas etapas de corrigir, a previsão é sobre o código pronto e é
-conferida no fim da tentativa. A paleta também traz **alternativas plausíveis** depois da primeira apresentação de cada
+Para não dar para resolver só imitando, cada conceito tem uma **prática guiada com previsão** (🔮), e a pergunta parte do
+**programa que o jogador escreveu**: o jogo executa esse programa (ou uma variação dele) para saber a resposta certa, então
+soluções diferentes e corretas nunca viram "erro". a1: "No seu programa, o que executa na situação B?"; b3: "No seu programa,
+quantas vezes irrigar() é chamada na situação A?"; d3: o seu programa com a ordem trocada aparece escrito, e a pergunta é o
+que a separadora faria; s1 é uma pergunta de conceito (rotulada assim: vale para qualquer programa). A resposta vem na hora
+com o caminho que a execução fez ("linha 1: if: energia >= 5 → 3 >= 5 é False → …"), e a situação da pergunta fica
+escolhida para a execução seguinte conferir. Sem programa ainda, a pergunta espera a próxima tentativa. Nas etapas de
+corrigir, a pergunta é sobre "o programa como está agora", numa situação definida, e é conferida no fim da tentativa. A paleta também traz **alternativas plausíveis** depois da primeira apresentação de cada
 conceito: na comporta (a1) há o `if` sem `else` e os operadores `>=`, `==` e `<`; no while guiado (b3), o `for` e o `<=` —
 caminhos que parecem servir, mas falham em alguma situação.
+
+Cada etapa mostra a **🎯 TAREFA** numa linha própria (o que fazer, em uma frase), separada do enunciado (contexto e conceito)
+e das respostas do painel (verde quando dá certo, vermelho com a área de erro, azul no passo a passo, dourado para o Lume).
+No **Passo a passo**, tudo o que mudou no passo — variável, sensor ou o `i` do `for` — fica marcado com "antes → depois".
+Se o programa mudar depois de uma situação ter dado certo, a situação vira **↻** (testar de novo), em vez de perder o ✔ em
+silêncio. Depois de três tentativas seguidas com erro, o botão 💡 Dica pisca e a mensagem sugere a dica ou o Passo, sem dar a
+resposta. **Executar** (verde), **Passo** (azul), **Parar** (vermelho) e **Reiniciar** (âmbar) ficam numa fileira própria;
+no teclado físico, Ctrl+Enter executa, Ctrl+Shift+Enter dá um passo, Ctrl+. para e Alt+R reinicia.
 
 | Lugar | Saber (relíquia) | O código controla… | Etapas |
 |---|---|---|---|
 | Pátio de Treino | primeiro comando e ordem | `acender_tocha()` acende a tocha; `destravar_portao()` e `erguer_portao()` abrem o portão | prática guiada, **corrigir** a ordem (com previsão) |
 | Engrenagens (Steampunk) | Sequência e execução (Engrenagem-mestra) | `avancar()`, `virar_direita()` e `ativar()` movem o autômato e abrem o mecanismo | demonstração (mesmas linhas em outra ordem), prática guiada, **corrigir** (o autômato bate: mudar a ordem), percurso novo |
 | Motores (Dieselpunk) | Variáveis e tipos int, float, str, bool (Vela de ignição) | **antes da oficina, o pátio de abastecimento**: cada máquina tem uma etiqueta com o tipo aceito e o valor pedido, e o jogador leva **cápsulas de valor** até ela — o disjuntor aceita bool (`True`, não `"True"`), a bomba aceita float (`2.5`, não `"2.5"`) e baixa a ponte do canal, o painel aceita str (`"ABRIR"`, não `"abrir"`) e abre a oficina; na oficina, `energia = True` liga o gerador, `combustivel = 2.5` enche o tanque, `pecas = 5` ajusta o contador, `senha = "ABRIR"` destrava a porta; a separadora, o monta-cargas e a bomba leem as variáveis | demonstração, os quatro tipos, `5` ou `"5"`, a máquina lê a variável, mudar o valor, **corrigir** a ficha do monta-cargas, **aplicação**: a bomba enche dois tanques (2,5 L e 4,0 L) — guardar, usar e alterar `energia` e `combustivel` |
-| Reator (Atompunk) | if, elif e else (Núcleo atômico) | sensores de energia, nível e temperatura; comporta, carregador, portão, dreno, jatos de resfriamento, ventilador e luz de estabilidade | demonstração em duas situações, if/else guiado (A e B), aplicação com variável e três situações, elif guiado (três temperaturas), **corrigir** a ordem dos elif |
+| Reator (Atompunk) | if, elif e else (Núcleo atômico) | sensores de energia, nível e temperatura; comporta, carregador, portão, dreno, jatos de resfriamento, ventilador e luz de estabilidade | demonstração em duas situações, if/else guiado (A e B), aplicação com variável e três situações, elif guiado (três temperaturas), **corrigir** a ordem dos elif, **aplicação final**: o painel de segurança com dois sensores, o limite numa variável e a regra mais importante primeiro (cinco situações, inclusive exatamente 80 graus) |
 | Viva (Biopunk) | for e while (Semente da vida) | `for i in range(4): acender_tocha()` acende quatro tochas de seiva, uma depois da outra; o polinizador rega os organismos | **demonstração** (as mesmas 4 tochas com 4 linhas e com for), for das tochas (painel de 2 linhas), for guiado, **corrigir** o padrão, while guiado (0, 1 e várias voltas), automação com while dentro do for |
 | Cidade-Jardim | tudo junto | robô jardineiro, cinco canteiros e a fonte | variável contadora + for + if em dois jardins |
 
@@ -180,7 +199,7 @@ Os arquivos de `src/` são concatenados nesta ordem pelo `build.sh`:
 | `00-head.html` | estilos e interface: HUD, botões de toque, painel de programação, diário, menus, tela final |
 | `01-core.js` | utilidades, textos, posições do mundo, relíquias, inscrições, segredos e o diário |
 | `02-lang.js` | **interpretador** (um pedaço de Python): valores tipados, expressões, comparações, if/elif/else, for/while, edição por toques, leitor de texto (`ler`), `passo()`, explicação dos erros com o nome do Python |
-| `03-learn.js` | **aprendizagem**: funções, os mundos de cada desafio (modelo do mecanismo), as 25 etapas, as três dicas de cada uma, saberes, as pistas (placas com !) e as marcas de luz |
+| `03-learn.js` | **aprendizagem**: funções, os mundos de cada desafio (modelo do mecanismo), as 26 etapas, as três dicas de cada uma, saberes, as pistas (placas com !) e as marcas de luz |
 | `04-save.js` | **salvamento** versionado e migração do save 3D (lógica pura) |
 | `05-audio.js` | sons sintetizados: os do 3D, os do painel, os ambientes (pássaros de dia, grilos à noite, vento, fogo, água, gotas e rangidos nas tumbas) e a **trilha sonora**: um tema por região (vale de dia e de noite, treino, cada tumba, Cidade-Jardim), com volume próprio e mais baixa com o painel aberto |
 | `06-input.js` | teclado, toque (joystick e botões) e controle |
@@ -274,9 +293,9 @@ Precisam de `node` e do pacote `playwright` com o Chromium: `npm install` e `npx
 
 | Arquivo | Tipo | O que confere |
 |---|---|---|
-| `l1-linguagem.js` | lógica (Node) | tipos int/float/str/bool com os nomes do Python, comparações como no Python (5 == "5" é False com aviso, 5 < "5" é TypeError, textos em ordem, bool como 0/1, verdade de números e textos), a recusa do contêiner como regra da máquina (não TypeError), a origem de cada erro escrito (Python, o que o editor não tem, regra da máquina, linha sem efeito), o fim do Passo a passo, `"5"` × `5`, vazio × 0 × False, contas, comparações, `not`, if/elif/else (só o primeiro caminho verdadeiro), for com `i` (0, 1, n voltas), while (0, 1, várias voltas), repetição sem parada e limite de passos sem travar, erro na linha responsável, exibição em Python, leitor de texto e seus erros (SyntaxError, IndentationError, NameError, TypeError), edição por toques, Executar × Passo, soluções de todas as 25 etapas e soluções alternativas, previsão nas etapas com código pronto e numa prática guiada de cada conceito, alternativas da paleta que falham (a1, b3), demonstração/prática/aplicação em cada tumba, código inicial das etapas de corrigir falhando, três dicas por etapa |
+| `l1-linguagem.js` | lógica (Node) | tipos int/float/str/bool com os nomes do Python, comparações como no Python (5 == "5" é False com aviso, 5 < "5" é TypeError, textos em ordem, bool como 0/1, verdade de números e textos), a recusa do contêiner como regra da máquina (não TypeError), a origem de cada erro escrito (Python, o que o editor não tem, regra da máquina, linha sem efeito), o fim do Passo a passo, `"5"` × `5`, vazio × 0 × False, contas, comparações, `not`, if/elif/else (só o primeiro caminho verdadeiro), for com `i` (0, 1, n voltas), while (0, 1, várias voltas), repetição sem parada e limite de passos sem travar, erro na linha responsável, exibição em Python, leitor de texto e seus erros (SyntaxError, IndentationError, NameError, TypeError), edição por toques, Executar × Passo, soluções de todas as 26 etapas e soluções alternativas, previsão nas etapas com código pronto e numa prática guiada de cada conceito, alternativas da paleta que falham (a1, b3), demonstração/prática/aplicação em cada tumba, código inicial das etapas de corrigir falhando, três dicas por etapa |
 | `l2-save.js` | lógica (Node) | migração do 3D (relíquias adormecidas, diário, segredos, posição convertida e segura, save dentro de tumba), save 3D estragado, save 2D ida e volta, save 2D estragado campo a campo, revisão 2 (treino, dicas, pontos de interesse) e save antigo ganhando as etapas novas |
-| `b1-percurso.js` | navegador | o jogo inteiro como um jogador: treino (andar, Lume, câmera, manivela, Guia, editor, primeiro comando, previsão e correção da ordem do portão), tumbas fora de ordem seladas, cada tumba com seus perigos (nos Motores, o pátio de abastecimento com as cápsulas de valor) e todas as 25 etapas — montadas por toques, escritas no modo Escrever e corrigidas a partir da área de erro —, a bomba dos Motores, a demonstração da Viva, máquinas e tochas reagindo ao código, **recarregar a página depois de cada tumba** (etapas, relíquias e programas voltam), o diário com o programa do jogador, Cidade-Jardim, final, recarregar e continuar |
+| `b1-percurso.js` | navegador | o jogo inteiro como um jogador: treino (andar, Lume, câmera, manivela, Guia, editor, primeiro comando, previsão e correção da ordem do portão), tumbas fora de ordem seladas, cada tumba com seus perigos (nos Motores, o pátio de abastecimento com as cápsulas de valor) e todas as 26 etapas — montadas por toques, escritas no modo Escrever e corrigidas a partir da área de erro —, a bomba dos Motores, a demonstração da Viva, máquinas e tochas reagindo ao código, **recarregar a página depois de cada tumba** (etapas, relíquias e programas voltam), o diário com o programa do jogador, Cidade-Jardim, final, recarregar e continuar |
 | `b2-painel.js` | navegador | Executar e Passo a passo dão os mesmos passos, mundo e variáveis (inclusive com erro); uma execução por vez; Parar; Reiniciar; Limpar com confirmação; dicas do Lume em três níveis e recapitulação; Guia aberto do painel e de volta; limite de linhas; while sem parada explicado; exploração pausada; fechar no meio |
 | `b3-save.js` | navegador | migração real a partir do save 3D no `localStorage`, save 3D intacto, relíquia que desperta, save dentro de tumba, save 2D estragado, posição dentro de obstáculo, save ilegível |
 | `b4-telas.js` | navegador | 10 tamanhos de tela (em pé, deitado, tablet, computador): escala inteira (com a câmera afastada quando cabe), HUD (com Guia) e avisos sem sobreposição, botão VER livre, botões grandes, textos legíveis, painel inteiro alcançável, editor amplo com o mecanismo na faixa da sala, Ver a sala com a sala maior, área de erro inteira acima dos botões fixos |
@@ -288,6 +307,8 @@ Precisam de `node` e do pacote `playwright` com o Chromium: `npm install` e `npx
 | `b13-tela.js` | navegador | tela limpa no celular: cápsula da mão no HUD (sem aviso), aviso da interação nova substitui o anterior (×2 na mesma), no máximo dois avisos compactos abaixo do HUD e acima do explorador, objetivo refeito só quando muda, encolhe e abre com um toque, marcador inteiro na tela e por baixo do HUD, texto da ação longe de VER/LUZ/AÇÃO, Guia com o exemplo inteiro e o conteúdo com a maior parte da altura (em pé, deitado e no computador), grupo abre o primeiro assunto |
 | `b14-mvp.js` | navegador | história antes do treino (pulável, no menu), "Você quis dizer…?", painel no celular (código à vista no modo Escrever com erro em 412 e 360 px, enunciado inteiro ou "ler o resto", duas colunas deitado), rótulos do cenário em dobro no celular e normais no computador, explorador fora dos botões na entrada das tumbas, porta selada que aponta a tumba da vez, bússola do objetivo, Guia com as mecânicas do jogo |
 | `b15-plano.js` | navegador | plano de melhorias: a versão pública aberta com `#vt`, `#vt-treino` e `#vt-treino-historia` não cria nenhum objeto interno e segue o caminho normal; previsão das práticas guiadas (pergunta antes de executar, resposta e explicação na hora, Executar seguinte confere sem perguntar de novo, Pular executa direto); o `if` sem `else` da paleta não resolve a comporta |
+| `l3-relatorio.js` | lógica (Node) | relatório de aprendizagem: partida nova sem números inventados, totais, etapa antiga "sem registro", pendentes, os seis lugares com o conceito, TXT e CSV com os mesmos números e sem dados pessoais |
+| `b16-melhorias.js` | navegador | tarefa da etapa, previsão sobre o programa do jogador (b3) com o caminho da execução e a situação escolhida, sensor marcado "antes → depois" no Passo, situação ↻ depois de mudar o programa, botões de execução e Ctrl+Enter, Dica sugerida após três erros seguidos, funções do jogo × Python no painel e no Guia, relatório no Diário com TXT e CSV baixados e salvos no save, lembrete sem progresso |
 | `b9-validacoes.js` | navegador | armazenamento bloqueado (aviso e jogo seguindo), sair para outro aplicativo e voltar (pausa e salva), teclado virtual simulado (painel, código e Executar acima dele), sem rolagem horizontal |
 | `b6-personagem.js` | navegador | quadros de todas as direções e animações, linha do chão e altura coerentes, espelho, colisão nos pés, passagem de 1 tile, porta da tumba, atrás/na frente do pilar, transições repouso → caminhada → repouso, interação e dano, folha exportada igual à do jogo |
 | `b7-ajuda.js` | navegador | Guia na tela inicial, no HUD, na tecla G, na pausa e no painel (os dez assuntos com exemplo); pular e revisitar o treino; câmera na tecla C (começa afastada); Lume no acampamento e na tumba com dicas em ordem que não entregam o programa; pontos de interesse no diário; Reiniciar depois de um erro; a área de erro diz a origem (Python, regra da máquina, o que o editor não tem) e leva ao assunto do Guia em um toque, sem perder o programa; Passo a passo que mostra o resultado na última instrução e marca o mecanismo afetado |

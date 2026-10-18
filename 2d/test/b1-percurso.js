@@ -143,6 +143,11 @@ const t=suite('b1-percurso');
   await U.etapa(4);r=await U.executar();er=await U.erro();t.ok(!r.ok&&er,'a ordem errada dos elif: com 95 graus o reator só ventila',er);
   w=await U.escrever('if temperatura >= 80:\n    resfriar()\nelif temperatura >= 50:\n    ventilar()\nelse:\n    manter_estavel()');
   r=await U.executarTodas();e=await U.estado();t.ok(w.aceito&&e.learn.a4,'condição mais rigorosa primeiro: as quatro situações passam',r.msg);
+  /* aplicação final do Reator: dois sensores, limite numa variável e a regra mais importante primeiro */
+  await U.etapa(5);w=await U.escrever('limite = 80\nif temperatura >= limite:\n    resfriar()\nelif energia < 5:\n    ligar_carregador()\nelse:\n    manter_estavel()');
+  r=await U.executarTodas();e=await U.estado();t.ok(w.aceito&&!r.ok&&!e.learn.a5&&/E · 80 graus/.test(await ev(()=>PAINEL.cfg.situacoes[PAINEL.sit].nome)),'a5: com >= o painel resfria a 80 graus (exatamente no limite) e a etapa não conclui',r.msg);
+  w=await U.escrever('limite = 80\nif temperatura > limite:\n    resfriar()\nelif energia < 5:\n    ligar_carregador()\nelse:\n    manter_estavel()');
+  r=await U.executarTodas();e=await U.estado();t.ok(w.aceito&&e.learn.a5,'a5: a regra mais importante primeiro e > no limite: as cinco situações passam',r.msg);
   await ev(()=>fecharPainel());lb=await U.usarEm(14*16+8,4*16+12,'cima');e=await U.estado();t.ok(e.relics.atom&&e.saberes===3,'Núcleo atômico recolhido',lb);
   await U.usarEm(15*16,31*16+8,'baixo');await U.transicao();await recarregar('Tumba do Reator');
   /* ---------- Viva: for e while ---------- */

@@ -91,7 +91,7 @@ CONSTRUIR.atom=function(){
   const foco={x:14*16+8,y:10*16};A.focoPainel=foco;
   terminal(A,14,13,'atom',foco,'painelAtom','Usar o painel do reator');
   criarLume(A,17.5,12.5,'atom');
-  tochasProgresso(A,'atom',[[9,14],[10.5,14],[12,14],[17,14],[18.5,14]],'#9aff9a');
+  tochasProgresso(A,'atom',[[9,14],[10.5,14],[12,14],[17,14],[18.5,14],[20,14]],'#9aff9a');
   placaPista(A,'atom',6*16+8,13*16+14,{cor:'#9aff9a'});
   marcaLuz(A,'atom_primeiro',11,26);marcaLuz(A,'atom_resto',9,15);
   /* estado visível das máquinas (vem da execução ou da situação escolhida) */

@@ -65,5 +65,15 @@ t.ok(r2m&&!r2m.learn.t2&&!r2m.learn.d6&&!r2m.learn.bd,'save da revisão 2 pela m
 const r3=S.limpar(JSON.parse(JSON.stringify(S.montar({relics:{steam:false,diesel:false,atom:false,bio:false},learn:{t1:true},progs:{},diary:[],insc:{},sec:{},abertas:[],done:false,time:0.1,pos:null,tomb:null,
   treino:{feito:true,passo:9,manivela:true},dicas:{},poi:{},guia:true,solucoes:{t1:[{id:1,k:'cmd',cmd:'tocha'}],zz:[1]}}))));
 t.ok(r3&&!r3.learn.t2&&r3.solucoes.t1&&r3.solucoes.t1.length===1&&!r3.solucoes.zz&&r3.fixed,'save da revisão 3: guarda o programa que resolveu cada etapa (e descarta o inválido), sem etapas de graça',r3&&{learn:r3.learn,sol:r3.solucoes});
-t.ok(S.montar({relics:{},learn:{},progs:{},diary:[],insc:{},sec:{},abertas:[],done:false,time:0,treino:{},dicas:{},poi:{},guia:false}).rev===3,'o save gravado é da revisão 3');
+t.ok(S.montar({relics:{},learn:{},progs:{},diary:[],insc:{},sec:{},abertas:[],done:false,time:0,treino:{},dicas:{},poi:{},guia:false}).rev===4,'o save gravado é da revisão 4');
+/* revisão 4: aplicação final do Reator (a5) e registro de aprendizagem */
+const at={a0:true,a1:true,a2:true,a3:true,a4:true};
+const r3a=S.limpar({v:1,rev:3,learn:Object.assign({t1:true},at),relics:{atom:true},diary:[]}),r3b=S.limpar({v:1,rev:3,learn:{a0:true,a1:true},diary:[]});
+t.ok(r3a&&r3a.learn.a5&&!r3a.fixed&&r3b&&!r3b.learn.a5,'save da revisão 3: quem terminou o Reator ganha a aplicação nova (a5); quem não terminou, faz',[r3a&&r3a.learn.a5,r3b&&r3b.learn.a5]);
+t.ok(r3a&&!Object.keys(r3a.reg).length&&r3a.regDesde===null,'save antigo não ganha números de tentativas inventados',r3a&&r3a.reg);
+const rg=S.limpar(JSON.parse(JSON.stringify(S.montar({relics:{},learn:{t2:true},progs:{},diary:[],insc:{},sec:{},abertas:[],done:false,time:0.1,treino:{feito:true,passo:9,manivela:true},dicas:{},poi:{},guia:false,
+  reg:{t2:{t:3,e:2,p:'e',d:'2026-10-18'}},regDesde:'2026-10-18'}))));
+t.ok(rg&&!rg.fixed&&rg.reg.t2.t===3&&rg.reg.t2.e===2&&rg.reg.t2.p==='e'&&rg.reg.t2.d==='2026-10-18'&&rg.regDesde==='2026-10-18','registro de aprendizagem vai e volta no save',rg&&rg.reg);
+const rgb=S.limpar({v:1,rev:4,learn:{},diary:[],reg:{t2:{t:-1,e:'x',p:'z',d:'ontem'},zz:{t:1},s1:'a'},regDesde:'hoje'});
+t.ok(rgb&&rgb.fixed&&JSON.stringify(rgb.reg)==='{"t2":{}}'&&rgb.regDesde===null,'registro estragado é limpo campo a campo',rgb&&rgb.reg);
 t.done();
