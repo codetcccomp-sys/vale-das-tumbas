@@ -66,6 +66,8 @@ function construirVale(){
     const T=TOMBS[k],bx=T.door.x*16+8,by=(T.door.y+1)*16;
     objeto(A,SPR.get('torre',k),bx,by-50,{col:null});
     objeto(A,SPR.get('entrada',k),bx,by,{col:[-48,-46,48,0]});
+    /* marca própria de cada tumba: o emblema com o símbolo do saber, iluminado com a cor da tumba */
+    const em=objeto(A,SPR.get('emblema',k),bx,by-52,{camada:60});em.luz={r:30,cor:T.col,dy:-10};
     VALE.feixes.push({k,x:bx,y:by-150});reserva(T.door.x,T.door.y-2,6);reserva(T.out.x,T.out.y,2.5);
     interacao(A,{x:bx,y:by+10,r:22,label:()=>tumbaRotulo(k),use:()=>usarPortaTumba(k)});
   }

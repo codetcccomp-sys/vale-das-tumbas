@@ -19,45 +19,59 @@ Object.assign(OBJS,{
 
 /* ---------- Guia de Programação ---------- */
 const GUIA=[
-  {id:'comandos',t:'Comandos (funções)',ic:['f()','#ffd24a'],txt:'Um comando manda a máquina fazer uma ação. Em Python ele se escreve com o nome e parênteses. Cada linha do programa é uma instrução.',
-    cod:'acender_tocha()\navancar()',passos:['acender_tocha() → a tocha acende','avancar() → o autômato anda uma casa'],jogo:'No pátio de treino, acender_tocha() acende a tocha do portão. Cada tumba tem as suas funções na paleta do painel.'},
-  {id:'sequencia',t:'Sequência',ic:['1 2 3','#c8743a'],txt:'O computador lê o programa de cima para baixo, uma linha de cada vez. Trocar a ordem das linhas muda o resultado.',
+  {id:'comandos',g:'seq',t:'Comandos (funções)',ic:['f()','#ffd24a'],txt:'Um comando manda a máquina fazer uma ação. Em Python ele se escreve com o nome e parênteses. Cada linha do programa é uma instrução.',
+    cod:'acender_tocha()\navancar()',passos:['acender_tocha() → a tocha acende','avancar() → o autômato anda uma casa'],jogo:'No pátio de treino, acender_tocha() acende a tocha. Cada tumba tem as suas funções na paleta do painel.'},
+  {id:'sequencia',g:'seq',t:'Sequência',ic:['1 2 3','#c8743a'],txt:'O computador lê o programa de cima para baixo, uma linha de cada vez. Trocar a ordem das linhas muda o resultado.',
     cod:'avancar()\nvirar_direita()\navancar()',passos:['linha 1: anda','linha 2: gira (sem andar)','linha 3: anda na nova direção'],jogo:'Na Tumba das Engrenagens, o autômato cumpre as linhas na ordem. Se ele bate, o erro costuma estar numa linha antes.'},
-  {id:'variaveis',t:'Variáveis',ic:['x = 5','#6fd3ff'],txt:'Uma variável funciona como uma caixa usada para guardar uma informação. O = coloca o valor dentro da caixa; guardar de novo troca o conteúdo.',
-    cod:'quantidade = 5\nquantidade = quantidade + 3',caixa:['quantidade','5 → 8'],jogo:'Na Tumba dos Motores, cada contêiner é uma variável ligada a uma máquina, que lê o valor quando é chamada.'},
-  {id:'tipos',t:'Os quatro tipos',ic:['tipos','#6fd3ff'],txt:'Todo valor tem um tipo. O tipo diz o que a informação é e o que dá para fazer com ela.',
-    tipos:[['engr','int','5','número inteiro: contar'],['galao','float','2.5','número com ponto decimal: medir'],['placa','string','"ABRIR"','texto entre aspas'],['fusivel1','boolean','True','só True ou False: ligado ou desligado']],
-    cod:'pecas = 5            # int\ncombustivel = 2.5    # float\nsenha = "ABRIR"      # string\nenergia = True       # boolean',jogo:'Cada máquina dos Motores aceita um tipo só. "5" com aspas é texto, não número: o jogo não converte sozinho.'},
-  {id:'int',t:'int (número inteiro)',ic:['int','#ffd24a'],img:'engr',txt:'Números sem casas decimais: para contar peças, voltas, níveis. Escreve-se sem aspas.',
-    cod:'pecas = 5\nnivel = 0',passos:['5 → int','"5" → string (tem aspas!)'],jogo:'quantidade, pecas, carga e regadas guardam int.'},
-  {id:'float',t:'float (número decimal)',ic:['float','#ff9a3a'],img:'galao',txt:'Números com parte decimal. Em Python o decimal usa ponto, não vírgula: 2,5 litros vira 2.5.',
+  {id:'variaveis',g:'dados',t:'Variáveis',ic:['x = 5','#6fd3ff'],txt:'Uma variável funciona como uma caixa usada para guardar uma informação. O = coloca o valor dentro da caixa; guardar de novo troca o conteúdo.',
+    cod:'quantidade = 5\nquantidade = quantidade + 3',caixa:['quantidade','5 → 8'],passos:['quantidade = 5 → a caixa guarda 5','quantidade + 3 → lê 5 e soma 3','a caixa passa a guardar 8'],jogo:'Na Tumba dos Motores, cada contêiner é uma variável ligada a uma máquina, que lê o valor quando é chamada.'},
+  {id:'tipos',g:'dados',t:'Os quatro tipos',ic:['tipos','#6fd3ff'],txt:'Todo valor tem um tipo. O tipo diz o que a informação é e o que dá para fazer com ela. Os nomes entre parênteses são os do Python.',
+    tipos:[['engr','int','5','número inteiro: contar'],['galao','float','2.5','número com ponto decimal: medir'],['placa','str','"ABRIR"','texto entre aspas (string)'],['fusivel1','bool','True','booleano: True ou False']],
+    cod:'pecas = 5            # int\ncombustivel = 2.5    # float\nsenha = "ABRIR"      # str\nenergia = True       # bool',jogo:'"5" com aspas é str (texto); sem aspas, 5 é int. Nada vira outro tipo sozinho. Cada máquina dos Motores aceita um tipo só: veja Regras das máquinas.'},
+  {id:'contratos',g:'dados',t:'Regras das máquinas',ic:['x: int','#ffb84a'],txt:'Em Python, uma variável pode guardar qualquer tipo: quantidade = "5" é permitido. Neste jogo, cada variável é o contêiner de uma máquina, e cada máquina tem um contrato: aceita um tipo só. É como escrever quantidade: int (uma anotação de tipo). Quando o valor não combina, quem recusa é a máquina, não o Python.',
+    cod:'quantidade: int      # o contrato da separadora\nquantidade = 5       # aceito: 5 é int\nquantidade = "5"     # o Python aceitaria; a máquina recusa',passos:['5 → int → a máquina aceita','"5" → str (tem aspas) → a máquina recusa','2.5 → float → recusado: ela conta peças inteiras'],
+    jogo:'O painel mostra o contrato de cada contêiner (o nome, o tipo exigido e o valor atual). Na área de erro, uma recusa aparece como "Regra desta máquina", diferente de um erro de Python.'},
+  {id:'int',g:'dados',t:'int (número inteiro)',ic:['int','#ffd24a'],img:'engr',txt:'Números sem casas decimais: para contar peças, voltas, níveis. Escreve-se sem aspas.',
+    cod:'pecas = 5\nnivel = 0',passos:['5 → int','"5" → str (tem aspas!)'],jogo:'quantidade, pecas, carga e regadas guardam int.'},
+  {id:'float',g:'dados',t:'float (número decimal)',ic:['float','#ff9a3a'],img:'galao',txt:'Números com parte decimal. Em Python o decimal usa ponto, não vírgula: 2,5 litros vira 2.5.',
     cod:'combustivel = 2.5\noleo = 0.75',passos:['2.5 → float','5 → int (para float, escreva 5.0)'],jogo:'Litros de combustível e de óleo são float.'},
-  {id:'string',t:'string (texto)',ic:['"abc"','#7ee08a'],img:'placa',txt:'Texto fica entre aspas. Maiúsculas e minúsculas fazem diferença: "ABRIR" e "abrir" são textos diferentes.',
-    cod:'senha = "ABRIR"\ncodigo = "MOTOR"',passos:['"ABRIR" == "ABRIR" → True','"ABRIR" == "abrir" → False'],jogo:'A senha da garagem e o código do monta-cargas são strings.'},
-  {id:'boolean',t:'boolean (True ou False)',ic:['True','#5dff7a'],img:'fusivel1',txt:'Só dois valores: True (verdadeiro, ligado, sim) e False (falso, desligado, não). Sem aspas e com a primeira letra maiúscula.',
-    cod:'energia = True\nfreio = False',passos:['energia = True → o gerador liga','energia = "True" → erro: isso é texto'],jogo:'energia = True liga o gerador da oficina. Toda condição de if e while também dá um boolean.'},
-  {id:'comparar',t:'Comparações',ic:['==','#ffd8a0'],txt:'Uma comparação faz uma pergunta e responde True ou False. Atenção: = guarda um valor; == pergunta se é igual.',
+  {id:'string',g:'dados',t:'str (texto, a string)',ic:['"abc"','#7ee08a'],img:'placa',txt:'Em Python, o texto é do tipo str (de string). Ele fica entre aspas. Maiúsculas e minúsculas fazem diferença: "ABRIR" e "abrir" são textos diferentes.',
+    cod:'senha = "ABRIR"\ncodigo = "MOTOR"',passos:['"ABRIR" == "ABRIR" → True','"ABRIR" == "abrir" → False','5 == "5" → False (número e texto nunca são iguais)'],jogo:'A senha da garagem e o código do monta-cargas são str.'},
+  {id:'boolean',g:'dados',t:'bool (booleano)',ic:['True','#5dff7a'],img:'fusivel1',txt:'Em Python, o booleano é do tipo bool. Só dois valores: True (verdadeiro, ligado, sim) e False (falso, desligado, não). Sem aspas e com a primeira letra maiúscula.',
+    cod:'energia = True\nfreio = False',passos:['energia = True → o gerador liga','energia = "True" → isso é str: a máquina bool recusa'],jogo:'energia = True liga o gerador da oficina. Toda comparação também dá um bool: True ou False.'},
+  {id:'comparar',g:'dec',t:'Comparações',ic:['==','#ffd8a0'],txt:'Uma comparação faz uma pergunta e responde True ou False. Atenção: = guarda um valor; == pergunta se é igual.',
     tabela:[['==','igual'],['!=','diferente'],['<','menor'],['>','maior'],['<=','menor ou igual'],['>=','maior ou igual']],
-    cod:'energia >= 5     # True se energia for 5 ou mais\nsolo == "seco"   # True se o texto for "seco"',jogo:'As comparações aparecem nas condições do if, do elif e do while.'},
-  {id:'if',t:'if (se)',ic:['if','#c9a6ff'],txt:'O comando IF verifica uma condição antes de executar uma ação. O bloco embaixo dele (com recuo) só roda quando a condição dá True.',
+    cod:'energia >= 5     # True se energia for 5 ou mais\nsolo == "seco"   # True se o texto for "seco"',passos:['energia 7: 7 >= 5 → True','solo "úmido": "úmido" == "seco" → False','5 == "5" → False; 5 < "5" → TypeError'],jogo:'As comparações aparecem nas condições do if, do elif e do while.'},
+  {id:'if',g:'dec',t:'if (se)',ic:['if','#c9a6ff'],txt:'O comando IF verifica uma condição antes de executar uma ação. O bloco embaixo dele (com recuo) só roda quando a condição dá True.',
     cod:'if porta_aberta:\n    entrar()',passos:['porta_aberta é True → entrar() roda','porta_aberta é False → pula o bloco'],jogo:'No Reator: if energia >= 5: abrir_comporta().'},
-  {id:'else',t:'else (senão)',ic:['else','#c9a6ff'],txt:'O else é o caminho para quando a condição do if deu False. Ele não tem condição: pega todos os outros casos.',
+  {id:'else',g:'dec',t:'else (senão)',ic:['else','#c9a6ff'],txt:'O else é o caminho para quando a condição do if deu False. Ele não tem condição: pega todos os outros casos.',
     cod:'if energia >= 5:\n    abrir_comporta()\nelse:\n    ligar_carregador()',passos:['energia 7 → 7 >= 5 é True → abrir_comporta()','energia 3 → 3 >= 5 é False → ligar_carregador()'],jogo:'A comporta do Reator abre com energia; sem energia, o carregador liga.'},
-  {id:'elif',t:'elif (senão, se)',ic:['elif','#c9a6ff'],txt:'O elif testa outra condição quando as de cima deram False. O Python testa de cima para baixo e executa só o PRIMEIRO caminho verdadeiro.',
+  {id:'elif',g:'dec',t:'elif (senão, se)',ic:['elif','#c9a6ff'],txt:'O elif testa outra condição quando as de cima deram False. O Python testa de cima para baixo e executa só o PRIMEIRO caminho verdadeiro.',
     cod:'if temperatura >= 80:\n    resfriar()\nelif temperatura >= 50:\n    ventilar()\nelse:\n    manter_estavel()',passos:['90 → >= 80 é True → resfriar()','65 → >= 80 False, >= 50 True → ventilar()','30 → as duas False → else'],jogo:'No Reator, a temperatura escolhe entre resfriar, ventilar ou manter estável. A condição mais rigorosa vem primeiro.'},
-  {id:'for',t:'for (repetir n vezes)',ic:['for','#b98cff'],txt:'O for repete o bloco embaixo dele um número fixo de vezes. range(4) dá 4 voltas, e a variável i vale 0, 1, 2 e 3.',
+  {id:'for',g:'rep',t:'for (repetir n vezes)',ic:['for','#b98cff'],txt:'O for repete o bloco embaixo dele um número fixo de vezes. range(4) dá 4 voltas, e a variável i vale 0, 1, 2 e 3.',
     cod:'for i in range(4):\n    acender_tocha()',passos:['volta 1 (i = 0): tocha 1','volta 2 (i = 1): tocha 2','volta 3 (i = 2): tocha 3','volta 4 (i = 3): tocha 4'],jogo:'Na Tumba Viva, o for acende as quatro tochas, uma depois da outra, e rega os organismos.'},
-  {id:'while',t:'while (enquanto)',ic:['while','#b98cff'],txt:'O while repete enquanto a condição for True e para quando ela dá False. Alguma linha dentro dele precisa mudar o valor testado, senão a repetição não para.',
-    cod:'while umidade < 3:\n    irrigar()',passos:['umidade 1 < 3? True → irrigar()','umidade 2 < 3? True → irrigar()','umidade 3 < 3? False → para'],jogo:'Na estufa, o while rega cada organismo só o que ele precisa: às vezes nenhuma vez.'},
-  {id:'recuo',t:'Blocos e recuo',ic:['    ','#ffd24a'],txt:'Em Python, o que pertence a um if, for ou while fica embaixo dele com 4 espaços na frente (recuo). O bloco termina quando o recuo volta.',
+  {id:'while',g:'rep',t:'while (enquanto)',ic:['while','#b98cff'],txt:'O while repete enquanto a condição for True e para quando ela dá False. Alguma linha dentro dele precisa mudar o valor testado, senão a repetição não para.',
+    cod:'while umidade < 3:\n    irrigar()',passos:['umidade 1 < 3? True → irrigar()','umidade 2 < 3? True → irrigar()','umidade 3 < 3? False → para'],jogo:'Na estufa, o while rega cada organismo só o que ele precisa: às vezes nenhuma vez. Se ele não parar, o jogo interrompe por segurança.'},
+  {id:'recuo',g:'ajuda',t:'Blocos e recuo',ic:['    ','#ffd24a'],txt:'Em Python, o que pertence a um if, for ou while fica embaixo dele com 4 espaços na frente (recuo). O bloco termina quando o recuo volta.',
     cod:'regadas = 0\nfor i in range(5):\n    if solo == "seco":\n        irrigar()\n        regadas = regadas + 1\n    avancar()\nacender_jardim()',passos:['for: repete as linhas com 4 espaços','if: só as linhas com 8 espaços dependem dele','acender_jardim() sem recuo: roda uma vez, no fim'],jogo:'No painel, o recuo aparece sozinho; no modo ✎ Escrever, use a tecla Tab para 4 espaços.'},
-  {id:'erros',t:'Erros comuns',ic:['erro','#ff6a4a'],txt:'Errar faz parte de programar. O jogo mostra a linha do erro, o nome que o Python daria e o que fazer.',
-    tabela:[['SyntaxError','algo escrito fora da regra: faltou : ou aspas'],['IndentationError','recuo errado: espaços a mais ou a menos'],['NameError','nome que não existe, ou variável ainda vazia'],['TypeError','tipo errado: texto onde a máquina queria número']],
-    cod:'if energia >= 5      # faltou o :\nquantidade = "5"     # texto numa variável de int',jogo:'Leia a área vermelha do painel, observe o mecanismo e use ⏭ Passo para ver a execução linha a linha.'},
-  {id:'exemplos',t:'Seus exemplos',ic:['meus','#7ee08a'],txt:'O código das etapas que você já concluiu.'}
+  {id:'erros',g:'ajuda',t:'Tipos de erro',ic:['erro','#ff6a4a'],txt:'Errar faz parte de programar. A área de erro diz a linha, de onde vem o problema e o que fazer. Os quatro primeiros são erros do próprio Python; os outros são do jogo.',
+    tabela:[['SyntaxError','Python: algo escrito fora da regra (faltou : ou aspas)'],['IndentationError','Python: recuo errado ou bloco vazio'],['NameError','Python: nome que não existe, ou variável que ainda não recebeu valor'],['TypeError','Python: tipos que não combinam numa conta ou comparação, como "5" + 1'],
+      ['Regra desta máquina','jogo: o contêiner recusa um tipo, o sensor é só leitura'],['O Python tem, o editor não','jogo: print, listas, def… não existem neste editor'],['Objetivo não alcançado','jogo: o programa rodou até o fim, mas o mecanismo não chegou ao resultado'],['Limite de segurança','jogo: um while que não para é interrompido']],
+    cod:'if energia >= 5      # SyntaxError: faltou o :\n"5" + 1              # TypeError no Python\nquantidade = "5"     # Python aceita; a máquina int recusa',jogo:'Leia a área de erro, toque em 📖 Ver no Guia para a explicação do assunto e use ⏭ Passo para ver a execução linha a linha.'},
+  {id:'editor',g:'ajuda',t:'O que o editor aceita',ic:['py','#7ee08a'],txt:LANG.SUBCONJUNTO,
+    tabela:[['Aceita','funções da sala, =, + e -, == != < > <= >=, not, if, elif, else, for i in range(n), while'],['Não aceita','print, input, listas, def, import, and, or, * e / (eles existem no Python, mas não neste editor)']],
+    cod:'quantidade = 5\nif quantidade >= 3:\n    separar_lote()\nfor i in range(2):\n    avancar()',jogo:'Se você escrever algo que o Python tem e o editor não, a área de erro avisa: "O Python tem, o editor do jogo não".'},
+  {id:'palavras',g:'ajuda',t:'Palavras do jogo',ic:['abc','#ecdcb4'],txt:'Os nomes que o jogo usa, sempre com o mesmo sentido.',
+    tabela:[['Instrução','uma linha do programa, como avancar()'],['Função','uma ação que a máquina sabe fazer, como acender_tocha()'],['Programa','todas as instruções, na ordem'],['Tentativa','uma execução do programa: ▶ Executar ou ⏭ Passo. ↺ Reiniciar começa outra sem apagar o programa'],
+      ['Etapa','um desafio de uma tumba; as concluídas ganham ✔'],['Saber','o conhecimento de uma tumba: Sequência, Variáveis e tipos, Decisões, Repetições'],['Relíquia','o objeto que guarda o saber; desperta quando todas as etapas da tumba são concluídas']],
+    cod:'# um programa com 2 instruções\nacender_tocha()\nacender_tocha()',jogo:'O HUD conta os saberes recuperados (0/4); cada saber tem a sua relíquia.'},
+  {id:'exemplos',g:'ajuda',t:'Seus exemplos',ic:['meus','#7ee08a'],txt:'O código das etapas que você já concluiu.'}
 ];
-const GUIA_TOPICO={t1:'comandos',s0:'sequencia',s1:'sequencia',s3:'sequencia',s2:'sequencia',d0:'variaveis',d1:'tipos',d2:'int',d3:'variaveis',d4:'variaveis',d5:'tipos',
-  a0:'if',a1:'else',a2:'comparar',a3:'elif',a4:'elif',b0:'for',b1:'for',b2:'for',b3:'while',b4:'while',c1:'recuo'};
+/* grupos do índice: os assuntos da tumba atual aparecem primeiro e marcados */
+const GUIA_GRUPOS=[{id:'seq',t:'Sequência'},{id:'dados',t:'Dados'},{id:'dec',t:'Decisões'},{id:'rep',t:'Repetições'},{id:'ajuda',t:'Ajuda'}];
+const GRUPO_LUGAR={treino:'seq',steam:'seq',diesel:'dados',atom:'dec',bio:'rep'};
+const GUIA_TOPICO={t1:'comandos',t2:'sequencia',s0:'sequencia',s1:'sequencia',s3:'sequencia',s2:'sequencia',d0:'variaveis',d1:'tipos',d2:'contratos',d3:'variaveis',d4:'variaveis',d5:'contratos',d6:'variaveis',
+  a0:'if',a1:'else',a2:'comparar',a3:'elif',a4:'elif',bd:'for',b0:'for',b1:'for',b2:'for',b3:'while',b4:'while',c1:'recuo'};
 function topicoGuia(cfg){return(cfg&&GUIA_TOPICO[cfg.id])||'comandos';}
 const KW=/^(if|elif|else|for|in|range|while|not|and|or|True|False)$/;
 /* código colorido: palavras-chave, textos, números, funções e comentários */
@@ -86,7 +100,10 @@ function abrirGuia(topico){
   G.mode='guia';$('guia').hidden=false;document.body.classList.add('modal');limparEntrada();
   if(!G.guia){G.guia=true;if(G.area&&G.modoAntesGuia!=='menu')salvar(false);}
   if(G.area&&G.area.aoGuia)G.area.aoGuia();
-  mostrarTopico(topico||guiaAtual);SFX.page();
+  /* sem assunto pedido: continua no último lido, se for desta tumba; senão abre no primeiro assunto da tumba */
+  const gr=grupoAtual(),atual=GUIA.find(g=>g.id===guiaAtual);
+  if(!topico)topico=gr&&(!atual||atual.g!==gr)?GUIA.find(g=>g.g===gr).id:guiaAtual;
+  mostrarTopico(topico);SFX.page();
   try{$('gFechar').focus({preventScroll:true});}catch(e){}
 }
 function fecharGuia(){
@@ -95,11 +112,23 @@ function fecharGuia(){
   else if(G.mode!=='painel')document.body.classList.remove('modal');
   if(G.mode==='painel')document.body.classList.remove('modal');
 }
+/* o grupo da tumba onde o jogador está (ou do desafio aberto) */
+function grupoAtual(){const k=PAINEL.aberto&&PAINEL.cfg?PAINEL.cfg.tumba:G.area&&G.area.id;return GRUPO_LUGAR[k]||null;}
+let guiaGrupo=null;
+/* índice compacto: uma fileira com os cinco grupos e, embaixo, os assuntos do grupo escolhido */
+function renderIndice(grupo){
+  guiaGrupo=grupo;const L=$('gTopicos');L.textContent='';const aqui=grupoAtual();
+  const gs=document.createElement('div');gs.className='ggrupos';
+  for(const gr of GUIA_GRUPOS){const b=document.createElement('button');b.className='btn ggr'+(gr.id===grupo?' on':'')+(gr.id===aqui?' aqui':'');b.dataset.g=gr.id;
+    b.textContent=(gr.id===aqui?'★ ':'')+gr.t;b.title=gr.id===aqui?'Assuntos desta tumba':'';b.onclick=()=>{renderIndice(gr.id);SFX.click();};gs.appendChild(b);}
+  L.appendChild(gs);
+  const ch=document.createElement('div');ch.className='gchips';
+  for(const g of GUIA.filter(x=>x.g===grupo)){const b=document.createElement('button');b.className='btn gtop'+(g.id===guiaAtual?' on':'');b.dataset.t=g.id;b.textContent=g.t;b.onclick=()=>{mostrarTopico(g.id);SFX.click();};ch.appendChild(b);}
+  L.appendChild(ch);
+}
 function mostrarTopico(id){
   guiaAtual=id;const T=GUIA.find(g=>g.id===id)||GUIA[0];
-  const L=$('gTopicos');L.textContent='';
-  for(const g of GUIA){const b=document.createElement('button');b.className='btn gtop'+(g.id===T.id?' on':'');b.textContent=g.t;b.onclick=()=>{mostrarTopico(g.id);SFX.click();};L.appendChild(b);}
-  const at=L.querySelector('.on');if(at)try{at.scrollIntoView({block:'nearest',inline:'nearest'});}catch(e){}
+  renderIndice(T.g);
   const C=$('gConteudo');C.textContent='';C.scrollTop=0;
   const el=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=txt;C.appendChild(e);return e;};
   const h=el('div','gcab');const ic=escalar(SPR.get('iconeGuia',T.ic[0],T.ic[1]),2);ic.className='px';h.appendChild(ic);
@@ -116,7 +145,7 @@ function mostrarTopico(id){
     const tx=document.createElement('span');tx.innerHTML='<b></b><code></code><i></i>';tx.children[0].textContent=rot;tx.children[1].textContent=ex;tx.children[2].textContent=d;it.appendChild(tx);g.appendChild(it);}}
   if(T.tabela){const tb=el('div','gtab');for(const[a,b]of T.tabela){const x=document.createElement('code');x.textContent=a;const y=document.createElement('span');y.textContent=b;tb.appendChild(x);tb.appendChild(y);}}
   el('p','gsub','Exemplo');el('pre','gcod').appendChild(realcarCodigo(T.cod));
-  if(T.passos){el('p','gsub','O que acontece');const p=el('div','gpassos');T.passos.forEach((s,i)=>{const d=document.createElement('span');d.textContent=s;p.appendChild(d);if(i<T.passos.length-1){const a=document.createElement('b');a.textContent='→';p.appendChild(a);}});}
+  if(T.passos){el('p','gsub','Resultado (o que acontece)');const p=el('div','gpassos');T.passos.forEach((s,i)=>{const d=document.createElement('span');d.textContent=s;p.appendChild(d);if(i<T.passos.length-1){const a=document.createElement('b');a.textContent='→';p.appendChild(a);}});}
   el('p','gjogo','No jogo: '+T.jogo);
 }
 
@@ -140,7 +169,7 @@ function textoControles(){
 }
 const LUME_TXT={
   interagir:()=>'Quando você chega perto de algo útil, aparece um aviso embaixo da tela e uma seta amarela em cima do objeto. Aí é só apertar '+(IN.mode==='touch'?'AÇÃO':IN.mode==='pad'?'A':'E')+' para usar: ler, pegar, abrir, ligar.',
-  programar:()=>'Nos terminais fica o editor. Toque nas linhas da paleta para escrever o programa, ou em ✎ Escrever para digitar código Python. ▶ Executar roda tudo; ⏭ Passo roda uma linha por vez. Se der erro, a área vermelha mostra a linha e o que fazer.',
+  programar:()=>'Nos terminais fica o editor. Toque nas linhas da paleta para escrever o programa, ou em ✎ Escrever para digitar código Python. ▶ Executar roda tudo; ⏭ Passo roda uma instrução por vez. Se algo der errado, a área de erro mostra a linha, diz se o problema é do Python ou de uma regra da máquina, e o que fazer. O editor aceita um pedaço do Python: o Guia mostra qual.',
   desafio:()=>'Leia a mensagem do painel e olhe o mecanismo da sala: ele mostra o que o código faz. As caixas mostram as variáveis. As situações (A, B…) são testes: o mesmo programa precisa funcionar em todas. Programe, execute, observe e corrija.',
   camera:()=>'Aperte '+(IN.mode==='touch'?'VER':'C')+' para afastar a câmera e enxergar mais longe. Aperte de novo para voltar ao normal.'
 };
@@ -179,7 +208,7 @@ function criarLume(A,tx,ty,lugar,extra){
   const o=objeto(A,SPR.get('lume',0),L.x,L.y,{});
   o.desenho=(g,ob,t)=>{const bob=Math.round(Math.sin(t*2.6+ob.x)*2);sombra(g,ob.x,ob.y,5,2,0.22);blit(g,SPR.get('lume',Math.floor(t*4)%2),ob.x,ob.y-5+bob,8,22);};
   if(A.lampadas)A.lampadas.push({x:L.x,y:L.y-14,r:30,cor:'#ffd24a'});else o.luz={r:22,cor:'#ffd24a',dy:-14};
-  L.it=interacao(A,{x:L.x,y:L.y+4,r:24,alto:34,label:()=>'Conversar com o Lume',use:()=>conversarLume(lugar,extra?extra():null)});
+  L.it=interacao(A,{x:L.x,y:L.y+4,r:24,alto:34,nome:'Lume',label:()=>'Conversar com o Lume',use:()=>conversarLume(lugar,extra?extra():null)});
   L.o=o;return L;
 }
 

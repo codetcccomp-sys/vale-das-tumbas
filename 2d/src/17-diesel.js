@@ -120,22 +120,27 @@ CONSTRUIR.diesel=function(){
   const foco={x:14*16,y:9*16};A.focoPainel=foco;
   terminal(A,14,12,'diesel',foco,'console','Usar o console da oficina');
   criarLume(A,17.5,11,'diesel');
-  tochasProgresso(A,'diesel',[[9,14],[10.5,14],[12,14],[17,14],[18.5,14],[20,14]],'#cfe8ff');
+  tochasProgresso(A,'diesel',[[9,14],[10.5,14],[12,14],[17,14],[18.5,14],[20,14],[21.5,14]],'#cfe8ff');
   /* etapa dos quatro tipos: cada máquina reage ao valor da variável dela */
   const maqEstado=()=>{const vis=PAINEL.aberto&&PAINEL.area===A?painelVis():null;
     if(vis&&vis.cfg.id==='d1')return{on:true,m:vis.ws.maq||{}};
+    /* bomba de combustível (etapa 7): o gerador segue a variável energia e o tanque mostra cada abastecimento */
+    if(vis&&vis.cfg.id==='d6'){const env=vis.s?vis.s.env:null;return{on:true,d6:true,m:{energia:env&&env.energia?env.energia.val:null},tq:vis.ws.tanques||[]};}
     if(G.learn.d1)return{on:false,m:{energia:LV('bool',true),combustivel:LV('float',2.5),pecas:LV('int',5),senha:LV('str','ABRIR')}};return{on:false,m:{}};};
   const ger=objeto(A,SPR.get('gerador',false,0),5*16+8,9*16+6,{col:[-14,-8,14,0]});
   ger.desenho=(g,ob,t)=>{const e=maqEstado(),lig=e.m.energia&&e.m.energia.v===true;blit(g,SPR.get('gerador',lig,Math.floor(t*6)%2),ob.x,ob.y,14,28);if(e.on)etiqueta(g,ob.x,ob.y-34,lig?'ligado':'desligado',lig?'#5dff7a':'#ff9a7a');};
   const tq=objeto(A,SPR.get('tanqueDiesel',0),24*16,9*16+6,{col:[-11,-8,11,0]});
-  tq.desenho=(g,ob)=>{const e=maqEstado(),v=e.m.combustivel?e.m.combustivel.v:0;blit(g,SPR.get('tanqueDiesel',Math.round(v*4)/4),ob.x,ob.y,11,36);if(e.on)etiqueta(g,ob.x,ob.y-42,LANG.fmt(e.m.combustivel||null)+(e.m.combustivel?' L':''),'#ffe080');};
+  tq.desenho=(g,ob)=>{const e=maqEstado();
+    if(e.d6){const l=e.tq,v=l.length?l[l.length-1]:0;blit(g,SPR.get('tanqueDiesel',Math.round(Math.min(v,4)*4)/4),ob.x,ob.y,11,36);
+      etiqueta(g,ob.x,ob.y-42,l.length?l.map((x,i)=>'T'+(i+1)+' '+LANG.fmtDec(x)+' L').join(' '):'tanques vazios','#ffe080');return;}
+    const v=e.m.combustivel?e.m.combustivel.v:0;blit(g,SPR.get('tanqueDiesel',Math.round(v*4)/4),ob.x,ob.y,11,36);if(e.on)etiqueta(g,ob.x,ob.y-42,LANG.fmt(e.m.combustivel||null)+(e.m.combustivel?' L':''),'#ffe080');};
   const ps=objeto(A,SPR.get('painelSenha',false,0),19*16+8,7*16+14,{});
   ps.desenho=(g,ob,t)=>{const e=maqEstado(),s=e.m.senha,ok=s&&s.v==='ABRIR';blit(g,SPR.get('painelSenha',ok,Math.floor(t*3)%2),ob.x,ob.y,15,26);
     if(s){const x=Math.round(ob.x+R.ox),y=Math.round(ob.y-20+R.oy);FONTE.rotulo(g,s.v.slice(0,6),x,y,ok?'#5dff7a':'#ffd24a');}};
   const pt=objeto(A,SPR.get('portinhola',0),22*16+8,7*16+14,{});const pst={a:0};
   pt.desenho=(g,ob)=>{const e=maqEstado(),ok=e.m.senha&&e.m.senha.v==='ABRIR';pst.a+=((ok?1:0)-pst.a)*0.08;blit(g,SPR.get('portinhola',Math.round(pst.a*6)/6),ob.x,ob.y,13,30);};
   A.luzGerador=()=>{const e=maqEstado();return e.m.energia&&e.m.energia.v===true;};
-  interacao(A,{x:14*16,y:7*16,r:30,label:()=>'Ler a placa dos contêineres',use:()=>{addDiary('oficina_diesel');toast('Cada contêiner é uma variável: tem um nome, aceita um tipo (int, float, string ou boolean) e mostra o valor atual. As máquinas leem a variável na hora de trabalhar.');}});
+  interacao(A,{x:14*16,y:7*16,r:30,label:()=>'Ler a placa dos contêineres',use:()=>{addDiary('oficina_diesel');toast('Cada contêiner é uma variável: tem um nome, aceita um tipo (int, float, str ou bool) e mostra o valor atual. As máquinas leem a variável na hora de trabalhar.');}});
   A.luzesExtra=t=>{
     const f=A.facho();luz(f.x,f.y,10,1,'#fff6c0');
     if(A.luzGerador()){luz(5*16+8,8*16,46+Math.sin(t*12)*2,1,'#ffe9a0');for(const x of[8,20])luz(x*16,7*16,30,0.8,'#ffe9a0');}
@@ -158,11 +163,16 @@ CONSTRUIR.diesel=function(){
     desenharOficina(A,g,t);
   };
   A.reiniciar=()=>{reiniciarGuardas(A);for(const pt of A.pontos)pt.aceso=false;holo.d=sensorLigado()?1:2;mc.nivel=G.learn.d5?1:0;addDiary('diesel_enter',true);};
-  A.objetivo=()=>{if(!sensorLigado())return{t:'Saber: Dados e variáveis',s:'A porta da oficina está fechada. Gire o holofote até a luz alcançar o sensor da parede.'};return objetivoTumba('diesel','No console da oficina');};
+  A.objetivo=()=>{if(!sensorLigado())return{t:'Saber: Dados e variáveis',s:'A porta da oficina está fechada. Gire o holofote até a luz alcançar o sensor da parede.',alvo:{x:8*16+8,y:24*16-14,txt:'Girar o holofote'}};return objetivoTumba('diesel','No console da oficina');};
+  /* o que cada instrução mexe: a máquina da variável (etapas 2 e 7), o contêiner, a separadora, o monta-cargas ou a bomba */
+  A.focoEvento=(ev,ws,cfg)=>{const M={energia:[5*16+8,9*16-28],combustivel:[24*16,9*16-38],senha:[19*16+8,7*16-18],pecas:[8*16,12*16-14]};
+    if(ev.tipo==='set'){if((cfg.id==='d1'||cfg.id==='d6')&&M[ev.nome])return{x:M[ev.nome][0],y:M[ev.nome][1]};const p=contPos(A,ev.nome);return{x:p.x,y:p.y-52};}
+    if(ev.cmd==='separar')return{x:8*16,y:12*16-18};if(ev.cmd==='mc')return{x:21*16,y:12*16-34};if(ev.cmd==='abastecer')return{x:24*16,y:9*16-38};return null;};
   A.aoEvento=(ev)=>{
     if(ev.anim&&ev.anim.maq){const m=ev.anim.maq;if(m==='energia'){if(ev.depois.v){SFX.maquina();faiscas(5*16+8,8*16,12,['#fff6c0','#ffd24a']);R.treme=0.2;}else SFX.deny();}
       else if(m==='combustivel'){SFX.agua();gotas(24*16,7*16,6);}else if(m==='senha'){if(ev.depois.v==='ABRIR'){SFX.sensor();SFX.gate();}else SFX.deny();}else if(m==='pecas')SFX.click();}
     if(ev.anim&&ev.anim.lote){SFX.maquina();for(let i=0;i<Math.min(ev.anim.lote,12);i++)setTimeout(()=>faiscas(10*16,11*16,2,['#ffd24a','#d8a24a']),i*40);}
+    if(ev.anim&&ev.anim.tanque){SFX.agua();gotas(24*16,7*16,8);}if(ev.anim&&ev.anim.falha==='bomba')SFX.deny();
     if(ev.anim&&ev.anim.mc)SFX.elev();if(ev.tipo==='set')faiscas(contPos(A,ev.nome).x,contPos(A,ev.nome).y-20,6,['#6fd3ff','#ffffff']);if(ev.tipo==='erro'){SFX.deny();R.treme=0.2;}};
   A.aoConcluir=(cfg)=>{if(saberOk('diesel')){setTimeout(()=>toast('O monta-cargas levou a carga e destravou o portão da câmara.','good'),600);}};
   return A;
@@ -196,5 +206,6 @@ function desenharOficina(A,g,t){
   (ws.lotes||[]).forEach((n,i)=>{const x=11*16+i*18,y=13*16+4;enfileirar(y,gg=>{blit(gg,SPR.get('caixaLote'),x,y,8,14);FONTE.rotulo(gg,String(n),Math.round(x+R.ox),Math.round(y-10+R.oy),'#fff6dc','#0b0705');});});
   /* pedido em cima da separadora */
   const ped=cfg.situacoes[0]&&cfg.situacoes[0].pedidos;if(ped){const txt='pedido: '+ped.join(' e ');const x=Math.round(8*16+R.ox),y=Math.round(9*16+6+R.oy),w=FONTE.larg(txt);g.fillStyle='#e9d8ae';g.fillRect(x-Math.ceil(w/2)-2,y-1,w+4,7);FONTE.rotulo(g,txt,x,y,'#24160d');}
+  const tqs=cfg.situacoes[0]&&cfg.situacoes[0].tanques;if(tqs){const txt='pedido: '+tqs.map(x=>LANG.fmtDec(x).replace('.',',')+' L').join(' e ');const x=Math.round(24*16+R.ox),y=Math.round(10*16+6+R.oy),w=FONTE.larg(txt);g.fillStyle='#e9d8ae';g.fillRect(x-Math.ceil(w/2)-2,y-1,w+4,7);FONTE.rotulo(g,txt,x,y,'#24160d');}
   if(cfg.id==='d5'){const x=Math.round(21*16+R.ox),y=Math.round(8*16+R.oy);const L=['carga 12','óleo 0,75 L','código MOTOR','freio solto'];g.fillStyle='#e9d8ae';g.fillRect(x-24,y-4,48,30);L.forEach((l,i)=>FONTE.texto(g,l,x-22,y-2+i*7,'#24160d'));}
 }

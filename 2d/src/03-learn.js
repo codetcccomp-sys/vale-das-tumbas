@@ -4,8 +4,8 @@
    (conceito → caminho → quase a solução) e o exemplo que fica guardado. Cada "mundo" é o modelo do mecanismo da sala:
    o interpretador (LANG) chama mundo.cmd() a cada função, mundo.atribuiu() a cada atribuição e mundo.fim() quando o
    programa termina; a sala só desenha o estado (ws) que o mundo mantém, então o código mexe no cenário.
-   Progressão: treino (primeiro comando) → sequência e execução (Engrenagens) → variáveis e tipos int, float, string e
-   boolean (Motores) → if, elif e else (Reator) → for e while (Viva) → tudo junto (Cidade-Jardim).
+   Progressão: treino (primeiro comando e ordem) → sequência e execução (Engrenagens) → variáveis e tipos int, float,
+   str e bool (Motores) → if, elif e else (Reator) → for e while (Viva) → tudo junto (Cidade-Jardim).
    Etapas: demo (assistir e comparar), guiada (passo a passo), aplicacao (situação nova, só dicas) e corrigir (o
    programa já vem escrito com erro: executar, observar onde para e corrigir). */
 const DIRS=[[0,-1],[1,0],[0,1],[-1,0]];
@@ -27,6 +27,9 @@ Object.assign(LANG.CMD,{
   irrigar:{py:'irrigar',sim:'≈',ajuda:'dá uma dose de água ao organismo da frente (umidade + 1)'},
   avancar:{py:'avancar',sim:'➜',ajuda:'anda uma posição no trilho'},
   tocha:{py:'acender_tocha',sim:'✹',ajuda:'acende a próxima tocha apagada'},
+  destravar:{py:'destravar_portao',sim:'⊡',ajuda:'abre a trava do portão do pátio'},
+  erguer:{py:'erguer_portao',sim:'⇑',ajuda:'ergue o portão do pátio (a trava precisa estar aberta)'},
+  abastecer:{py:'abastecer_tanque',sim:'▼',ajuda:'a bomba lê energia e combustivel e enche o próximo tanque'},
   acender:{py:'acender_jardim',sim:'☀',ajuda:'na fonte, informa quantos canteiros foram regados e acende a cidade'}
 });
 /* nome e símbolo das linhas de estrutura (aparecem na paleta junto com as funções) */
@@ -49,6 +52,8 @@ const OBJ={
   eng0:{icone:'engr',rotulo:'0',nome:'Lote vazio de engrenagens, marcado com 0',val:LV('int',0)},
   gal314:{icone:'galao',rotulo:'3,14 L',nome:'Galão com 3,14 litros',val:LV('float',3.14)},
   gal25:{icone:'galao',rotulo:'2,5 L',nome:'Galão com 2,5 litros',val:LV('float',2.5)},
+  gal15:{icone:'galao',rotulo:'1,5 L',nome:'Galão com 1,5 litro',val:LV('float',1.5)},
+  pl25:{icone:'placa',rotulo:'"2.5"',nome:'Placa com a inscrição 2.5',val:LV('str','2.5')},
   plAbrir:{icone:'placa',rotulo:'"ABRIR"',nome:'Placa com a inscrição ABRIR',val:LV('str','ABRIR')},
   plAbrirMin:{icone:'placa',rotulo:'"abrir"',nome:'Placa com a inscrição abrir',val:LV('str','abrir')},
   pl5:{icone:'placa',rotulo:'"5"',nome:'Placa com a inscrição 5',val:LV('str','5')},
@@ -119,11 +124,11 @@ function lerVar(s,nome){const d=s.env[nome];if(!d)return{erro:{tipo:'naoExiste',
 const MAQ={
   energia:v=>v.v===true?'O gerador ligou: energia = True.':'O gerador continua desligado: energia = False.',
   combustivel:v=>'O tanque do motor recebeu '+fmtV(v)+' litros.',
-  pecas:v=>'O contador da separadora marca '+fmtV(v)+' peças.',
+  pecas:v=>'O contador da separadora marca '+plural(v.v,'peça','peças')+'.',
   senha:v=>v.v==='ABRIR'?'O painel aceitou a senha "ABRIR": a porta da garagem destravou.':'O painel mostra '+fmtV(v)+', mas a senha não confere.'
 };
 MUNDOS.oficina={
-  init(sit){return{lotes:[],mc:null,maq:{},sit};},
+  init(sit){return{lotes:[],mc:null,maq:{},tanques:[],sit};},
   atribuiu(w,nome,v){if(!w.sit.tipos||!MAQ[nome])return null;w.maq[nome]=v;return{anim:{maq:nome},msg:MAQ[nome](v)};},
   cmd(w,c,s){
     if(c==='separar'){
@@ -131,13 +136,22 @@ MUNDOS.oficina={
       if(q.val.v<1||q.val.v>12)return{erro:{tipo:'faixa',titulo:'Quantidade fora do limite.',msg:'a separadora só monta lotes de 1 a 12 peças, e quantidade vale '+fmtV(q.val)+'.'}};
       if(w.lotes.length>=3)return{erro:{tipo:'cheia',titulo:'A esteira está cheia.',msg:'a esteira já tem três caixas. Não há lugar para outro lote.'}};
       w.lotes.push(q.val.v);
-      return{anim:{lote:q.val.v},msg:'separar_lote() leu quantidade ('+q.val.v+') e separou '+q.val.v+' peças.'};
+      return{anim:{lote:q.val.v},msg:'separar_lote() leu quantidade ('+q.val.v+') e separou '+plural(q.val.v,'peça','peças')+'.'};
     }
     if(c==='mc'){
       const r={};
       for(const n of['carga','oleo','codigo','freio']){const v=lerVar(s,n);if(v.erro)return v;r[n]=v.val;}
       w.mc=r;
       return{anim:{mc:true},msg:'O monta-cargas leu carga = '+fmtV(r.carga)+', oleo = '+fmtV(r.oleo)+', codigo = '+fmtV(r.codigo)+' e freio = '+fmtV(r.freio)+'.'};
+    }
+    if(c==='abastecer'){
+      const e=lerVar(s,'energia');if(e.erro)return e;const q=lerVar(s,'combustivel');if(q.erro)return q;
+      if(e.val.v!==true)return{erro:{tipo:'semEnergia',titulo:'A bomba não ligou.',msg:'energia vale False: sem energia, a bomba não funciona. Guarde True em energia antes de abastecer.'},anim:{falha:'bomba'}};
+      if(q.val.v<=0||q.val.v>9)return{erro:{tipo:'faixa',titulo:'Quantidade fora do limite.',msg:'a bomba enche de 0,5 a 9 litros por vez, e combustivel vale '+fmtV(q.val)+'.'}};
+      const n=w.tanques.length+1,tot=(w.sit.tanques||[]).length;
+      if(tot&&n>tot)return{erro:{tipo:'tanqueSobra',titulo:'Não há mais tanques vazios.',msg:'os '+tot+' tanques já estavam cheios. Conte quantas vezes abastecer_tanque() é chamada.'},anim:{falha:'bomba'}};
+      w.tanques.push(q.val.v);
+      return{anim:{tanque:n},msg:'abastecer_tanque() leu energia (True) e combustivel ('+fmtV(q.val)+') e encheu o tanque '+n+' com '+fmtV(q.val)+' L.'};
     }
     return{erro:{tipo:'desconhecido'}};
   },
@@ -162,11 +176,19 @@ MUNDOS.oficina={
       const p=sit.pedidos,l=w.lotes;
       if(!l.length)return{ok:false,erro:{tipo:'semLote',titulo:'Nenhum lote separado.',msg:'a separadora só trabalha quando o programa chama separar_lote().'}};
       for(let i=0;i<p.length;i++){
-        if(l[i]===undefined)return{ok:false,erro:{tipo:'faltaLote',titulo:'Faltou um lote.',msg:'o pedido '+(i+1)+' ('+p[i]+' peças) ficou sem caixa. Faltam linhas no programa.'}};
-        if(l[i]!==p[i])return{ok:false,erro:{tipo:'loteErrado',titulo:'Lote com a quantidade errada.',msg:'a caixa '+(i+1)+' saiu com '+l[i]+' peças, mas o pedido '+(i+1)+' era de '+p[i]+'. A separadora usa o valor que estiver em quantidade naquele momento.'}};
+        if(l[i]===undefined)return{ok:false,erro:{tipo:'faltaLote',titulo:'Faltou um lote.',msg:'o pedido '+(i+1)+' ('+plural(p[i],'peça','peças')+') ficou sem caixa. Faltam linhas no programa.'}};
+        if(l[i]!==p[i])return{ok:false,erro:{tipo:'loteErrado',titulo:'Lote com a quantidade errada.',msg:'a caixa '+(i+1)+' saiu com '+plural(l[i],'peça','peças')+', mas o pedido '+(i+1)+' era de '+p[i]+'. A separadora usa o valor que estiver em quantidade naquele momento.'}};
       }
-      if(l.length>p.length)return{ok:false,erro:{tipo:'loteSobra',titulo:'Sobrou uma caixa.',msg:'saiu uma caixa a mais ('+l[p.length]+' peças) que ninguém pediu.'}};
+      if(l.length>p.length)return{ok:false,erro:{tipo:'loteSobra',titulo:'Sobrou uma caixa.',msg:'saiu uma caixa a mais ('+plural(l[p.length],'peça','peças')+') que ninguém pediu.'}};
       return{ok:true,msg:'Pedido'+(p.length>1?'s':'')+' atendido'+(p.length>1?'s':'')+': '+p.join(' e ')+' peças.'};
+    }
+    if(sit.tanques){
+      const E=sit.tanques,T=w.tanques;
+      for(let i=0;i<E.length;i++){
+        if(T[i]===undefined)return{ok:false,erro:{tipo:'faltaTanque',titulo:'Um tanque ficou vazio.',msg:'o tanque '+(i+1)+' (pedido de '+fmtV(LV('float',E[i]))+' L) não foi abastecido. Faltam instruções no programa.'}};
+        if(Math.abs(T[i]-E[i])>1e-9)return{ok:false,erro:{tipo:'tanqueErrado',titulo:'Tanque com a quantidade errada.',msg:'o tanque '+(i+1)+' recebeu '+fmtV(LV('float',T[i]))+' L, mas o pedido era '+fmtV(LV('float',E[i]))+' L. A bomba usa o valor que estiver em combustivel no momento em que é chamada.'}};
+      }
+      return{ok:true,msg:'Tanques abastecidos com '+E.map(x=>fmtV(LV('float',x))+' L').join(' e ')+'.'};
     }
     if(sit.mc){
       if(!w.mc)return{ok:false,erro:{tipo:'semMc',titulo:'O monta-cargas não foi ligado.',msg:'as variáveis estão prontas, mas falta chamar ligar_monta_cargas() para a máquina ler os valores.'}};
@@ -247,14 +269,32 @@ MUNDOS.tochas={
   init(sit){return{n:sit.n,acesas:0,sit};},
   cmd(w,c){
     if(c==='tocha'){
-      if(w.acesas>=w.n)return{erro:{tipo:'semTocha',titulo:'Não há mais tochas apagadas.',msg:'as '+w.n+' tochas já estavam acesas, então esta chamada de acender_tocha() não tinha tocha para acender. Conte quantas vezes a função é chamada.'},anim:{falha:true}};
+      if(w.acesas>=w.n)return{erro:{tipo:'semTocha',titulo:'Não há mais tochas apagadas.',msg:(w.n===1?'a tocha já estava acesa':'as '+w.n+' tochas já estavam acesas')+', então esta chamada de acender_tocha() não tinha tocha para acender. Conte quantas vezes a função é chamada.'},anim:{falha:true}};
       w.acesas++;return{anim:{tocha:w.acesas-1},msg:'acender_tocha(): a tocha '+w.acesas+' de '+w.n+' acendeu.'};
     }
     return{erro:{tipo:'desconhecido'}};
   },
   fim(w){
-    if(w.acesas<w.n)return{ok:false,erro:{tipo:'faltaTocha',titulo:'Ainda há tochas apagadas.',msg:'o programa acendeu '+w.acesas+' de '+w.n+' tochas. Cada chamada de acender_tocha() acende uma.'}};
+    if(w.sit.demo)return{ok:true,msg:'Fim do programa: '+w.acesas+(w.acesas===1?' tocha acesa.':' tochas acesas.')};
+    if(w.acesas<w.n)return{ok:false,erro:{tipo:'faltaTocha',titulo:'Ainda há tochas apagadas.',msg:'o programa acendeu '+w.acesas+' de '+plural(w.n,'tocha','tochas')+'. Cada chamada de acender_tocha() acende uma.'}};
     return{ok:true,msg:w.n===1?'A tocha acendeu!':'As '+w.n+' tochas acenderam, uma depois da outra.'};
+  }
+};
+
+/* --- Pátio de treino: o portão com trava. A ordem das duas instruções decide se ele sobe --- */
+MUNDOS.patio={
+  init(sit){return{trava:true,aberto:false,sit};},
+  cmd(w,c){
+    if(c==='destravar'){if(!w.trava)return{msg:'destravar_portao(): a trava já estava aberta.'};w.trava=false;return{anim:{trava:false},msg:'destravar_portao(): a trava do portão abriu.'};}
+    if(c==='erguer'){
+      if(w.trava)return{erro:{tipo:'travado',titulo:'O portão não subiu.',msg:'a trava ainda segura o portão. Ela precisa ser aberta antes de erguer.'},anim:{falha:'portao'}};
+      w.aberto=true;return{anim:{portao:true},msg:'erguer_portao(): o portão subiu.'};
+    }
+    return{erro:{tipo:'desconhecido'}};
+  },
+  fim(w){
+    if(w.aberto)return{ok:true,msg:'O portão do pátio está aberto.'};
+    return{ok:false,erro:{tipo:'fechado',titulo:'O portão continua fechado.',msg:w.trava?'a trava continua fechada e o portão não foi erguido.':'a trava está aberta, mas falta erguer o portão.'}};
   }
 };
 
@@ -294,7 +334,7 @@ const SABERES={
     resumo:'Um programa é uma sequência de instruções que o computador executa uma de cada vez, de cima para baixo. Trocar a ordem muda o resultado; quando algo dá errado, a execução para na linha do problema.',
     exemplo:'avancar()\navancar()\nvirar_direita()\navancar()\nativar()'},
   dados:{nome:'Variáveis e tipos',tumba:'diesel',relic:'Vela de ignição',
-    resumo:'Uma variável é uma caixa com nome que guarda um valor. Os tipos básicos são int (inteiro: 5), float (decimal: 2.5), string (texto entre aspas: "ABRIR") e boolean (True ou False). O = guarda um valor; guardar de novo troca o conteúdo.',
+    resumo:'Uma variável é uma caixa com nome que guarda um valor. Os tipos básicos do Python são int (inteiro: 5), float (decimal: 2.5), str (texto entre aspas, a string: "ABRIR") e bool (booleano: True ou False). O = guarda um valor; guardar de novo troca o conteúdo. Em Python uma variável aceita qualquer tipo; no jogo, cada máquina tem um contrato e aceita um tipo só.',
     exemplo:'energia = True\ncombustivel = 2.5\npecas = 5\nsenha = "ABRIR"'},
   decisoes:{nome:'Decisões: if, elif e else',tumba:'atom',relic:'Núcleo atômico',
     resumo:'O if testa uma condição e só executa o seu bloco quando ela dá True. O elif testa outra condição se as de cima deram False, e o else pega todos os outros casos. Só o primeiro caminho verdadeiro é executado. == compara; = guarda.',
@@ -321,8 +361,19 @@ const DESAFIOS=[
     dicas:['Um programa é uma lista de instruções. Esta máquina conhece uma só: acender_tocha().',
       'A paleta, embaixo do painel, mostra as linhas que você pode usar. Tocar numa delas escreve a linha no programa.',
       'Programa: acender_tocha(). Depois toque em ▶ Executar.'],
-    sucesso:'A tocha acendeu e o portão do pátio se abriu! Programar é isso: escrever, executar e ver o resultado.',
+    sucesso:'A tocha acendeu! Programar é isso: escrever, executar e ver o resultado. Falta o portão: toque na etapa 2, no alto do painel.',
     exemplo:{titulo:'O primeiro comando',codigo:'acender_tocha()'}},
+  {id:'t2',tumba:'treino',saber:'treino',etapa:'corrigir',titulo:'Treino · a ordem importa',mundo:'patio',maxLinhas:4,
+    intro:['O portão do pátio tem uma trava e um guincho. Alguém já escreveu o programa que deveria abri-lo.',
+      'Antes de executar, faça uma previsão. Depois execute, observe e corrija: para mudar uma linha de lugar, toque nela e use ↑ Subir ou ↓ Descer.'],
+    blocos:['destravar','erguer'],situacoes:[{id:'a',nome:'portão do pátio'}],
+    inicial:[cmd_('erguer'),cmd_('destravar')],
+    previsao:{pergunta:'O programa já está escrito. O que vai acontecer quando ele rodar?',opcoes:[{t:'O portão sobe.',ok:true},{t:'O portão não sobe.',ok:false}]},
+    dicas:['O computador executa as instruções de cima para baixo. Quando uma depende da outra, a ordem decide o resultado.',
+      'Pense num portão de verdade: dá para erguê-lo com a trava fechada? Qual das duas instruções precisa vir primeiro?',
+      'Programa: destravar_portao() e, na linha de baixo, erguer_portao().'],
+    sucesso:'O portão abriu! As mesmas duas instruções, na ordem certa, resolveram o problema. Atravesse-o para chegar ao vale.',
+    exemplo:{titulo:'A ordem importa',codigo:'destravar_portao()\nerguer_portao()'}},
 
   /* ---------- Engrenagens: sequência e lógica de execução ---------- */
   {id:'s0',tumba:'steam',saber:'seq',etapa:'demo',titulo:'Demonstração · a ordem importa',mundo:'grade',
@@ -353,6 +404,7 @@ const DESAFIOS=[
       'Para mudar uma linha de lugar, toque nela e use ↑ Subir ou ↓ Descer.'],
     blocos:['fwd','right','act'],situacoes:[{id:'a',nome:'percurso 3',grid:G3,start:{x:0,y:2,dir:0}}],
     inicial:[cmd_('fwd'),cmd_('right'),cmd_('fwd'),cmd_('fwd'),cmd_('fwd'),cmd_('act')],
+    previsao:{pergunta:'Antes de executar: o autômato vai chegar ao destino com este programa?',opcoes:[{t:'Sim, ele chega e ativa.',ok:true},{t:'Não, ele para antes.',ok:false}]},
     dicas:['Corrigir um programa (depurar) começa por executar e olhar onde ele para: a linha marcada em vermelho é onde o problema apareceu.',
       'O autômato vira cedo demais e bate na pedra do meio. Ele precisa subir até a fileira de cima antes de virar.',
       'Mova virar_direita() uma linha para baixo: avancar(), avancar(), virar_direita(), avancar(), avancar(), ativar().'],
@@ -378,20 +430,20 @@ const DESAFIOS=[
     exemplo:{titulo:'Guardar e ler',codigo:'quantidade = 3\nseparar_lote()'}},
   {id:'d1',tumba:'diesel',saber:'dados',etapa:'guiada',titulo:'Etapa 1 · os quatro tipos',mundo:'oficina',maxLinhas:6,
     intro:['Ficha da oficina: ligar o gerador · abastecer 2,5 litros · contar 5 peças · digitar a senha ABRIR.',
-      'Cada máquina tem uma variável e aceita um tipo: boolean (True/False), float (decimal), int (inteiro) e string (texto entre aspas). Ao executar, cada máquina reage ao valor.'],
+      'Cada máquina tem uma variável e um contrato: aceita um tipo só — bool (True/False), float (decimal), int (inteiro) ou str (texto entre aspas). Ao executar, cada máquina reage ao valor.'],
     blocos:['set'],vars:[{nome:'energia',t:'bool'},{nome:'combustivel',t:'float',unid:'L'},{nome:'pecas',t:'int'},{nome:'senha',t:'str'}],
     objetos:['fusOn','fusOff','plTrue','gal25','gal314','eng5','pl5','plAbrir','plAbrirMin'],
     situacoes:[{id:'a',nome:'ficha da oficina',tipos:{energia:LV('bool',true),combustivel:LV('float',2.5),pecas:LV('int',5),senha:LV('str','ABRIR')}}],
     passos:[{texto:'Toque em "variável = valor". A linha nova guarda em energia: escolha o fusível ligado (True) para ligar o gerador.',bloco:'set',ok:p=>p.some(n=>n.k==='set'&&n.nome==='energia'&&n.expr&&n.expr.val&&n.expr.val.v===true)},
       {texto:'Nova atribuição: toque de novo em "variável = valor", escolha a variável combustivel e o galão de 2,5 L (um float).',bloco:'set',ok:p=>p.some(n=>n.k==='set'&&n.nome==='combustivel'&&n.expr)},
       {texto:'Agora pecas = 5 (um int, sem aspas).',bloco:'set',ok:p=>p.some(n=>n.k==='set'&&n.nome==='pecas'&&n.expr)},
-      {texto:'Por fim senha = "ABRIR" (uma string: texto entre aspas, em maiúsculas).',bloco:'set',ok:p=>p.some(n=>n.k==='set'&&n.nome==='senha'&&n.expr)},
+      {texto:'Por fim senha = "ABRIR" (um str: texto entre aspas, em maiúsculas).',bloco:'set',ok:p=>p.some(n=>n.k==='set'&&n.nome==='senha'&&n.expr)},
       {texto:'Toque em ▶ Executar e veja cada máquina reagir à sua variável.',ok:()=>false}],
-    dicas:['Uma variável guarda um valor de um tipo: int é número inteiro (5), float tem ponto decimal (2.5), string é texto entre aspas ("ABRIR") e boolean é True ou False.',
-      'Leia a ficha e pense no tipo: ligar é sim ou não (boolean); litros têm decimal (float); peças se contam (int); senha é texto (string). "5" com aspas é texto, não número.',
+    dicas:['Uma variável guarda um valor de um tipo: int é número inteiro (5), float tem ponto decimal (2.5), str é texto entre aspas ("ABRIR") e bool é True ou False.',
+      'Leia a ficha e pense no tipo: ligar é sim ou não (bool); litros têm decimal (float); peças se contam (int); senha é texto (str). "5" com aspas é texto, não número.',
       'Programa: energia = True, combustivel = 2.5, pecas = 5, senha = "ABRIR".'],
     sucesso:'As quatro máquinas funcionaram! Cada variável recebeu um valor do tipo que a máquina dela precisava.',
-    exemplo:{titulo:'Os quatro tipos',codigo:'energia = True      # boolean\ncombustivel = 2.5   # float\npecas = 5           # int\nsenha = "ABRIR"     # string'}},
+    exemplo:{titulo:'Os quatro tipos',codigo:'energia = True      # bool\ncombustivel = 2.5   # float\npecas = 5           # int\nsenha = "ABRIR"     # str'}},
   {id:'d2',tumba:'diesel',saber:'dados',etapa:'guiada',titulo:'Etapa 2 · 5 ou "5"?',mundo:'oficina',maxLinhas:3,
     intro:['Guardar um valor numa variável se chama atribuição e se escreve com =.','A variável quantidade aceita int (inteiro) e está vazia.'],
     blocos:['set'],vars:[{nome:'quantidade',t:'int'}],objetos:['eng5','pl5','gal314'],situacoes:[{id:'a',nome:'pedido',atrib:{nome:'quantidade',val:LV('int',5)}}],
@@ -399,7 +451,7 @@ const DESAFIOS=[
       {texto:'Toque na linha nova e escolha o valor: o lote de engrenagens marcado com 5. Experimente também a placa "5" para ver a diferença.',ok:p=>p.some(n=>n.k==='set'&&n.expr&&n.expr.k==='lit'&&n.expr.val.t==='int'&&n.expr.val.v===5)},
       {texto:'Pronto: quantidade = 5. Toque em ▶ Executar e observe o contêiner receber o valor.',ok:()=>false}],
     dicas:['Atribuição: nome = valor. O valor fica guardado na variável até outra atribuição trocar.',
-      'A placa "5" tem aspas: é uma string (texto). A variável quantidade só aceita int, um número sem aspas.',
+      'A placa "5" tem aspas: é um str (texto). O contêiner quantidade tem contrato int: só aceita um número sem aspas. (Em Python a atribuição seria permitida; quem recusa é a máquina.)',
       'Programa: quantidade = 5 (o lote de engrenagens, sem aspas).'],
     sucesso:'quantidade = 5. A variável deixou de estar vazia: agora guarda o int 5.',
     exemplo:{titulo:'Atribuição',codigo:'quantidade = 5'}},
@@ -431,13 +483,24 @@ const DESAFIOS=[
       'Alguém escreveu o programa com erros de tipo e de valor. Execute, leia o erro e corrija linha por linha.'],
     blocos:['set','mc'],vars:[{nome:'carga',t:'int'},{nome:'oleo',t:'float',unid:'L'},{nome:'codigo',t:'str'},{nome:'freio',t:'bool'}],
     objetos:['cx12','ct12','cx7','fr075','fr05','ctMotor','ctMotorMin','alvTrue','alvFalse'],
+    previsao:{pergunta:'Antes de executar: o monta-cargas vai subir com esta ficha?',opcoes:[{t:'Sim, os valores estão certos.',ok:true},{t:'Não, alguma variável está errada.',ok:false}]},
     inicial:[set_('carga',lit_(LV('str','12')),'ct12'),set_('oleo',lit_(LV('float',0.75)),'fr075'),set_('codigo',lit_(LV('str','motor')),'ctMotorMin'),set_('freio',lit_(LV('bool',true)),'alvTrue'),cmd_('mc')],
     situacoes:[{id:'a',nome:'ficha de serviço',mc:{carga:LV('int',12),oleo:LV('float',0.75),codigo:LV('str','MOTOR'),freio:LV('bool',false)}}],
-    dicas:['Cada variável aceita um tipo só: carga é int, oleo é float, codigo é string e freio é boolean. Valor com aspas é texto.',
+    dicas:['Cada contêiner tem um contrato de tipo: carga é int, oleo é float, codigo é str e freio é bool. Valor com aspas é texto.',
       'Execute e leia a área de erro: a linha marcada mostra o problema. "12" com aspas é texto; "motor" em minúsculas é outro texto; freio solto é False.',
       'Programa certo: carga = 12, oleo = 0.75, codigo = "MOTOR", freio = False, ligar_monta_cargas().'],
     sucesso:'O monta-cargas subiu! Cada variável tinha o dado certo, do tipo certo.',
     exemplo:{titulo:'Configuração corrigida',codigo:'carga = 12\noleo = 0.75\ncodigo = "MOTOR"\nfreio = False\nligar_monta_cargas()'}},
+  {id:'d6',tumba:'diesel',saber:'dados',etapa:'aplicacao',titulo:'Aplicação · a bomba de combustível',mundo:'oficina',maxLinhas:6,
+    intro:['Pedido da garagem: encher dois tanques, o primeiro com 2,5 litros e o segundo com 4,0 litros.',
+      'A bomba lê duas variáveis quando abastecer_tanque() é chamada: energia (bool) precisa estar True, e combustivel (float) diz quantos litros. Monte o programa sem guia: guarde, use e altere os dados.'],
+    blocos:['set','abastecer'],vars:[{nome:'energia',t:'bool'},{nome:'combustivel',t:'float',unid:'L'}],objetos:['fusOn','fusOff','gal25','gal15','f4','pl25'],arit:['+'],
+    situacoes:[{id:'a',nome:'dois tanques',tanques:[2.5,4]}],
+    dicas:['A bomba lê as variáveis no momento em que é chamada. Para encher dois tanques com quantidades diferentes, o valor guardado precisa mudar entre as duas chamadas.',
+      'Ligue a energia (True) e guarde 2.5 em combustivel; abasteça. Depois mude combustivel para 4.0 — guardando outro valor ou fazendo uma conta — e abasteça de novo.',
+      'Um programa possível: energia = True, combustivel = 2.5, abastecer_tanque(), combustivel = combustivel + 1.5, abastecer_tanque().'],
+    sucesso:'Os dois tanques foram abastecidos: você guardou, usou e alterou os dados para a máquina trabalhar.',
+    exemplo:{titulo:'Guardar, usar e alterar',codigo:'energia = True\ncombustivel = 2.5\nabastecer_tanque()\ncombustivel = combustivel + 1.5\nabastecer_tanque()'}},
 
   /* ---------- Reator: if, elif e else ---------- */
   {id:'a0',tumba:'atom',saber:'decisoes',etapa:'demo',titulo:'Demonstração · comparar e decidir',mundo:'reator',
@@ -494,6 +557,7 @@ const DESAFIOS=[
     intro:['O turno anterior escreveu este programa. Com 95 graus o reator só foi ventilado e quase superaqueceu.',
       'Execute cada situação, descubra por que o caminho errado foi escolhido e corrija. Atenção ao caso de exatamente 80 graus.'],
     blocos:['sese','elif','resfriar','ventilar','manter'],sensores:[{nome:'temperatura',t:'int'}],objetos:['n50','n80'],ops:['>=','>','<'],
+    previsao:{pergunta:'Antes de executar a situação A (95 graus): o reator vai ser resfriado?',opcoes:[{t:'Sim: 95 é maior que 80.',ok:true},{t:'Não: ele só vai ser ventilado.',ok:false}]},
     inicial:[{k:'se',cond:{a:var_('temperatura'),op:'>=',b:lit_(LV('int',50))},entao:[cmd_('ventilar')],elifs:[{k:'elif',cond:{a:var_('temperatura'),op:'>=',b:lit_(LV('int',80))},corpo:[cmd_('resfriar')]}],senao:[cmd_('manter')]}],
     situacoes:[{id:'A',nome:'A · 95 graus',temperatura:95,espera:{resfriar:true,ventilar:false,manter:false}},{id:'B',nome:'B · 80 graus',temperatura:80,espera:{resfriar:true,ventilar:false,manter:false}},
       {id:'C',nome:'C · 60 graus',temperatura:60,espera:{resfriar:false,ventilar:true,manter:false}},{id:'D',nome:'D · 20 graus',temperatura:20,espera:{resfriar:false,ventilar:false,manter:true}}],
@@ -504,6 +568,13 @@ const DESAFIOS=[
     exemplo:{titulo:'A ordem dos elif',codigo:'if temperatura >= 80:\n    resfriar()\nelif temperatura >= 50:\n    ventilar()\nelse:\n    manter_estavel()'}},
 
   /* ---------- Viva: for e while ---------- */
+  {id:'bd',tumba:'bio',saber:'automacao',etapa:'demo',titulo:'Demonstração · repetir sem copiar',mundo:'tochas',
+    intro:['Dois programas acendem as mesmas quatro tochas de seiva.','O primeiro repete a mesma linha quatro vezes; o segundo usa for. Compare o tamanho dos programas e o resultado.'],
+    blocos:['rep','tocha'],situacoes:[{id:'d',nome:'quatro tochas',n:4,demo:true}],
+    demo:[{nome:'Linha a linha',prog:[{id:1,k:'cmd',cmd:'tocha'},{id:2,k:'cmd',cmd:'tocha'},{id:3,k:'cmd',cmd:'tocha'},{id:4,k:'cmd',cmd:'tocha'}]},
+      {nome:'Com for',prog:[{id:1,k:'rep',n:4,var:'i',corpo:[{id:2,k:'cmd',cmd:'tocha'}]}]}],
+    conclusao:'Os dois acenderam as quatro tochas. O for fez o mesmo com 2 linhas: ele repete o bloco que está embaixo dele.',
+    exemplo:{titulo:'Repetir sem copiar',codigo:'# linha a linha\nacender_tocha()\nacender_tocha()\nacender_tocha()\nacender_tocha()\n\n# com for\nfor i in range(4):\n    acender_tocha()'}},
   {id:'b0',tumba:'bio',saber:'automacao',etapa:'guiada',titulo:'Prática guiada · as quatro tochas',mundo:'tochas',maxLinhas:2,repMax:8,
     intro:['Quatro tochas de seiva iluminam a estufa. Dá para escrever acender_tocha() quatro vezes… mas o painel tem só 2 linhas.',
       'for i in range(4): repete o bloco de baixo 4 vezes. As tochas acendem uma depois da outra.'],
@@ -534,6 +605,7 @@ const DESAFIOS=[
       'Execute, veja em que volta ele para e corrija o bloco e o número de voltas.'],
     blocos:['rep','irrigar','avancar'],situacoes:[{id:'a',nome:'organismos intercalados',pods:[2,null,2,null,2,null],chegar:true}],
     inicial:[{k:'rep',n:6,var:'i',corpo:[cmd_('irrigar'),cmd_('avancar')]}],
+    previsao:{pergunta:'Antes de executar: este for rega os três organismos sem desperdiçar água?',opcoes:[{t:'Sim, ele rega os três.',ok:true},{t:'Não, ele rega a terra vazia.',ok:false}]},
     dicas:['Para corrigir uma repetição, descubra o padrão: o que acontece igual em cada volta.',
       'De um organismo ao próximo são duas posições: cada volta precisa regar uma vez e avançar duas. Com isso, bastam 3 voltas.',
       'Programa: for i in range(3): irrigar(), avancar(), avancar().'],
@@ -584,6 +656,8 @@ const ETAPA_NOME={demo:'Demonstração',guiada:'Prática guiada',aplicacao:'Apli
 function desafiosDa(tumba){return DESAFIOS.filter(d=>d.tumba===tumba);}
 /* etapas que existiam antes desta versão: quem já tinha todas de uma tumba ganha as novas (o progresso não volta) */
 const ETAPAS_ANTIGAS={steam:['s0','s1','s2'],diesel:['d0','d1','d2','d3','d4','d5'],atom:['a0','a1','a2'],bio:['b0','b1','b2','b3','b4']};
+/* etapas criadas na revisão 3 do save: quem já tinha passado do ponto onde elas entram não as refaz */
+const ETAPAS_REV3={treino:'t2',diesel:'d6',bio:'bd'};
 
 /* ---------- criação de linhas pela paleta ---------- */
 function novoNo(cfg,b,prog){

@@ -72,7 +72,8 @@ CONSTRUIR.final=function(){
   A.luzesExtra=t=>{luz(14*16,11*16,PAINEL.aberto&&PAINEL.area===A?130:70,1,'#ffe9a0');luz(14*16,3*16,50,0.8,'#d8ffb0');};
   A.desenharChao=(g,t)=>desenharJardim(A,g,t);
   A.reiniciar=()=>{for(const pt of A.pontos)pt.aceso=false;A.escuro=G.learn.c1?0.04:0.5;addDiary('city_enter',true);};
-  A.objetivo=()=>G.learn.c1?{t:G.done?'Cidade-Jardim restaurada':'Etapa 5 de 5 · concluída',s:G.done?'Explore o vale: segredos '+secCount()+'/12.':'Suba ao terraço e toque na árvore-matriz.'}:{t:'Etapa 5 de 5 · Tudo junto',s:'Programe o Jardim Central: sequência, variável, decisão e repetição.'};
+  A.focoEvento=(ev,ws)=>{if(!ws||(!ev.cmd&&ev.tipo!=='se'))return null;const X=i=>JARDIM.x*16+i*JARDIM.passo+8;return ev.cmd==='acender'?{x:X(ws.fimX),y:JARDIM.y*16-38}:{x:X(Math.min(ws.x,ws.fimX)),y:JARDIM.y*16-36};};
+  A.objetivo=()=>G.learn.c1?{t:G.done?'Cidade-Jardim restaurada':'Etapa 5 de 5 · concluída',s:G.done?'Explore o vale: segredos '+secCount()+'/12.':'Suba ao terraço e toque na árvore-matriz.',alvo:G.done?null:{x:14*16,y:3*16-6,txt:'Árvore-matriz'}}:{t:'Etapa 5 de 5 · Tudo junto',s:'Programe o Jardim Central: sequência, variável, decisão e repetição.',alvo:A.term};
   A.aoEvento=(ev)=>{const a=ev.anim||{};if(a.rega!==undefined){SFX.rega();gotas(JARDIM.x*16+a.rega*JARDIM.passo+8,JARDIM.y*16-4,6);}if(a.acende){SFX.bioChime();faiscas(JARDIM.x*16+5*JARDIM.passo+8,JARDIM.y*16-10,20,['#ffd24a','#ffffff','#8fe0ff']);}if(ev.tipo==='erro'){SFX.deny();R.treme=0.2;}};
   A.aoConcluir=(cfg)=>{R.treme=0.4;setTimeout(()=>toast('O Jardim Central acendeu! A luz do sol entra pela cúpula e o terraço da árvore-matriz se abriu.','good'),700);};
   return A;

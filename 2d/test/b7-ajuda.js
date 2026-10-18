@@ -27,7 +27,7 @@ const t=suite('b7-ajuda');
   t.ok(!s.guia&&s.ini,'fechar o Guia volta à tela inicial',s);
   /* ---------- treino: objetivo em passos e pular ---------- */
   await ev(()=>document.getElementById('btnNew').click());await page.waitForTimeout(150);
-  let e=await U.estado();const obj=await ev(()=>objetivo());t.ok(e.area==='treino'&&/Treino 1 de 8/.test(obj.t),'o treino mostra o passo da vez no objetivo',obj);
+  let e=await U.estado();const obj=await ev(()=>objetivo());t.ok(e.area==='treino'&&/Treino 1 de 9/.test(obj.t)&&obj.alvo&&obj.alvo.txt,'o treino mostra o passo da vez no objetivo',obj);
   await ev(()=>__vt.usarEm(TREINO.lume.tx*16+8,TREINO.lume.ty*16+20,'cima'));await U.opcao('Já sei jogar');await U.confirmar();await U.transicao();
   e=await U.estado();let tr=await ev(()=>__vt.G.treino);t.ok(e.area==='vale'&&tr.feito&&!e.learn.t1,'"Já sei jogar" pula o treino e leva ao vale',[e.area,tr]);
   /* ---------- Guia pela tecla G e vista ampla pela tecla C ---------- */
@@ -84,15 +84,27 @@ const t=suite('b7-ajuda');
   const erroDe=async(cfg,txt)=>{await ev(cfg=>{escolherDesafio(__vt.DESAFIO[cfg]);},cfg);const w=await U.escrever(txt);if(w.aceito){await U.executar();}const x=await U.erro();await ev(()=>{if(PAINEL.texto){PAINEL.texto=false;renderPainel();}});return x;};
   await ev(()=>{fecharPainel();__vt.G.learn=Object.assign(__vt.G.learn,{s3:true,s2:true,d0:true,d1:true});__vt.entrar('diesel');__vt.usarEm(14*16+8,13*16+6,'cima');});
   er=await erroDe('d2','quantidade = "5"');
-  t.ok(er&&/linha 1/i.test(er.onde)&&/TypeError/.test(er.tit)&&/número inteiro/.test(er.tit)&&/texto/.test(er.txt)&&/número/.test(er.txt),'texto numa variável int: "era esperado um número inteiro" e a explicação do texto no lugar do número',er);
-  er=await erroDe('d2','quantidad = 5');t.ok(er&&/NameError/.test(er.tit)&&/quantidad/.test(er.tit+er.txt),'nome de variável errado: NameError explicado',er);
+  t.ok(er&&/linha 1/i.test(er.onde)&&/Regra desta máquina/.test(er.onde)&&/só aceita int \(inteiro\)/.test(er.tit)&&/"5", que é um texto \(str\)/.test(er.txt)&&/Em Python, quantidade = "5" seria permitido/.test(er.txt)&&!/TypeError/.test(er.tit),
+    'texto no contêiner int: a área diz que é regra da máquina (não erro do Python), mostra o valor recebido e o tipo exigido',er);
+  /* em até duas ações, a explicação do assunto no Guia, sem perder o programa */
+  {const g=await ev(()=>{const b=document.querySelector('#pErro .gbtn');const tx=document.getElementById('pTxt').value;b.click();return{bt:b.textContent,modo:__vt.G.mode,top:(document.querySelector('#gTopicos .gtop.on')||{}).textContent,tx};});
+    await ev(()=>document.getElementById('gFechar').click());const v=await ev(()=>({modo:__vt.G.mode,erro:!document.getElementById('pErro').hidden,prog:LANG.codigo(PAINEL.prog)}));
+    t.ok(/Ver no Guia/.test(g.bt)&&g.modo==='guia'&&/int/.test(g.top)&&v.modo==='painel'&&v.prog==='quantidade = "5"','um toque em "📖 Ver no Guia" abre o assunto do erro; ao fechar, o painel e o programa continuam iguais',{g,v});}
+  er=await erroDe('d2','quantidad = 5');t.ok(er&&/não é uma variável desta sala/.test(er.tit)&&/criaria uma variável nova/.test(er.txt)&&/Regra desta máquina/.test(er.onde),'nome de variável que não existe: explica que o Python criaria a variável, mas a sala só tem os contêineres dela',er);
+  er=await erroDe('d2','quantidade = 5\nprint(quantidade)');t.ok(er&&/O Python tem, o editor do jogo não/.test(er.onde)&&/print\(\) existe no Python/.test(er.tit),'print(): o Python tem, o editor do jogo não (e diz o que o editor aceita)',er);
   er=await erroDe('d3','quantidade = 5\nseparar()');t.ok(er&&/linha 2/i.test(er.onde)&&/NameError/.test(er.tit)&&/separar_lote/.test(er.txt),'função que não existe: NameError com a função certa sugerida',er);
   er=await erroDe('d2','quantidade = 5,5');t.ok(er&&/linha 1/i.test(er.onde)&&er.txt.length>10,'vírgula no decimal: erro explicado',er);
   await ev(()=>{fecharPainel();__vt.G.learn=Object.assign(__vt.G.learn,{d2:true,d3:true,d4:true,d5:true,a0:true});__vt.entrar('atom');__vt.usarEm(14*16+8,14*16+6,'cima');});
   er=await erroDe('a1','if energia = 5:\n    abrir_comporta()');t.ok(er&&/SyntaxError/.test(er.tit)&&/==/.test(er.tit+er.txt),'= no lugar de == na condição: SyntaxError que explica a diferença',er);
   er=await erroDe('a1','if energia >= 5:\nabrir_comporta()');t.ok(er&&/IndentationError/.test(er.tit)&&/4 espaços/.test(er.txt),'bloco do if sem recuo: IndentationError com o que fazer',er);
   er=await erroDe('a1','if energia >= 5\n    abrir_comporta()');t.ok(er&&/linha 1/i.test(er.onde)&&/SyntaxError/.test(er.tit)&&/:/.test(er.tit+er.txt),'faltou o dois-pontos: SyntaxError na linha 1',er);
-  const dicaTxt=await ev(()=>document.querySelector('#pErro .dica').textContent);t.ok(/Dica/.test(dicaTxt)&&/Guia/.test(dicaTxt),'a área de erro lembra a Dica do Lume e o Guia',dicaTxt);
+  /* Passo a passo: na última instrução, o resultado aparece no mesmo toque, e o mecanismo afetado fica marcado */
+  await ev(()=>{escolherDesafio(__vt.DESAFIO.a1);});await U.escrever('abrir_comporta()');await U.sit(0);
+  await ev(()=>document.getElementById('pStep').click());await page.waitForTimeout(150);
+  const ps=await ev(()=>({fim:!!PAINEL.run&&PAINEL.run.s.fim,ok:!!PAINEL.run&&PAINEL.run.s.ok,msg:$('pMsg').textContent,foco:__vt.R.focoEvento}));
+  t.ok(ps.fim&&ps.ok&&/Deu certo em A/.test(ps.msg),'Passo a passo: no programa de uma linha, um toque executa a instrução e já mostra o resultado',ps);
+  t.ok(ps.foco&&Math.abs(ps.foco.x-20*16)<4&&!ps.foco.erro,'o mecanismo que a instrução mexeu (a comporta) fica marcado na sala',ps.foco);
+  const dicaTxt=await ev(()=>document.querySelector('#pErro .dica').textContent+' | '+document.querySelector('#pErro .gbtn').textContent);t.ok(/Dica/.test(dicaTxt)&&/Ver no Guia/.test(dicaTxt),'a área de erro lembra a Dica do Lume e leva ao Guia',dicaTxt);
   await page.screenshot({path:require('path').join(__dirname,'shots','erro-painel.png')});
   }catch(err){t.ok(false,'erro no teste: '+err.message);}
   clearTimeout(vigia);t.done(logs);await browser.close();

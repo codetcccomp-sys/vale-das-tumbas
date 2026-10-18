@@ -109,16 +109,17 @@ function heroiQuadro(vista,q){
 const HEROI_ANIM={
   lado:{
     parado:[{botas:[[2,0],[-2,0]],livre:'quadril'},{botas:[[2,0],[-2,0]],livre:'quadril',dy:-1},{botas:[[2,0],[-2,0]],livre:'quadril',dy:-1,brilho:1},{botas:[[2,0],[-2,0]],livre:'quadril'}],
-    /* passo A (frames 0–3): bengala apoiada, ficando para trás; passo B (4–7): ela sobe, vai à frente e apoia de novo */
+    /* passo A (frames 0–3): a ponta da bengala fica apoiada no chão e vai ficando para trás enquanto o corpo avança;
+       passo B (4–7): ela sobe em arco, passa à frente e desce até tocar o chão de novo (by 0 = ponta na linha dos pés) */
     andar:[
-      {botas:[[4,0],[-4,0]],livre:'quadril',bx:1},
-      {botas:[[3,0],[-3,0]],livre:'quadril',bx:0,dy:1},
+      {botas:[[4,0],[-4,0]],livre:'quadril',bx:3},
+      {botas:[[3,0],[-3,0]],livre:'quadril',bx:1,dy:1},
       {botas:[[1,0],[-1,2]],livre:'quadril',bx:-1},
-      {botas:[[-1,0],[2,1]],livre:'quadril',bx:-2,dy:-1},
+      {botas:[[-1,0],[2,1]],livre:'quadril',bx:-3,dy:-1},
       {botas:[[-4,0],[4,0]],livre:'quadril',bx:-2,by:-2},
-      {botas:[[-3,0],[3,0]],livre:'quadril',bx:0,by:-2,dy:1},
-      {botas:[[-1,2],[1,0]],livre:'quadril',bx:2,by:-1},
-      {botas:[[2,1],[-1,0]],livre:'quadril',bx:2,dy:-1}],
+      {botas:[[-3,0],[3,0]],livre:'quadril',bx:0,by:-3,dy:1},
+      {botas:[[-1,2],[1,0]],livre:'quadril',bx:2,by:-2},
+      {botas:[[2,1],[-1,0]],livre:'quadril',bx:3,by:-1,dy:-1}],
     usar:[{botas:[[2,0],[-2,0]],livre:'meio'},{botas:[[2,0],[-2,0]],livre:'estica',inclina:1},{botas:[[2,0],[-2,0]],livre:'estica',inclina:1,aperta:1}],
     dano:[{botas:[[1,0],[-3,0]],livre:'dano',dx:-1,bx:1,by:-1,dano:1},{botas:[[1,0],[-3,0]],livre:'dano',dx:-1,bx:1,by:-1,dano:1,flash:1}]
   },

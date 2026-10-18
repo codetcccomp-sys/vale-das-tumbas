@@ -6,25 +6,39 @@
 
    O código aparece como em Python:  avancar()   quantidade = 5   if energia >= 5:   elif …:   else:
    for i in range(4):   while umidade < 3:   — o bloco é o que está com recuo (4 espaços) embaixo do cabeçalho.
-   Regras de tipo (as do Python, mais rígidas onde o Python esconderia diferenças):
-   - quatro tipos: int (inteiro) 5, float (decimal) 3.14, string (texto, str) "ABRIR", boolean (bool) True/False;
-   - cada variável da sala é ligada a um mecanismo e aceita um tipo só; o jogo NUNCA converte sozinho:
-     "5" (texto) não entra numa variável de inteiro, e 5 (inteiro) não entra numa de decimal (escreve-se 5.0);
-   - uma variável sem valor fica vazia, diferente de 0 e de False; ler uma variável vazia é erro (NameError);
-   - soma e subtração só entre números; inteiro com decimal dá decimal;
-   - comparar número com texto é erro (não vira False escondido); texto e booleano só se comparam com == e !=;
+   O que é do Python e o que é regra do jogo (os erros dizem qual dos dois aconteceu):
+   - quatro tipos do Python: int (inteiro) 5, float (decimal) 3.14, str (texto, a "string") "ABRIR", bool (booleano)
+     True/False. Nada é convertido sozinho: "5" é texto, 5 é número;
+   - REGRA DO JOGO: cada variável da sala é um contêiner ligado a uma máquina, com um contrato de tipo (como a anotação
+     quantidade: int). Em Python, quantidade = "5" é permitido; aqui a máquina confere o tipo antes de guardar e recusa;
+   - REGRA DO JOGO: as variáveis são as da sala (x = 5 com um nome novo não cria variável), sensores são só leitura e a
+     variável do for não recebe valores;
+   - Python: ler uma variável que ainda não recebeu valor é NameError (no painel ela aparece "vazia", diferente de 0 e
+     de False); soma e subtração só entre números (TypeError com texto); inteiro com decimal dá decimal;
+   - Python: == e != entre número e texto dão False/True (nunca são iguais) e o jogo avisa; < > <= >= entre número e
+     texto dão TypeError; textos se comparam em ordem alfabética; True/False valem 1/0 nas contas e comparações;
+   - Python: a condição de if, elif e while pode ser uma comparação, um booleano ou outro valor (0, 0.0 e "" contam
+     como False; o resto, como True);
    - = guarda um valor (atribuição); == pergunta se dois valores são iguais (comparação);
-   - a condição de if, elif e while pode ser uma comparação (energia >= 5) ou um booleano (porta_aberta, not cheio).
+   - o editor aceita só um pedaço do Python (SUBCONJUNTO); o que existe no Python e não é aceito aqui é dito assim.
    Decimais são guardados de forma aproximada, como em qualquer computador: o jogo mostra até 4 casas. */
+/* "1 etapa", "2 etapas", "0 etapas": contagens com singular e plural certos (usado também pelo resto do jogo) */
+function plural(n,um,varios){return n+' '+(n===1?um:varios);}
 const LANG=(function(){
   const TIPOS={
-    int:{nome:'inteiro',py:'int',rot:'int',ex:'5',art:'um número inteiro',desc:'um número'},
-    float:{nome:'decimal',py:'float',rot:'float',ex:'3.14',art:'um número decimal',desc:'um número com ponto decimal'},
-    str:{nome:'texto',py:'str',rot:'string',ex:'"ABRIR"',art:'um texto',desc:'um texto entre aspas'},
-    bool:{nome:'verdadeiro ou falso',py:'bool',rot:'boolean',ex:'True',art:'um valor booleano',desc:'True ou False'}
+    int:{nome:'inteiro',py:'int',rot:'int',ex:'5',art:'um número inteiro',desc:'um número inteiro',guia:'int'},
+    float:{nome:'decimal',py:'float',rot:'float',ex:'3.14',art:'um número decimal',desc:'um número com ponto decimal',guia:'float'},
+    str:{nome:'texto, a string',py:'str',rot:'str',ex:'"ABRIR"',art:'um texto',desc:'um texto entre aspas',guia:'string'},
+    bool:{nome:'booleano',py:'bool',rot:'bool',ex:'True',art:'um booleano',desc:'True ou False',guia:'boolean'}
   };
-  /* "int (inteiro)", "string (texto)"… para rótulos e mensagens */
+  /* "int (inteiro)", "str (texto, a string)"… para rótulos e mensagens: o nome do Python e o nome em português */
   const rotulo=t=>TIPOS[t].rot+' ('+TIPOS[t].nome+')';
+  /* o que o editor aceita, numa frase (Guia, modo Escrever e Lume) */
+  const SUBCONJUNTO='O editor aceita um pedaço do Python: chamar as funções da sala com parênteses vazios, guardar valores com = (números, textos entre aspas, True/False e contas com + e -), comparar com == != < > <= >=, not, if/elif/else, for i in range(n) e while, com recuo de 4 espaços. Não tem print, input, listas, def, import, and/or, * nem /.';
+  /* de onde vem cada erro: do Python, do pedaço que o editor aceita, de uma regra da máquina, do limite de segurança,
+     do mecanismo ou do objetivo que ainda não foi alcançado */
+  const CAT={python:'Erro de Python',subconjunto:'O Python tem, o editor do jogo não',semEfeito:'Linha que não faz nada',maquina:'Regra desta máquina (não é erro do Python)',
+    limite:'Limite de segurança do jogo',mecanismo:'O mecanismo não conseguiu',objetivo:'Objetivo ainda não alcançado',editor:'Programa incompleto'};
   const OPS_CMP=['==','!=','<','>','<=','>='],OPS_ARIT=['+','-'],OPS_BOOL=['bool','not'];
   const OP_NOME={'==':'é igual a','!=':'é diferente de','<':'é menor que','>':'é maior que','<=':'é menor ou igual a','>=':'é maior ou igual a','+':'mais','-':'menos'};
   const LIM={num:999999,str:16,linhas:40,prof:3,rep:20,passos:400,voltas:30};
@@ -52,6 +66,10 @@ const LANG=(function(){
   }
   const tipoDe=x=>x?TIPOS[x.t].art+' ('+TIPOS[x.t].rot+')':'vazio';
   const ehNum=x=>x&&(x.t==='int'||x.t==='float');
+  /* em Python, bool é um número: True vale 1 e False vale 0 nas comparações */
+  const comoNum=x=>x&&(ehNum(x)||x.t==='bool');const numDe=x=>x.t==='bool'?(x.v?1:0):x.v;
+  /* verdade de um valor que não é bool (if x:): 0, 0.0 e "" são False; o resto é True */
+  const verdadeDe=x=>x.t==='bool'?x.v:x.t==='str'?x.v!=='':x.v!==0;
 
   /* ---------- expressões e condições ----------
      expressão: {k:'lit',val} | {k:'var',nome} | {k:'op',op:'+'|'-',a,b}
@@ -87,23 +105,25 @@ const LANG=(function(){
     if(!c)return{erro:{tipo:'incompleta'}};
     if(c.op==='bool'||c.op==='not'){
       const a=avaliar(c.a,env);if(a.erro)return a;
-      if(a.val.t!=='bool')return{erro:{tipo:'condNaoBool',val:a.val,expr:fmtExpr(c.a)}};
-      return{res:c.op==='bool'?a.val.v:!a.val.v,a:a.val,b:null,op:c.op,txt:fmtCond(c)};
+      const v=verdadeDe(a.val);
+      return{res:c.op==='bool'?v:!v,a:a.val,b:null,op:c.op,txt:fmtCond(c),verdade:a.val.t!=='bool'};
     }
     if(OPS_CMP.indexOf(c.op)<0)return{erro:{tipo:'incompleta'}};
     const a=avaliar(c.a,env);if(a.erro)return a;const b=avaliar(c.b,env);if(b.erro)return b;
-    const A=a.val,B=b.val;let r;
-    if(ehNum(A)&&ehNum(B)){const x=A.v,y=B.v;r=c.op==='=='?x===y:c.op==='!='?x!==y:c.op==='<'?x<y:c.op==='>'?x>y:c.op==='<='?x<=y:x>=y;}
-    else if(A.t===B.t){if(c.op!=='=='&&c.op!=='!=')return{erro:{tipo:'cmpOrdem',t:A.t,op:c.op}};r=c.op==='=='?A.v===B.v:A.v!==B.v;}
-    else return{erro:{tipo:'cmpTipos',a:A,b:B}};
-    return{res:r,a:A,b:B,op:c.op,txt:fmtCond(c)};
+    const A=a.val,B=b.val;let r,misto=false;
+    const cmp=(x,y)=>c.op==='=='?x===y:c.op==='!='?x!==y:c.op==='<'?x<y:c.op==='>'?x>y:c.op==='<='?x<=y:x>=y;
+    if(comoNum(A)&&comoNum(B))r=cmp(numDe(A),numDe(B));
+    else if(A.t==='str'&&B.t==='str')r=cmp(A.v,B.v);
+    /* número (ou bool) com texto: == dá False e != dá True (nunca são iguais); ordem não existe (TypeError) */
+    else if(c.op==='=='||c.op==='!='){r=c.op==='!=';misto=true;}
+    else return{erro:{tipo:'cmpOrdem',a:A,b:B,op:c.op}};
+    return{res:r,a:A,b:B,op:c.op,txt:fmtCond(c),misto};
   }
   /* antes de guardar um objeto numa variável: explica a incompatibilidade (null quando pode) */
   function compativel(tipoVar,v){
     if(!v)return'Escolha um valor para guardar.';
     if(v.t===tipoVar)return null;
-    let s='Era esperado '+TIPOS[tipoVar].art+' ('+TIPOS[tipoVar].rot+'), mas '+fmt(v)+' é '+tipoDe(v)+'.'+dicaTipo(tipoVar,v);
-    return s+' O objeto continua disponível.';
+    return'A máquina recusou: este contêiner só aceita '+rotulo(tipoVar)+', e '+fmt(v)+' é '+tipoDe(v)+'.'+dicaTipo(tipoVar,v)+' (Em Python a atribuição seria permitida; o contrato de tipo é da máquina.) O objeto continua disponível.';
   }
   function dicaTipo(tipoVar,v){
     if(v.t==='str'&&(tipoVar==='int'||tipoVar==='float'))return' O que está entre aspas é texto, mesmo quando parece número: o jogo não converte sozinho.';
@@ -290,7 +310,10 @@ const LANG=(function(){
     const funcs={};for(const b of cfg.blocos||[])if(CMD[b])funcs[CMD[b].py]=b;
     const listaFuncs=Object.keys(funcs).map(f=>f+'()').join(', ')||'nenhuma';
     const listaVars=(cfg.vars||[]).map(d=>d.nome).concat((cfg.sensores||[]).map(d=>d.nome+' (sensor)')).join(', ')||'nenhuma';
-    const E=(n,titulo,texto)=>({erro:{tipo:'sintaxe',linha:n,titulo,texto}});
+    const E=(n,titulo,texto,cat,guia)=>({erro:{tipo:'sintaxe',linha:n,titulo,texto,cat:cat||'python',guia:guia||'erros'}});
+    /* funções do Python que não existem nas máquinas do jogo */
+    const EMBUTIDAS=['print','input','len','int','float','str','bool','type','abs','min','max','sum','round','list','range','sorted','open'];
+    const SUB=(n,titulo,texto)=>E(n,titulo,texto+' O editor do jogo aceita só um pedaço do Python (veja "O que o editor aceita" no Guia).','subconjunto','editor');
     /* linhas com conteúdo: recuo e texto sem comentário (# fora de aspas) */
     const L=[];const cru=String(txt).replace(/\t/g,'    ').split(/\r?\n/);
     for(let i=0;i<cru.length;i++){let s=cru[i],q=null,corte=s.length;for(let k=0;k<s.length;k++){const ch=s[k];if(q){if(ch===q)q=null;}else if(ch==='"'||ch==='\'')q=ch;else if(ch==='#'){corte=k;break;}}
@@ -302,60 +325,63 @@ const LANG=(function(){
       const out=[];let i=0;
       while(i<s.length){const ch=s[i];
         if(ch===' '){i++;continue;}
-        if(ch==='"'||ch==='\''){const j=s.indexOf(ch,i+1);if(j<0)return{erro:E(n,'Erro de sintaxe (SyntaxError): faltou fechar as aspas.','Um texto começa e termina com aspas: "ABRIR".')};out.push({t:'str',v:s.slice(i+1,j)});i=j+1;continue;}
+        if(ch==='"'||ch==='\''){const j=s.indexOf(ch,i+1);if(j<0)return{erro:E(n,'SyntaxError: faltou fechar as aspas.','Um texto começa e termina com aspas: "ABRIR".','python','string')};out.push({t:'str',v:s.slice(i+1,j)});i=j+1;continue;}
         const num=s.slice(i).match(/^\d+(\.\d+)?/);
-        if(num){if(s[i+num[0].length]===','&&/\d/.test(s[i+num[0].length+1]||''))return{erro:E(n,'Erro de sintaxe (SyntaxError): número decimal com vírgula.','Em Python o decimal usa ponto: escreva '+num[0]+'.'+s.slice(i+num[0].length+1).match(/^\d+/)[0]+' em vez de vírgula.')};
+        if(num){if(s[i+num[0].length]===','&&/\d/.test(s[i+num[0].length+1]||''))return{erro:E(n,'Número com vírgula: em Python, o decimal usa ponto.','Em Python, '+num[0]+','+s.slice(i+num[0].length+1).match(/^\d+/)[0]+' não é um número: a vírgula separa dois valores (uma tupla, que o editor do jogo não usa). Escreva '+num[0]+'.'+s.slice(i+num[0].length+1).match(/^\d+/)[0]+'.','subconjunto','float')};
           out.push({t:num[1]?'float':'int',v:Number(num[0])});i+=num[0].length;continue;}
         const id=s.slice(i).match(/^[A-Za-z_À-ú][A-Za-z0-9_À-ú]*/);if(id){out.push({t:'id',v:id[0]});i+=id[0].length;continue;}
         const op=s.slice(i).match(/^(==|!=|<=|>=|<|>|=|\+|-|\(|\))/);if(op){out.push({t:'op',v:op[0]});i+=op[0].length;continue;}
-        return{erro:E(n,'Erro de sintaxe (SyntaxError): o símbolo '+ch+' não é entendido aqui.','Use números, textos entre aspas, True/False, nomes de variáveis e os sinais + - == != < > <= >=.')};
+        if('*/%[]{},.:;@&|^~'.indexOf(ch)>=0)return{erro:SUB(n,'O símbolo '+ch+' existe no Python, mas não neste editor.','Aqui as contas usam só + e -, e as comparações == != < > <= >=.')};
+        return{erro:E(n,'SyntaxError: o símbolo '+ch+' não é entendido.','Use números, textos entre aspas, True/False, nomes de variáveis e os sinais + - == != < > <= >=.')};
       }
       return{t:out};
     }
     function expr(tk,n,loc){
-      if(!tk.length)return{erro:E(n,'Erro de sintaxe (SyntaxError): falta um valor.','Depois do sinal, escreva um valor: um número, um texto entre aspas, True/False ou o nome de uma variável.')};
+      if(!tk.length)return{erro:E(n,'SyntaxError: falta um valor.','Depois do sinal, escreva um valor: um número, um texto entre aspas, True/False ou o nome de uma variável.')};
       let i=0;
       const termo=()=>{
-        let t=tk[i];if(!t)return{erro:E(n,'Erro de sintaxe (SyntaxError): falta um valor no fim da conta.','Uma conta tem um valor dos dois lados: quantidade + 3.')};
+        let t=tk[i];if(!t)return{erro:E(n,'SyntaxError: falta um valor no fim da conta.','Uma conta tem um valor dos dois lados: quantidade + 3.')};
         let neg=false;if(t.t==='op'&&t.v==='-'&&tk[i+1]&&(tk[i+1].t==='int'||tk[i+1].t==='float')){neg=true;i++;t=tk[i];}
         i++;
-        if(t.t==='int'||t.t==='float'){const v=val(t.t,neg?-t.v:t.v);if(!valValido(v))return{erro:E(n,'Número grande demais.','Os mecanismos aceitam números até '+LIM.num+'.')};return{e:{k:'lit',val:v}};}
-        if(t.t==='str'){if(!valValido(val('str',t.v)))return{erro:E(n,'Texto grande demais.','Os textos desta tumba têm até '+LIM.str+' letras.')};return{e:{k:'lit',val:val('str',t.v)}};}
+        if(t.t==='int'||t.t==='float'){const v=val(t.t,neg?-t.v:t.v);if(!valValido(v))return{erro:E(n,'Número grande demais para os mecanismos.','As máquinas aceitam números até '+LIM.num+'. O Python aceitaria números maiores.','limite','int')};return{e:{k:'lit',val:v}};}
+        if(t.t==='str'){if(!valValido(val('str',t.v)))return{erro:E(n,'Texto grande demais para os mecanismos.','Os painéis das máquinas mostram até '+LIM.str+' letras.','limite','string')};return{e:{k:'lit',val:val('str',t.v)}};}
         if(t.t==='id'){
           if(t.v==='True'||t.v==='False')return{e:{k:'lit',val:val('bool',t.v==='True')}};
-          if(t.v==='true'||t.v==='false'||t.v==='TRUE'||t.v==='FALSE')return{erro:E(n,'Erro de nome (NameError): '+t.v+' não existe.','Em Python, os booleanos começam com letra maiúscula: True e False.')};
-          if(vars[t.v]||sens[t.v]||loc.indexOf(t.v)>=0){if(tk[i]&&tk[i].v==='(')return{erro:E(n,'Erro de tipo (TypeError): '+t.v+' é uma variável, não uma função.','Variáveis não levam parênteses. Para ler o valor, escreva só '+t.v+'.')};return{e:{k:'var',nome:t.v}};}
-          if(funcs[t.v])return{erro:E(n,'Erro: '+t.v+'() é uma função, não um valor.','Uma função é chamada sozinha numa linha: '+t.v+'().')};
-          return{erro:E(n,'Erro de nome (NameError): "'+t.v+'" não existe nesta sala.','Variáveis disponíveis: '+listaVars+'. Um texto precisa de aspas: "'+t.v+'".')};
+          if(t.v==='true'||t.v==='false'||t.v==='TRUE'||t.v==='FALSE')return{erro:E(n,'NameError: '+t.v+' não existe.','Em Python, os booleanos começam com letra maiúscula: True e False.','python','boolean')};
+          if(vars[t.v]||sens[t.v]||loc.indexOf(t.v)>=0){if(tk[i]&&tk[i].v==='(')return{erro:E(n,'TypeError: '+t.v+' é uma variável, não uma função.','Variáveis não levam parênteses. Para ler o valor, escreva só '+t.v+'.','python','variaveis')};return{e:{k:'var',nome:t.v}};}
+          if(funcs[t.v])return{erro:SUB(n,t.v+' é uma função, não um valor.','Em Python dá para guardar uma função numa variável, mas aqui as variáveis guardam só int, float, str e bool. Uma função é chamada sozinha numa linha: '+t.v+'().')};
+          return{erro:E(n,'NameError: "'+t.v+'" não existe nesta sala.','Variáveis disponíveis: '+listaVars+'. Se era um texto, ele precisa de aspas: "'+t.v+'".','python','variaveis')};
         }
-        if(t.v==='(')return{erro:E(n,'Parênteses não são usados nas contas desta tumba.','Escreva a conta direto: quantidade + 3.')};
-        return{erro:E(n,'Erro de sintaxe (SyntaxError): faltou um valor antes de '+t.v+'.','Uma expressão começa com um valor: um número, um texto entre aspas, True/False ou uma variável.')};
+        if(t.v==='(')return{erro:SUB(n,'Parênteses nas contas existem no Python, mas não neste editor.','Escreva a conta direto: quantidade + 3.')};
+        return{erro:E(n,'SyntaxError: faltou um valor antes de '+t.v+'.','Uma expressão começa com um valor: um número, um texto entre aspas, True/False ou uma variável.')};
       };
       let r=termo();if(r.erro)return r;let e=r.e;
       while(i<tk.length){
-        const op=tk[i];if(op.t!=='op'||(op.v!=='+'&&op.v!=='-'))return{erro:E(n,'Erro de sintaxe (SyntaxError): '+(op.t==='op'?op.v:op.v)+' fora do lugar.',op.v==='='?'Um = sozinho só aparece na atribuição (variavel = valor). Para comparar, use ==.':'Entre dois valores vai um sinal: + ou -.')};
+        const op=tk[i];
+        if(op.t==='op'&&OPS_CMP.indexOf(op.v)>=0)return{erro:SUB(n,'Comparação fora de uma condição.','Em Python, x = a '+op.v+' b guardaria True ou False; neste editor, as comparações ficam na linha do if, do elif ou do while.')};
+        if(op.t!=='op'||(op.v!=='+'&&op.v!=='-'))return{erro:E(n,'SyntaxError: '+op.v+' fora do lugar.',op.v==='='?'Um = sozinho só aparece na atribuição (variavel = valor). Para comparar, use ==.':'Entre dois valores vai um sinal: + ou -.')};
         i++;const b=termo();if(b.erro)return b;e={k:'op',op:op.v,a:e,b:b.e};
       }
       return{e};
     }
     function cond(s,n,loc,kw){
       const r=tokens(s,n);if(r.erro)return r.erro;const tk=r.t;
-      if(!tk.length)return E(n,'Erro de sintaxe (SyntaxError): falta a condição do '+kw+'.','Depois de '+kw+' vem uma pergunta: '+kw+' energia >= 5:');
-      if(tk.some(t=>t.t==='id'&&(t.v==='and'||t.v==='or')))return E(n,'and e or ainda não são usados nesta tumba.','Cada condição testa uma coisa só. Para testar duas, coloque um if dentro do outro.');
+      if(!tk.length)return E(n,'SyntaxError: falta a condição do '+kw+'.','Depois de '+kw+' vem uma pergunta: '+kw+' energia >= 5:','python',kw==='while'?'while':'if');
+      if(tk.some(t=>t.t==='id'&&(t.v==='and'||t.v==='or')))return SUB(n,'and e or existem no Python, mas não neste editor.','Cada condição testa uma coisa só. Para testar duas, coloque um if dentro do outro.');
       if(tk[0].t==='id'&&tk[0].v==='not'){const e=expr(tk.slice(1),n,loc);if(e.erro)return e.erro;return{c:{a:e.e,op:'not',b:null}};}
       const k=tk.findIndex(t=>t.t==='op'&&OPS_CMP.indexOf(t.v)>=0),um=tk.findIndex(t=>t.t==='op'&&t.v==='=');
-      if(um>=0&&(k<0||um<k))return E(n,'Erro de sintaxe (SyntaxError): = dentro da condição.','Para comparar use ==. Um = sozinho guarda um valor numa variável (atribuição).');
+      if(um>=0&&(k<0||um<k))return E(n,'SyntaxError: = dentro da condição.','Para comparar use ==. Um = sozinho guarda um valor numa variável (atribuição).','python','comparar');
       if(k<0){const e=expr(tk,n,loc);if(e.erro)return e.erro;return{c:{a:e.e,op:'bool',b:null}};}
-      if(tk.slice(k+1).some(t=>t.t==='op'&&OPS_CMP.indexOf(t.v)>=0))return E(n,'Uma comparação de cada vez.','Escreva só um sinal de comparação na condição, por exemplo: nivel < limite.');
+      if(tk.slice(k+1).some(t=>t.t==='op'&&OPS_CMP.indexOf(t.v)>=0))return SUB(n,'Duas comparações seguidas: o Python aceita, este editor não.','Escreva um sinal de comparação por condição, por exemplo: nivel < limite.');
       const a=expr(tk.slice(0,k),n,loc);if(a.erro)return a.erro;const b=expr(tk.slice(k+1),n,loc);if(b.erro)return b.erro;
       return{c:{a:a.e,op:tk[k].v,b:b.e}};
     }
     /* ---- comandos e blocos ---- */
-    const proibido=(n,o)=>E(n,'Nesta etapa ainda não usamos '+o+'.','Use o que a etapa oferece. Funções: '+listaFuncs+'.');
+    const proibido=(n,o)=>E(n,o+' existe no Python, mas esta etapa não usa.','Use o que a etapa oferece (a paleta mostra). Funções: '+listaFuncs+'.','subconjunto','editor');
     function cabecalho(s,n){
       const m=s.match(/^(if|elif|else|for|while)\b(.*)$/);if(!m)return null;
       const kw=m[1];let resto=m[2].trim();
-      if(!resto.endsWith(':'))return{erro:E(n,'Erro de sintaxe (SyntaxError): faltaram os dois-pontos (:) no fim da linha do '+kw+'.','Toda linha que abre um bloco termina com dois-pontos: '+(kw==='else'?'else:':kw==='for'?'for i in range(4):':kw+' energia >= 5:'))};
+      if(!resto.endsWith(':'))return{erro:E(n,'SyntaxError: faltaram os dois-pontos (:) no fim da linha do '+kw+'.','Toda linha que abre um bloco termina com dois-pontos: '+(kw==='else'?'else:':kw==='for'?'for i in range(4):':kw+' energia >= 5:'),'python','recuo')};
       resto=resto.slice(0,-1).trim();return{kw,resto};
     }
     function bloco(idx,ind,nv,loc){
@@ -363,18 +389,18 @@ const LANG=(function(){
       while(idx<L.length&&!erro){
         const ln=L[idx];
         if(ln.ind<ind)break;
-        if(ln.ind>ind){erro=E(ln.n,'Erro de recuo (IndentationError): recuo inesperado.','Esta linha tem mais espaços na frente do que a anterior, mas não está dentro de nenhum bloco. Tire o recuo ou coloque-a embaixo de um if, for ou while.');break;}
+        if(ln.ind>ind){erro=E(ln.n,'IndentationError: recuo inesperado.','Esta linha tem mais espaços na frente do que a anterior, mas não está dentro de nenhum bloco. Tire o recuo ou coloque-a embaixo de um if, for ou while.');break;}
         const s=ln.s,n=ln.n;
-        if(/^(se|senao|senão|enquanto|repetir|para)\b/i.test(s)){erro=E(n,'Erro de sintaxe (SyntaxError): Python usa palavras em inglês.','Escreva if (se), else (senão), while (enquanto) e for (repetir).');break;}
-        if(/^(IF|If|ELIF|Elif|ELSE|Else|FOR|For|WHILE|While)\b/.test(s)){erro=E(n,'Erro de sintaxe (SyntaxError): Python diferencia maiúsculas de minúsculas.','As palavras do Python são escritas em minúsculas: if, elif, else, for, while.');break;}
-        if(/^else\s+if\b/.test(s)){erro=E(n,'Erro de sintaxe (SyntaxError): em Python se escreve elif.','Para testar outra condição depois de um if, use elif condição:');break;}
+        if(/^(se|senao|senão|enquanto|repetir|para)\b/i.test(s)){erro=E(n,'SyntaxError: o Python usa palavras em inglês.','Escreva if (se), else (senão), while (enquanto) e for (repetir).');break;}
+        if(/^(IF|If|ELIF|Elif|ELSE|Else|FOR|For|WHILE|While)\b/.test(s)){erro=E(n,'SyntaxError: o Python diferencia maiúsculas de minúsculas.','As palavras do Python são escritas em minúsculas: if, elif, else, for, while.');break;}
+        if(/^else\s+if\b/.test(s)){erro=E(n,'SyntaxError: em Python se escreve elif.','Para testar outra condição depois de um if, use elif condição:','python','elif');break;}
         const cab=cabecalho(s,n);
         if(cab&&cab.erro){erro=cab.erro;break;}
         if(cab){
-          if(cab.kw==='elif'||cab.kw==='else'){erro=E(n,'Erro de sintaxe (SyntaxError): '+cab.kw+' sem if.','O '+cab.kw+' precisa vir logo depois do bloco de um if, com o mesmo recuo do if.');break;}
-          if(nv+1>LIM.prof){erro=E(n,'Blocos demais um dentro do outro.','Um bloco pode ficar dentro de outro só até '+LIM.prof+' níveis.');break;}
+          if(cab.kw==='elif'||cab.kw==='else'){erro=E(n,'SyntaxError: '+cab.kw+' sem if.','O '+cab.kw+' precisa vir logo depois do bloco de um if, com o mesmo recuo do if.');break;}
+          if(nv+1>LIM.prof){erro=E(n,'Blocos demais um dentro do outro.','Neste painel, um bloco fica dentro de outro só até '+LIM.prof+' níveis. O Python aceitaria mais.','limite','recuo');break;}
           /* o bloco embaixo de um cabeçalho (if, elif, else, for, while) da linha nl */
-          const corpo=(i0,loc2,kw,nl)=>{const nx=L[i0];if(!nx||nx.ind<=ind){erro=E(nl||n,'Erro de recuo (IndentationError): o bloco do '+(kw||cab.kw)+' está vazio.','Escreva pelo menos uma linha embaixo dele, com 4 espaços a mais na frente.');return null;}
+          const corpo=(i0,loc2,kw,nl)=>{const nx=L[i0];if(!nx||nx.ind<=ind){erro=E(nl||n,'IndentationError: o bloco do '+(kw||cab.kw)+' está vazio.','Escreva pelo menos uma linha embaixo dele, com 4 espaços a mais na frente.','python','recuo');return null;}
             return bloco(i0,nx.ind,nv+1,loc2);};
           if(cab.kw==='if'){
             if(!permite(cfg,'se')){erro=proibido(n,'if');break;}
@@ -382,10 +408,10 @@ const LANG=(function(){
             const no={k:'se',cond:c.c,entao:[],senao:null};const r=corpo(idx+1,loc);if(!r)break;no.entao=r.nos;idx=r.idx;
             while(idx<L.length&&L[idx].ind===ind&&!erro){
               const c2=cabecalho(L[idx].s,L[idx].n);if(!c2||c2.erro){if(c2&&c2.erro)erro=c2.erro;break;}
-              if(c2.kw==='elif'){if(!permite(cfg,'elif')){erro=proibido(L[idx].n,'elif');break;}if(no.senao){erro=E(L[idx].n,'Erro de sintaxe (SyntaxError): elif depois do else.','O else é sempre o último caminho: os elif vêm antes dele.');break;}
+              if(c2.kw==='elif'){if(!permite(cfg,'elif')){erro=proibido(L[idx].n,'elif');break;}if(no.senao){erro=E(L[idx].n,'SyntaxError: elif depois do else.','O else é sempre o último caminho: os elif vêm antes dele.');break;}
                 const cc=cond(c2.resto,L[idx].n,loc,'elif');if(cc.erro){erro=cc;break;}const r2=corpo(idx+1,loc,'elif',L[idx].n);if(!r2)break;(no.elifs=no.elifs||[]).push({k:'elif',cond:cc.c,corpo:r2.nos});idx=r2.idx;}
-              else if(c2.kw==='else'){if(!permite(cfg,'senao')){erro=proibido(L[idx].n,'else');break;}if(no.senao){erro=E(L[idx].n,'Erro de sintaxe (SyntaxError): dois else no mesmo if.','Cada if tem no máximo um else, no fim.');break;}
-                if(c2.resto){erro=E(L[idx].n,'Erro de sintaxe (SyntaxError): else não tem condição.','O else pega todos os outros casos: escreva só else:');break;}const r2=corpo(idx+1,loc,'else',L[idx].n);if(!r2)break;no.senao=r2.nos;idx=r2.idx;}
+              else if(c2.kw==='else'){if(!permite(cfg,'senao')){erro=proibido(L[idx].n,'else');break;}if(no.senao){erro=E(L[idx].n,'SyntaxError: dois else no mesmo if.','Cada if tem no máximo um else, no fim.');break;}
+                if(c2.resto){erro=E(L[idx].n,'SyntaxError: else não tem condição.','O else pega todos os outros casos: escreva só else:');break;}const r2=corpo(idx+1,loc,'else',L[idx].n);if(!r2)break;no.senao=r2.nos;idx=r2.idx;}
               else break;
             }
             out.push(no);continue;
@@ -397,44 +423,50 @@ const LANG=(function(){
           if(cab.kw==='for'){
             if(!permite(cfg,'rep')){erro=proibido(n,'for');break;}
             const m=cab.resto.match(/^([A-Za-z_][A-Za-z0-9_]*)\s+in\s+range\s*\((.*)\)$/);
-            if(!m){erro=E(n,'Erro de sintaxe (SyntaxError): o for não está completo.','O for desta tumba se escreve assim: for i in range(4):  (repete 4 vezes; i vale 0, 1, 2 e 3).');break;}
+            if(!m){erro=SUB(n,'Este editor só aceita o for com range.','O Python tem outros jeitos de usar o for (com listas, por exemplo). Aqui ele se escreve assim: for i in range(4):  (repete 4 vezes; i vale 0, 1, 2 e 3).');break;}
             const vn=m[1],arg=m[2].trim();
-            if(!NOME_OK.test(vn)){erro=E(n,'Nome de variável do for inválido.','Use letras minúsculas, como i ou volta.');break;}
-            if(vars[vn]||sens[vn]){erro=E(n,'O for não pode usar a variável '+vn+'.','Ela já guarda um dado da sala. Use outro nome, como i.');break;}
-            if(!/^\d+$/.test(arg)){erro=E(n,'range() recebe um número inteiro.',arg.indexOf(',')>=0?'Nesta tumba o range tem um número só: range(4) repete 4 vezes.':'Escreva quantas vezes repetir, por exemplo range(4).');break;}
-            const k=+arg,mx=cfg.repMax||LIM.rep;if(k>mx){erro=E(n,'Repetição grande demais.','Aqui o for repete no máximo '+mx+' vezes.');break;}
+            if(!NOME_OK.test(vn)){erro=E(n,'Nome de variável do for inválido.','Use letras minúsculas, como i ou volta.','python','for');break;}
+            if(vars[vn]||sens[vn]){erro=E(n,'O for não pode usar a variável '+vn+'.','Regra do jogo: '+vn+' é o contêiner de uma máquina. Use outro nome, como i.','maquina','for');break;}
+            if(!/^\d+$/.test(arg)){erro=arg.indexOf(',')>=0||/^[A-Za-z_]/.test(arg)?SUB(n,'Este editor usa range com um número só.','O Python aceita range(2, 5) ou range(n) com uma variável; aqui se escreve o número de voltas: range(4) repete 4 vezes.'):E(n,'range() recebe um número inteiro.','Escreva quantas vezes repetir, por exemplo range(4).','python','for');break;}
+            const k=+arg,mx=cfg.repMax||LIM.rep;if(k>mx){erro=E(n,'Repetição grande demais para este painel.','Aqui o for repete no máximo '+mx+' vezes.','limite','for');break;}
             const r=corpo(idx+1,loc.concat([vn]));if(!r)break;out.push({k:'rep',n:k,var:vn,corpo:r.nos});idx=r.idx;continue;
           }
         }
         /* chamada de função */
         const ch=s.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*\((.*)\)$/);
         if(ch){const f=ch[1];
-          if(!funcs[f]){if(vars[f]||sens[f]){erro=E(n,'Erro de tipo (TypeError): '+f+' é uma variável, não uma função.','Para guardar um valor, escreva '+f+' = valor.');break;}
-            erro=E(n,'Erro de nome (NameError): a função '+f+'() não existe nesta sala.','Funções disponíveis: '+listaFuncs+'.');break;}
-          if(ch[2].trim()){erro=E(n,'Erro de tipo (TypeError): '+f+'() não recebe valores.','Deixe os parênteses vazios: '+f+'(). A máquina lê o que precisar das variáveis.');break;}
+          if(!funcs[f]){if(vars[f]||sens[f]){erro=E(n,'TypeError: '+f+' é uma variável, não uma função.','Para guardar um valor, escreva '+f+' = valor.','python','variaveis');break;}
+            if(EMBUTIDAS.indexOf(f)>=0){erro=SUB(n,f+'() existe no Python, mas não nas máquinas desta sala.',(f==='print'?'As máquinas não têm tela para mostrar textos: o resultado aparece no mecanismo e nas variáveis do painel.':'Aqui só existem as funções da sala.')+' Funções disponíveis: '+listaFuncs+'.');break;}
+            erro=E(n,'NameError: a função '+f+'() não existe nesta sala.','Funções disponíveis: '+listaFuncs+'.','python','comandos');break;}
+          if(ch[2].trim()){erro=E(n,'TypeError: '+f+'() não recebe valores.','Deixe os parênteses vazios: '+f+'(). A máquina lê o que precisar das variáveis.','python','comandos');break;}
           out.push({k:'cmd',cmd:funcs[f]});idx++;continue;}
-        if(funcs[s]){erro=E(n,'Faltaram os parênteses para chamar a função.','Para a máquina executar, escreva '+s+'() com parênteses.');break;}
+        if(funcs[s]){erro=E(n,'Faltaram os parênteses: a função não foi chamada.','Em Python, escrever só '+s+' não dá erro, mas também não faz nada. Para a máquina executar, escreva '+s+'() com parênteses.','semEfeito','comandos');break;}
         /* atribuição */
         const at=s.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*(==|=)(.*)$/);
         if(at){const nome=at[1];
-          if(at[2]==='=='){erro=E(n,'== compara, não guarda.','Para guardar um valor numa variável use um = só: '+nome+' = valor. O == é usado nas condições.');break;}
-          if(!permite(cfg,'set')){erro=proibido(n,'atribuição (=)');break;}
-          if(sens[nome]){erro=E(n,'"'+nome+'" é um sensor (só leitura).','O programa pode ler o valor de um sensor, mas não guardar outro nele.');break;}
-          if(loc.indexOf(nome)>=0){erro=E(n,'"'+nome+'" é a variável do for.','Ela muda sozinha a cada volta. Guarde valores nas variáveis da sala: '+listaVars+'.');break;}
-          if(!vars[nome]){erro=E(n,'Erro de nome (NameError): não há variável "'+nome+'" nesta sala.','Cada variável aqui é ligada a um mecanismo. Use uma destas: '+listaVars+'.');break;}
+          if(at[2]==='=='){erro=E(n,'== compara, não guarda.','Em Python, '+nome+' == … só faz uma pergunta, e a resposta se perde: a linha não dá erro, mas não faz nada. Para guardar um valor use um = só: '+nome+' = valor.','semEfeito','comparar');break;}
+          if(!permite(cfg,'set')){erro=proibido(n,'A atribuição (=)');break;}
+          if(sens[nome]){erro=E(n,'"'+nome+'" é um sensor: só dá para ler.','Regra desta sala: o programa pode ler o valor de um sensor, mas não guardar outro nele. Em Python, uma variável comum poderia receber outro valor.','maquina','variaveis');break;}
+          if(loc.indexOf(nome)>=0){erro=E(n,'"'+nome+'" é a variável do for.','Regra do jogo: ela muda sozinha a cada volta e não recebe valores. Guarde valores nas variáveis da sala: '+listaVars+'.','maquina','for');break;}
+          if(!vars[nome]){erro=E(n,'"'+nome+'" não é uma variável desta sala.','Em Python, '+nome+' = … criaria uma variável nova. Aqui, as variáveis são os contêineres ligados às máquinas da sala, e o programa usa só estas: '+listaVars+'.','maquina','variaveis');break;}
           const r=tokens(at[3],n);if(r.erro){erro=r.erro;break;}const e=expr(r.t,n,loc);if(e.erro){erro=e.erro;break;}
           out.push({k:'set',nome,expr:e.e});idx++;continue;}
-        if(/^[a-z_][a-z0-9_]*$/i.test(s)){erro=E(n,'Erro de nome (NameError): "'+s+'" sozinho não faz nada.','Chame uma função com parênteses ('+listaFuncs+') ou guarde um valor: variavel = valor.');break;}
-        erro=E(n,'Erro de sintaxe (SyntaxError): esta linha não foi entendida.','Uma linha pode chamar uma função, como avancar(); guardar um valor, como x = 5; ou abrir um bloco com if, elif, else, for ou while.');break;
+        if(/^[a-z_][a-z0-9_]*$/i.test(s)){
+          if(vars[s]||sens[s]||loc.indexOf(s)>=0){erro=E(n,'"'+s+'" sozinho não faz nada.','Em Python, escrever só o nome de uma variável não dá erro, mas a linha não muda nada. Chame uma função ('+listaFuncs+') ou guarde um valor: '+s+' = valor.','semEfeito','variaveis');break;}
+          if(/^(pass|break|continue|return)$/.test(s)){erro=SUB(n,s+' existe no Python, mas não neste editor.','Cada linha aqui chama uma função, guarda um valor ou abre um bloco.');break;}
+          erro=E(n,'NameError: "'+s+'" não existe nesta sala.','Chame uma função com parênteses ('+listaFuncs+') ou guarde um valor numa variável da sala: '+listaVars+'.','python','comandos');break;}
+        const pal=(s.match(/^([a-z]+)\b/)||[])[1];
+        if(['def','import','from','class','return','try','except','with','lambda','global','print','del','assert','raise','yield','async','await','match'].indexOf(pal)>=0){erro=SUB(n,pal+' existe no Python, mas não neste editor.','Cada linha aqui chama uma função da sala, guarda um valor (x = 5) ou abre um bloco com if, elif, else, for ou while.');break;}
+        erro=E(n,'SyntaxError: esta linha não foi entendida.','Uma linha pode chamar uma função, como avancar(); guardar um valor, como x = 5; ou abrir um bloco com if, elif, else, for ou while.');break;
       }
       return{nos:out,idx};
     }
-    if(L.length&&L[0].ind>0)return E(L[0].n,'Erro de recuo (IndentationError): recuo inesperado.','A primeira linha do programa começa sem espaços na frente.');
+    if(L.length&&L[0].ind>0)return E(L[0].n,'IndentationError: recuo inesperado.','A primeira linha do programa começa sem espaços na frente.','python','recuo');
     const r=bloco(0,0,0,[]);
     if(erro)return erro;
     const prog=renumerar(r.nos);
     const maxL=cfg.maxLinhas||LIM.linhas,n=contarLinhas(prog);
-    if(n>maxL)return E(L[L.length-1].n,'O programa tem '+n+' linhas, e este painel aceita '+maxL+'.','Encurte o programa: uma repetição pode substituir linhas iguais.');
+    if(n>maxL)return E(L[L.length-1].n,'O programa tem '+n+' linhas, e este painel aceita '+maxL+'.','Encurte o programa: uma repetição pode substituir linhas iguais.','limite','for');
     return{prog};
   }
 
@@ -447,7 +479,8 @@ const LANG=(function(){
     sensores(s);return s;
   }
   function sensores(s){const o=s.mundo.sensores?s.mundo.sensores(s.ws,s.cfg):null;if(o)for(const k in o)s.env[k]={t:o[k].t,val:o[k].val,ro:true,unid:o[k].unid||''};}
-  function ev(s,e){s.ultimo=e;e.passo=s.passos;return e;}
+  function ev(s,e){s.ultimo=e;e.passo=s.passos;if(e.cmp&&e.cmp.misto&&!s.aviso)s.aviso=AVISO_MISTO(e.cmp);return e;}
+  const AVISO_MISTO=c=>'Atenção: '+fmt(c.a)+' '+c.op+' '+fmt(c.b)+' compara '+TIPOS[c.a.t].rot+' com '+TIPOS[c.b.t].rot+'. Em Python, um número e um texto nunca são iguais, então == dá sempre False.';
   function falha(s,erro,linha,extra){s.fim=true;s.erro=Object.assign({},erro,{linha:linha===undefined?null:linha});return ev(s,Object.assign({tipo:'erro',linha:s.erro.linha,erro:s.erro},extra||{}));}
   /* blocos ativos (para mostrar o contador de cada repetição) */
   function contadores(s){return s.pilha.filter(f=>f.k==='rep'||f.k==='enq').map(f=>({id:f.no.id,k:f.k,volta:f.volta,n:f.no.n,var:f.no.var||'i'}));}
@@ -464,7 +497,7 @@ const LANG=(function(){
       if(f.k==='raiz'){
         const r=s.mundo.fim?s.mundo.fim(s.ws,s):{ok:true};s.fim=true;
         if(r.ok){s.ok=true;return ev(s,{tipo:'fim',ok:true,msg:r.msg||''});}
-        s.erro=Object.assign({linha:null},r.erro);return ev(s,{tipo:'fim',ok:false,erro:s.erro});
+        s.erro=Object.assign({linha:null,origem:'objetivo'},r.erro);return ev(s,{tipo:'fim',ok:false,erro:s.erro});
       }
       if(f.k==='entao'||f.k==='senao'||f.k==='elif'){s.pilha.pop();continue;}
       if(f.k==='rep'){
@@ -491,7 +524,7 @@ const LANG=(function(){
     const no=f.lista[f.i];
     if(no.k==='cmd'){
       const r=s.mundo.cmd(s.ws,no.cmd,s)||{};
-      if(r.erro)return falha(s,r.erro,no.id,{cmd:no.cmd,anim:r.anim});
+      if(r.erro)return falha(s,Object.assign({origem:'mecanismo'},r.erro),no.id,{cmd:no.cmd,anim:r.anim});
       f.i++;sensores(s);
       const e=Object.assign({tipo:'cmd',linha:no.id,cmd:no.cmd},r);
       if(r.fimOk){s.fim=true;s.ok=true;
@@ -508,7 +541,7 @@ const LANG=(function(){
       if(r.val.t!==d.t)return falha(s,{tipo:'tipoIncompativel',nome:no.nome,esperado:d.t,val:r.val},no.id);
       const antes=d.val;d.val=r.val;f.i++;
       const mr=s.mundo.atribuiu?s.mundo.atribuiu(s.ws,no.nome,r.val,s):null;
-      if(mr&&mr.erro)return falha(s,mr.erro,no.id,{anim:mr.anim});
+      if(mr&&mr.erro)return falha(s,Object.assign({origem:'mecanismo'},mr.erro),no.id,{anim:mr.anim});
       sensores(s);
       return ev(s,Object.assign({tipo:'set',linha:no.id,nome:no.nome,antes,depois:r.val,conta:no.expr&&no.expr.k==='op'},mr||{}));
     }
@@ -534,6 +567,16 @@ const LANG=(function(){
     }
     return falha(s,{tipo:'desconhecido'},no.id);
   }
+  /* depois da última instrução visível, o próximo passo só confere o resultado: o painel faz isso no mesmo toque */
+  function soFaltaFim(s){
+    if(s.fim)return false;
+    for(let i=s.pilha.length-1;i>=0;i--){const f=s.pilha[i];
+      if(f.k==='cadeia'||f.i<f.lista.length)return false;
+      if(f.k==='rep'||f.k==='enq')return false;     /* o fim de uma volta é um passo que aparece (a condição ou o contador) */
+      if(f.k==='raiz')return true;
+    }
+    return true;
+  }
   /* roda tudo com o mesmo passo() (testes e conferência) */
   function executar(cfg,mundo,sit,prog){const s=iniciar(cfg,mundo,sit,prog),eventos=[];let e;while((e=passo(s)))eventos.push(e);return{s,eventos};}
 
@@ -543,35 +586,36 @@ const LANG=(function(){
   function explicarErro(s){
     const e=s.erro;if(!e)return null;
     const n=e.linha?(e.tipo==='sintaxe'?e.linha:numeroLinha(s.prog,e.linha)):0;
-    const R=(titulo,texto)=>({linha:n,titulo,texto});
-    if(e.tipo==='sintaxe')return R(e.titulo,e.texto);
-    if(e.msg)return R(e.titulo||'O mecanismo não funcionou.',mai(e.msg));
+    const R=(cat,guia,titulo,texto)=>({linha:n,cat,guia,titulo,texto});
+    if(e.tipo==='sintaxe')return R(e.cat||'python',e.guia||'erros',e.titulo,e.texto);
+    if(e.msg)return R(e.origem||'mecanismo',null,e.titulo||'O mecanismo não funcionou.',mai(e.msg));
     const vs=((s.cfg&&s.cfg.vars)||[]).map(d=>d.nome).concat(((s.cfg&&s.cfg.sensores)||[]).map(d=>d.nome)).join(', ');
     switch(e.tipo){
-      case'vazio':return R('O programa está vazio.','Coloque pelo menos uma linha de código antes de executar.');
-      case'incompleta':return R('Linha incompleta.','Esta linha ainda tem um espaço vazio (?). Toque nela e escolha o que falta.');
-      case'semValor':return R('Erro de nome (NameError): a variável "'+e.nome+'" ainda está vazia.','Antes de ler uma variável, guarde um valor nela, por exemplo: '+e.nome+' = … . Vazia é diferente de 0 e de False.');
-      case'naoExiste':return R('Erro de nome (NameError): "'+e.nome+'" não existe aqui.','Variáveis desta sala: '+(vs||'nenhuma')+'.');
-      case'somenteLeitura':return R('"'+e.nome+'" é um sensor (só leitura).','O programa pode ler o valor de um sensor, mas não guardar outro nele.');
-      case'variavelFor':return R('"'+e.nome+'" é a variável do for.','Ela muda sozinha a cada volta: 0, 1, 2… Não guarde valores nela.');
+      case'vazio':return R('editor','comandos','O programa está vazio.','Coloque pelo menos uma instrução antes de executar.');
+      case'incompleta':return R('editor','comandos','Linha incompleta.','Esta linha ainda tem um espaço vazio (?). Toque nela e escolha o que falta.');
+      case'semValor':return R('python','variaveis','NameError: a variável "'+e.nome+'" ainda não recebeu valor.','Em Python, ler uma variável antes de guardar algo nela é erro. Guarde um valor primeiro, por exemplo: '+e.nome+' = … . No painel ela aparece como "vazia", que é diferente de 0 e de False.');
+      case'naoExiste':return R('python','variaveis','NameError: "'+e.nome+'" não existe aqui.','Variáveis desta sala: '+(vs||'nenhuma')+'.');
+      case'somenteLeitura':return R('maquina','variaveis','"'+e.nome+'" é um sensor: só dá para ler.','Regra desta sala: o sensor mede o mecanismo, e o programa pode ler o valor dele, mas não guardar outro. Em Python, uma variável comum poderia receber outro valor.');
+      case'variavelFor':return R('maquina','for','"'+e.nome+'" é a variável do for.','Regra do jogo: ela muda sozinha a cada volta (0, 1, 2…) e não recebe valores. Em Python dá para mudá-la dentro do for, mas isso não muda o número de voltas, então aqui o jogo não deixa.');
       case'tipoIncompativel':{const T=TIPOS[e.esperado];
-        return R('Erro de tipo (TypeError): era esperado '+T.art+' ('+T.rot+').','Você tentou guardar '+fmt(e.val)+', que é '+tipoDe(e.val)+', na variável '+e.nome+', mas o mecanismo dela precisa receber '+T.desc+'.'+dicaTipo(e.esperado,e.val));}
-      case'tipoOp':return R('Erro de tipo (TypeError): a conta '+fmt(e.a)+' '+e.op+' '+fmt(e.b)+' mistura tipos.','Soma e subtração só funcionam entre números.'+(e.a.t==='str'||e.b.t==='str'?' Um texto entre aspas não vira número sozinho.':''));
-      case'cmpTipos':return R('Erro de tipo (TypeError): comparação entre tipos diferentes.',fmt(e.a)+' é '+tipoDe(e.a)+' e '+fmt(e.b)+' é '+tipoDe(e.b)+'. O jogo não converte um no outro: compare valores do mesmo tipo.');
-      case'cmpOrdem':return R('Erro de tipo (TypeError): < e > servem só para números.','Textos e booleanos são comparados apenas com == (igual) ou != (diferente).');
-      case'condNaoBool':return R('A condição precisa dar True ou False.','"'+e.expr+'" vale '+fmt(e.val)+', que é '+tipoDe(e.val)+'. Faça uma pergunta com ele, por exemplo: '+e.expr+' > 0.');
-      case'grande':return R('Número grande demais.','O resultado passou do que o mecanismo aguenta ('+LIM.num+').');
-      case'semParada':return R('Repetição sem fim: o while não parou.','A condição "'+e.cond+'" continuou verdadeira por '+e.voltas+' voltas, então a repetição foi interrompida. Alguma linha dentro do while precisa mudar o valor testado até a condição ficar falsa.');
-      case'limitePassos':return R('O programa ficou longo demais.','Passou de '+e.n+' passos e foi interrompido. Confira se alguma repetição está grande demais.');
-      default:return R('Esta linha não pôde ser executada.','Confira o que ela pede e tente de novo.');
+        return R('maquina',T.guia,'A máquina recusou o valor: '+e.nome+' só aceita '+rotulo(e.esperado)+'.','O programa tentou guardar '+fmt(e.val)+', que é '+tipoDe(e.val)+'. Em Python, '+e.nome+' = '+fmt(e.val)+' seria permitido: a variável passaria a guardar '+TIPOS[e.val.t].art+'. Mas aqui '+e.nome+' é o contêiner de uma máquina que só funciona com '+T.desc+' (como a anotação '+e.nome+': '+T.rot+'), então o jogo confere o tipo antes de guardar.'+dicaTipo(e.esperado,e.val));}
+      case'tipoOp':return R('python','tipos','TypeError: a conta '+fmt(e.a)+' '+e.op+' '+fmt(e.b)+' mistura tipos.','Em Python, + e - entre um número e um texto dão erro.'+(e.a.t==='str'||e.b.t==='str'?' Um texto entre aspas não vira número sozinho.':''));
+      case'cmpOrdem':return R('python','comparar','TypeError: '+e.op+' não compara '+TIPOS[e.a.t].rot+' com '+TIPOS[e.b.t].rot+'.','Em Python, < > <= >= entre um número e um texto dão erro: '+fmt(e.a)+' é '+tipoDe(e.a)+' e '+fmt(e.b)+' é '+tipoDe(e.b)+'. Compare valores do mesmo tipo (sem aspas, para números).');
+      case'grande':return R('limite','int','Número grande demais para o mecanismo.','O resultado passou do que esta máquina aguenta ('+LIM.num+'). O Python aceitaria números maiores.');
+      case'semParada':return R('limite','while','A repetição não parou: o jogo interrompeu o while.','A condição "'+e.cond+'" continuou verdadeira por '+e.voltas+' voltas. Em Python o programa ficaria rodando para sempre; aqui o jogo para por segurança. Alguma linha dentro do while precisa mudar o valor testado até a condição ficar falsa.');
+      case'limitePassos':return R('limite','for','O programa ficou longo demais e foi interrompido.','Passou de '+e.n+' passos. Confira se alguma repetição está grande demais.');
+      default:return R('mecanismo',null,'Esta linha não pôde ser executada.','Confira o que ela pede e tente de novo.');
     }
   }
   /* a explicação numa frase só (avisos, diário e testes) */
   function explicar(s){const r=explicarErro(s);if(!r)return'';return(r.linha?'Linha '+r.linha+': ':'')+r.titulo+' '+r.texto;}
+  /* o assunto do Guia que explica um erro de leitura do texto */
+  const GUIA_ERRO=x=>x&&(x.guia||'erros');
   /* o que aconteceu em um passo, numa frase curta (painel durante a execução) */
   function narrar(e,s){
     if(!e)return'';
-    const verdade=c=>c.op==='bool'||c.op==='not'?c.txt+' → '+(c.res?'True':'False'):c.txt+' → '+fmt(c.a)+' '+c.op+' '+fmt(c.b)+' é '+(c.res?'True':'False');
+    const verdade=c=>(c.op==='bool'||c.op==='not'?c.txt+' → '+(c.verdade?fmt(c.a)+(c.res!==(c.op==='not')?' conta como True':' conta como False')+' → ':'')+(c.res?'True':'False')
+      :c.txt+' → '+fmt(c.a)+' '+c.op+' '+fmt(c.b)+' é '+(c.res?'True':'False'))+(c.misto?' (número e texto nunca são iguais)':'');
     if(e.tipo==='set')return e.nome+' agora vale '+fmt(e.depois)+(e.antes?' (antes: '+fmt(e.antes)+')':' (estava vazia)')+'.'+(e.msg?' '+e.msg:'');
     if(e.tipo==='se'){const kw=e.elif?'elif':'if';return kw+': '+verdade(e.cmp)+'. '+(e.res?'Executa o bloco do '+kw+'.':e.ramo==='elif'?'Testa o próximo elif.':e.ramo==='senao'?'Executa o else.':'Pula o bloco.');}
     if(e.tipo==='rep')return'for: volta '+e.volta+' de '+e.n+' ('+e.var+' = '+(e.volta-1)+').';
@@ -582,7 +626,7 @@ const LANG=(function(){
     return'';
   }
 
-  return{TIPOS,OPS_CMP,OPS_ARIT,OPS_BOOL,OP_NOME,LIM,CMD,rotulo,nomeCmd,val,valValido,fmt,fmtDec,tipoDe,fmtExpr,fmtCond,avaliar,comparar,compativel,
+  return{TIPOS,OPS_CMP,OPS_ARIT,OPS_BOOL,OP_NOME,LIM,CMD,SUBCONJUNTO,CAT,GUIA_ERRO,rotulo,nomeCmd,val,valValido,fmt,fmtDec,tipoDe,fmtExpr,fmtCond,avaliar,comparar,compativel,
     elifsDe,ramos,ramoLista,filhos,cada,novoId,renumerar,linhas,contarLinhas,profundidade,numeroLinha,achar,listaDe,nivelDe,inserir,adicionarElif,alternarSenao,remover,mover,clonar,assinatura,permite,limpar,
-    fmtNo,fmtLinha,codigo,ler,iniciar,passo,executar,contadores,explicarErro,explicar,narrar};
+    fmtNo,fmtLinha,codigo,ler,iniciar,passo,soFaltaFim,executar,contadores,explicarErro,explicar,narrar};
 })();

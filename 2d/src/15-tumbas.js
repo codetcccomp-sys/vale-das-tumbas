@@ -26,14 +26,14 @@ function pontoEnergia(A,tx,ty,spr,nome,diario){
   const o=objeto(A,SPR.get(spr,false,0),x,y,{col:[-10,-8,10,0]});
   o.desenho=(g,ob,t)=>{blit(g,SPR.get(spr,pt.aceso,Math.floor(t*4)%2),ob.x,ob.y,ob.ax,ob.ay);};
   A.lampadas.push({get x(){return x;},get y(){return y-10;},get r(){return pt.aceso?52:16;},get cor(){return pt.aceso?'#ffb060':null;}});
-  interacao(A,{x,y:y+12,r:22,label:()=>pt.aceso?'Recarregar e salvar o ponto':'Acender '+nome,use:()=>{
+  interacao(A,{x,y:y+12,r:22,nome:mai1(nome.replace(/^(a|o) /,'')),label:()=>pt.aceso?'Recarregar e salvar o ponto':'Acender '+nome,use:()=>{
     const novo=!pt.aceso;pt.aceso=true;G.checkpoint={x,y:y+16,dir:'baixo'};G.lantern=100;G.lanternOn=true;SFX.lamp();
     toast(novo?TXT.pointLit:TXT.pointAgain,'good');if(diario)addDiary(diario,true);if(A.id==='steam'&&novo)vapor(x,y-20,6);salvar(false);}});
   A.pontos=(A.pontos||[]).concat([pt]);return pt;
 }
 function saidaVale(A,tx,ty){
   objeto(A,SPR.get('escada',TEMA[A.tema].parede[0]),tx*16+16,ty*16+18,{camada:-40});
-  interacao(A,{x:tx*16+16,y:ty*16+8,r:22,label:()=>'Voltar ao vale',use:()=>sairTumba(false)});
+  interacao(A,{x:tx*16+16,y:ty*16+8,r:22,nome:'Escada para o vale',label:()=>'Voltar ao vale',use:()=>sairTumba(false)});A.saida={x:tx*16+16,y:ty*16-8,txt:'Saída'};
 }
 /* pedestal: a relíquia fica nele até ser recolhida; quem trouxe a relíquia do 3D já a carrega */
 function pedestal(A,tx,ty,k){
@@ -41,7 +41,8 @@ function pedestal(A,tx,ty,k){
   const o=objeto(A,SPR.get('pedestal',null),x,y,{col:[-10,-8,10,0]});
   o.desenho=(g,ob,t)=>{blit(g,SPR.get('pedestal',null),ob.x,ob.y,ob.ax,ob.ay);if(!G.relics[k]){const yy=ob.y-22+Math.round(Math.sin(t*2.5)*1.5);blit(g,SPR.get('reliquia',k,2),ob.x,yy,6,6);}};
   A.lampadas.push({x,y:y-16,get r(){return G.relics[k]?18:40;},cor});
-  interacao(A,{x,y:y+12,r:22,label:()=>G.relics[k]?'Pedestal '+relDe(k)+' (já está com você)':'Pegar '+relNome(k),use:()=>{if(!G.relics[k])pegarReliquia(k,x,y-20);else toast(relNome(k,true)+' já está com você'+(saberOk(k)?', desperto pelo saber.':'.'));}});
+  A.ped={x,y:y-36,txt:'Relíquia'};
+  interacao(A,{x,y:y+12,r:22,nome:()=>G.relics[k]?'Pedestal':mai1(RELIC_INFO[k].name),label:()=>G.relics[k]?'Pedestal '+relDe(k)+' (já está com você)':'Pegar '+relNome(k),use:()=>{if(!G.relics[k])pegarReliquia(k,x,y-20);else toast(relNome(k,true)+' já está com você'+(saberOk(k)?', desperto pelo saber.':'.'));}});
 }
 function pegarReliquia(k,x,y){
   G.relics[k]=true;SFX.relic();faiscas(x,y,18,['#ffffff',TOMBS[k].col,'#ffd24a']);
@@ -57,7 +58,7 @@ function saberConcluido(k){
 function terminal(A,tx,ty,k,foco,spr,rotulo){
   const x=tx*16+8,y=ty*16+14;
   const o=objeto(A,SPR.get(spr,0),x,y,{col:[-8,-6,8,0]});o.frames=[0,1].map(f=>SPR.get(spr,f));o.fps=2;
-  interacao(A,{x,y:y+10,r:22,label:()=>rotulo,use:()=>{abrirPainel(k,A,foco);}});
+  interacao(A,{x,y:y+10,r:22,nome:mai1(rotulo.replace(/^(Usar|Programar) (o |a )?/,'')),label:()=>rotulo,use:()=>{abrirPainel(k,A,foco);}});A.term={x,y:y-30,txt:'Programe aqui'};
   return o;
 }
 /* portão: objeto + caixa sólida que some quando aberto() fica verdadeiro */
@@ -109,7 +110,8 @@ function acenderTochaProgresso(A,cid){const p=A&&A.tochas&&A.tochas[cid];if(!p)r
 function objetivoTumba(k,termNome){
   const l=desafiosDa(k),feitos=l.filter(d=>G.learn[d.id]).length;
   const S=SABERES[TOMBS[k].saber];
-  if(feitos<l.length){const prox=l.find(d=>!G.learn[d.id]);return{t:'Saber: '+S.nome+' · etapa '+(feitos+1)+' de '+l.length,s:termNome+': '+prox.titulo+'.'};}
-  if(!G.relics[k])return{t:'Saber recuperado',s:'O caminho para '+relNome(k)+' está aberto.'};
-  return{t:'Tumba concluída',s:'Volte ao vale: '+(saberesCount()<4?'a próxima tumba espera.':'leve os quatro saberes à Cidade-Jardim.')};
+  const A=AREAS[k];
+  if(feitos<l.length){const prox=l.find(d=>!G.learn[d.id]);return{t:'Saber: '+S.nome+' · etapa '+(feitos+1)+' de '+l.length,s:termNome+': '+prox.titulo+'.',alvo:A&&A.term};}
+  if(!G.relics[k])return{t:'Saber recuperado',s:'O caminho para '+relNome(k)+' está aberto.',alvo:A&&A.ped};
+  return{t:'Tumba concluída',s:'Volte ao vale: '+(saberesCount()<4?'a próxima tumba espera.':'leve os quatro saberes à Cidade-Jardim.'),alvo:A&&A.saida};
 }

@@ -6,8 +6,11 @@
    - As relíquias trazidas do 3D voltam "adormecidas": o saber de cada tumba é controlado à parte (learn), então
      quem já venceu uma tumba no 3D pode revisitá-la e fazer os desafios educativos.
    - rev conta as revisões do conteúdo: um save sem rev é de antes das etapas novas (treino, corrigir, elif, tochas).
-     Nele, uma tumba que já estava completa ganha as etapas novas, e o treino conta como feito: o progresso não volta. */
-const SAVE2D_KEY='vale_das_tumbas_2d',CFG2D_KEY='vale_das_tumbas_2d_cfg',SAVE3D_KEY='vale_das_tumbas_save',SAVE2D_VER=1,SAVE2D_REV=2;
+     Nele, uma tumba que já estava completa ganha as etapas novas, e o treino conta como feito: o progresso não volta.
+     A revisão 3 trouxe a ordem no treino (t2), a bomba dos Motores (d6) e a demonstração da Viva (bd): quem já tinha
+     terminado o treino ganha t2, quem completou as outras etapas dos Motores ganha d6 e quem já começou a Viva ganha bd.
+   - solucoes guarda o último programa que resolveu cada etapa (o diário mostra o programa do jogador). */
+const SAVE2D_KEY='vale_das_tumbas_2d',CFG2D_KEY='vale_das_tumbas_2d_cfg',SAVE3D_KEY='vale_das_tumbas_save',SAVE2D_VER=1,SAVE2D_REV=3;
 for(const k in SABERES)ENTRIES[SABER_ENTRY[k]]={t:'Saber: '+SABERES[k].nome,s:SABERES[k].resumo,cod:SABERES[k].exemplo};
 ENTRIES.saber_tudo={t:'Saber: tudo junto',s:'Um programa de verdade mistura tudo: a ordem das linhas, variáveis que guardam valores, decisões que escolhem o caminho e repetições que poupam trabalho.',cod:DESAFIO.c1.exemplo.codigo};
 
@@ -17,7 +20,7 @@ const SAVE2D=(function(){
   const INSC_IDS=INSC.map(i=>i.id);
   /* save novo, vazio */
   function novo(){return{v:SAVE2D_VER,rev:SAVE2D_REV,relics:{steam:false,diesel:false,atom:false,bio:false},learn:{},progs:{},diary:[],insc:{},sec:{},abertas:[],done:false,time:0.12,pos:null,tomb:null,migr:null,
-    treino:{feito:false,passo:0,manivela:false},dicas:{},poi:{},guia:false};}
+    treino:{feito:false,passo:0,manivela:false},dicas:{},poi:{},guia:false,solucoes:{}};}
   /* confere um save 2D. Devolve null quando não há nada aproveitável. */
   function limpar(d){
     if(!obj(d)||d.v!==SAVE2D_VER)return null;
@@ -30,8 +33,9 @@ const SAVE2D=(function(){
     if(obj(d.relics)){for(const k of RELIC_KEYS){const v=d.relics[k];if(v!==undefined&&typeof v!=='boolean')bad();s.relics[k]=v===true;}}else if(d.relics!==undefined)bad();
     /* a anotação de cada relíquia só existe depois de pegá-la: uma relíquia perdida no save é deduzida dela */
     for(const k of RELIC_KEYS)if(!s.relics[k]&&s.diary.indexOf(RELIC_INFO[k].diary)>=0){s.relics[k]=true;bad();}
-    if(obj(d.progs)){for(const k in d.progs){const cfg=DESAFIO[k];if(!cfg||cfg.etapa==='demo'||cfg.etapa==='classificar'){bad();continue;}
-      const r=LANG.limpar(d.progs[k],cfg);if(r.fixed)bad();s.progs[k]=r.prog;}}else if(d.progs!==undefined)bad();
+    const progsDe=(src,dst)=>{if(obj(src)){for(const k in src){const cfg=DESAFIO[k];if(!cfg||cfg.etapa==='demo'||cfg.etapa==='classificar'){bad();continue;}
+      const r=LANG.limpar(src[k],cfg);if(r.fixed)bad();dst[k]=r.prog;}}else if(src!==undefined)bad();};
+    progsDe(d.progs,s.progs);progsDe(d.solucoes,s.solucoes);
     const pick=(src,ids,val)=>{const o={};if(src===undefined)return o;if(!obj(src)){bad();return o;}for(const k in src){if(ids.indexOf(k)<0)bad();else if(src[k])o[k]=val;}return o;};
     s.insc=pick(d.insc,INSC_IDS,1);s.sec=pick(d.sec,SEC_IDS,true);
     if(Array.isArray(d.abertas)){for(const a of d.abertas){if(typeof a==='string'&&/^[a-z]+_[a-z0-9]+$/.test(a)&&a.length<=24&&s.abertas.length<60){if(s.abertas.indexOf(a)<0)s.abertas.push(a);}else bad();}}else if(d.abertas!==undefined)bad();
@@ -47,6 +51,13 @@ const SAVE2D=(function(){
     if(obj(d.dicas)){for(const k in d.dicas){const n=d.dicas[k];if(DESAFIO[k]&&Number.isInteger(n)&&n>=0&&n<=3)s.dicas[k]=n;else bad();}}else if(d.dicas!==undefined)bad();
     s.poi=pick(d.poi,POI_IDS,true);
     if(d.guia!==undefined&&typeof d.guia!=='boolean')bad();s.guia=d.guia===true;
+    /* revisão 3: etapas novas para quem já tinha passado do ponto onde elas entram */
+    const rev=num(d.rev)?d.rev:1;
+    if(rev<3){
+      if(s.treino.feito)s.learn[ETAPAS_REV3.treino]=true;
+      if(desafiosDa('diesel').every(c=>c.id===ETAPAS_REV3.diesel||s.learn[c.id]))s.learn[ETAPAS_REV3.diesel]=true;
+      if(desafiosDa('bio').some(c=>s.learn[c.id]))s.learn[ETAPAS_REV3.bio]=true;
+    }
     s.fixed=fixed;
     return s;
   }
@@ -93,7 +104,7 @@ const SAVE2D=(function(){
     const tr=st.treino||{feito:true,passo:0,manivela:false};
     return{v:SAVE2D_VER,rev:SAVE2D_REV,relics:Object.assign({},st.relics),learn:Object.assign({},st.learn),progs:st.progs,diary:st.diary.slice(),insc:st.insc,sec:st.sec,
       abertas:st.abertas.slice(),done:!!st.done,time:st.time,pos:st.pos?{x:st.pos.x,y:st.pos.y}:null,tomb:st.tomb||null,migr:st.migr||null,
-      treino:{feito:!!tr.feito,passo:tr.passo|0,manivela:!!tr.manivela},dicas:Object.assign({},st.dicas||{}),poi:Object.assign({},st.poi||{}),guia:!!st.guia};
+      treino:{feito:!!tr.feito,passo:tr.passo|0,manivela:!!tr.manivela},dicas:Object.assign({},st.dicas||{}),poi:Object.assign({},st.poi||{}),guia:!!st.guia,solucoes:st.solucoes||{}};
   }
   return{novo,limpar,ler3d,migrar,posSegura,montar};
 })();

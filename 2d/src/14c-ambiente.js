@@ -5,6 +5,13 @@
    do mapa; o que tem altura é objeto com sombra, ordenado pela base. Partículas (poeira com o vento, vaga-lumes à noite,
    brasas, folhas) só nascem perto da tela e têm limite; a névoa da manhã é uma textura pronta que desliza. */
 Object.assign(OBJS,{
+  /* emblema de cada tumba (símbolo + cor): engrenagem, vela de ignição, átomo e folha */
+  emblema(k){const c=cnv(20,20),g=ctx2(c),C=TOMBS[k].col;P.circ(g,10,10,9,'#3a2a1c');P.circ(g,10,10,8,'#24160d');P.anel(g,10,10,8,1,tom(C,-0.2));
+    if(k==='steam')P.engrenagem(g,10,10,5,8,C,tom(C,-0.4),1);
+    else if(k==='diesel'){P.r(g,9,3,2,3,'#d8d8d8');P.r(g,7,6,6,3,C);P.r(g,8,9,4,5,'#e8e0d0');P.r(g,9,14,2,2,tom(C,-0.4));P.p(g,10,16,'#ffffff');}
+    else if(k==='atom'){g.globalAlpha=1;P.elip(g,10,10,7,2.5,C);P.elip(g,10,10,6,1.5,'#24160d');for(const[a,b]of[[-1,1],[1,1]]){for(let t=0;t<TAU;t+=0.08){const x=10+Math.cos(t)*6.5*0.5+Math.sin(t)*2*a,y=10+Math.sin(t)*6.5*b*0.9;P.p(g,Math.round(x),Math.round(y),C);}}P.circ(g,10,10,2,'#ffffff');}
+    else{P.elip(g,10,10,4,6.5,C);P.linha(g,10,4,10,16,tom(C,-0.4));P.linha(g,10,9,7,7,tom(C,-0.4));P.linha(g,10,12,13,10,tom(C,-0.4));}
+    return contorno(c,'#0b0705');},
   acacia(v){const c=cnv(46,44),g=ctx2(c),r=rng(60+v);P.r(g,21,22,4,21,'#6a4a2a');P.r(g,21,22,1,21,'#8a6a3a');P.linha(g,22,28,13,18,'#6a4a2a');P.linha(g,23,26,32,17,'#6a4a2a');P.linha(g,23,25,31,17,'#6a4a2a');
     const C=v%2?'#6a9a3a':'#5a8a34';for(let i=0;i<26;i++){const x=6+r()*34,y=8+r()*10;P.elip(g,x,y,4+r()*3,2.2+r(),i%3?C:tom(C,-0.2));}
     for(let i=0;i<12;i++)P.p(g,8+r()*30,6+r()*8,tom(C,0.3));if(v%3===0)for(let i=0;i<6;i++)P.p(g,8+r()*30,8+r()*8,'#ffd24a');return contorno(c,'#1a2a10');},

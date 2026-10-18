@@ -45,7 +45,8 @@ const S3={v:1,relics:{steam:true,diesel:true,atom:false,bio:false},diary:['camp'
     t2.ok(e.toasts.some(x=>/danificada/.test(x)),'avisa que parte do save estava danificada',e.toasts);
     t2.ok(e.livre&&e.y/16>40,'posição salva dentro da pirâmide vai para um lugar livre',{x:e.x/16,y:e.y/16});
     t2.ok(e.progs.s1&&e.progs.s1.length===1,'programa salvo é limpo sem perder as placas válidas',e.progs);
-    await ev(()=>localStorage.setItem('vale_das_tumbas_2d','{lixo'));await page.reload();await page.waitForFunction(()=>window.__vt);
+    /* o jogo salva ao sair da página: volta ao menu antes de estragar o save (no menu ele não salva) */
+    await ev(()=>{irMenu();localStorage.setItem('vale_das_tumbas_2d','{lixo');});await page.reload();await page.waitForFunction(()=>window.__vt);
     const ini=await ev(()=>({cont:!document.getElementById('btnContinue').hidden}));t2.ok(!ini.cont,'save ilegível: o jogo abre normalmente, sem Continuar',ini);
     t2.done(logs);await browser.close();
   }

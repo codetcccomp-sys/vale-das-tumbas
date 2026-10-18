@@ -10,7 +10,7 @@
    - Enquanto o painel está aberto, a exploração fica pausada e a câmera mostra o mecanismo da sala, que reage ao
      código. Ao fechar, a execução para, o programa fica guardado e os controles voltam ao normal. */
 const PAINEL={aberto:false,tumba:null,cfg:null,prog:[],cur:{pai:null,ramo:null,i:0},sel:null,sit:0,run:null,vel:1,passou:{},falhou:{},
-  demoVisto:{},foco:null,area:null,msg:'',msgTipo:'',ultimoEv:null,parado:null,texto:false,erroTexto:null};
+  demoVisto:{},foco:null,area:null,msg:'',msgTipo:'',ultimoEv:null,parado:null,texto:false,erroTexto:null,previsao:{}};
 const VEL=[1,2,0.5];
 function painelInit(){
   $('pFechar').onclick=()=>fecharPainel();
@@ -53,6 +53,7 @@ function atualizarVista(){
 function guardarPrograma(){const c=PAINEL.cfg;if(c&&c.etapa!=='demo')G.progs[c.id]=LANG.clonar(PAINEL.prog);}
 function escolherDesafio(cfg,primeiro){
   painelParar(false);if(PAINEL.texto)lerTexto(true);guardarPrograma();
+  $('pPrev').hidden=true;
   PAINEL.cfg=cfg;PAINEL.sit=0;PAINEL.sel=null;PAINEL.parado=null;PAINEL.ultimoEv=null;PAINEL.erroTexto=null;PAINEL.texto=false;
   if(cfg.etapa==='demo'){PAINEL.prog=LANG.clonar(cfg.demo[0].prog);PAINEL.demoIdx=0;}
   else{const p=G.progs[cfg.id];PAINEL.prog=p?LANG.limpar(p,cfg).prog:programaInicial(cfg);}
@@ -70,11 +71,16 @@ function mensagemInicial(){
 }
 function painelMsg(t,tipo){PAINEL.msg=t;PAINEL.msgTipo=tipo||'';const m=$('pMsg');m.textContent=t;m.className=tipo||'';m.scrollTop=0;}
 /* área de erro: o que deu errado (com o nome do erro em Python) e o que fazer, em linguagem simples */
+/* área de erro: de onde vem o problema (Python, regra da máquina, objetivo…), a linha, o que deu errado e o que fazer;
+   o botão abre o Guia no assunto do erro, sem perder o programa */
 function mostrarErro(x){
   const box=$('pErro');if(!x){box.hidden=true;return;}
-  box.hidden=false;box.querySelector('.onde').textContent=x.linha?'Erro na linha '+x.linha:'Erro';
+  const cat=x.cat||'python';box.className='cat-'+cat;
+  box.hidden=false;box.querySelector('.onde').textContent=(x.linha?'Linha '+x.linha+' · ':'')+(LANG.CAT[cat]||'Erro');
   box.querySelector('.tit').textContent=x.titulo;box.querySelector('.txt').textContent=x.texto;
-  box.querySelector('.dica').textContent=(PAINEL.cfg&&PAINEL.cfg.dicas?'Se precisar, toque em 💡 Dica para perguntar ao Lume, ou em 📖 Guia.':'');
+  box.querySelector('.dica').textContent=(PAINEL.cfg&&PAINEL.cfg.dicas?'Se precisar, peça uma 💡 Dica ao Lume.':'');
+  const top=x.guia||topicoGuia(PAINEL.cfg),T=GUIA.find(g=>g.id===top),gb=box.querySelector('.gbtn');
+  gb.hidden=!T;if(T){gb.textContent='📖 Ver no Guia: '+T.t;gb.onclick=()=>abrirGuia(top);}
   aVista(box);
 }
 /* rola o painel até o elemento ficar visível acima da barra fixa de linhas e controles (telas baixas) */
@@ -125,9 +131,9 @@ function renderVars(){
   V.hidden=!lista.length;
   for(const{d,sensor,laco}of lista){const e=ini[d.nome],v=e?e.val:null;const el=document.createElement('div');el.className='var'+(v===null?' vazio':'')+(sensor?' sensor':'')+(laco?' laco':'');
     const unid=d.unid&&v?' '+d.unid:'';
-    el.innerHTML='<span class="tp"></span><span class="nm"></span><span class="vl"></span>';el.children[0].textContent=(sensor?'sensor · ':laco?'variável do for · ':'')+LANG.rotulo(d.t);
+    el.innerHTML='<span class="tp"></span><span class="nm"></span><span class="vl"></span>';el.children[0].textContent=(sensor?'sensor · ':laco?'variável do for · ':'aceita ')+LANG.rotulo(d.t);el.title=sensor?'Sensor: o programa só lê o valor.':laco?'Muda sozinha a cada volta do for.':'Contêiner da máquina: aceita só '+LANG.rotulo(d.t)+'.';
     el.children[1].textContent=d.nome;el.children[2].textContent=v===null?'vazia':LANG.fmt(v)+unid;
-    if(PAINEL.ultimoEv&&PAINEL.ultimoEv.tipo==='set'&&PAINEL.ultimoEv.nome===d.nome)el.classList.add('mudou');
+    const ue=PAINEL.ultimoEv;if(ue&&ue.tipo==='set'&&ue.nome===d.nome){el.classList.add('mudou');el.children[2].textContent=(ue.antes?LANG.fmt(ue.antes):'vazia')+' → '+LANG.fmt(ue.depois)+unid;}
     V.appendChild(el);}
 }
 /* linhas do programa (como em Python) com o cursor de inserção */
@@ -202,6 +208,8 @@ function renderEditor(){
     E.appendChild(chip('↑ Subir',false,mv(-1),'op'));E.appendChild(chip('↓ Descer',false,mv(1),'op'));
   }
   E.appendChild(chip(n.k==='elif'?'✕ Remover elif':'✕ Remover',false,()=>{const cur=LANG.remover(PAINEL.prog,n.id);PAINEL.sel=null;if(cur)PAINEL.cur=cur;SFX.tira();fim();},'op'));
+  /* o Guia no assunto da instrução selecionada */
+  const tg=topicoDaLinha(n,a,c),TG=GUIA.find(g=>g.id===tg);if(TG)E.appendChild(chip('📖 '+TG.t,false,()=>abrirGuia(tg),'op gl'));
   const sep=t=>{const d=document.createElement('div');d.className='lbl';d.textContent=t;E.appendChild(d);};
   const objs=opcoesValor(c);
   if(n.k==='set'){
@@ -235,6 +243,11 @@ function renderEditor(){
   }
   /* o editor aparece inteiro, acima da barra fixa de linhas e controles */
   if(PAINEL.editorDe!==n.id){PAINEL.editorDe=n.id;aVista(E);}
+}
+function topicoDaLinha(n,a,c){
+  if(n.k==='set'){const v=(c.vars||[]).find(d=>d.nome===n.nome);return v?LANG.TIPOS[v.t].guia:'variaveis';}
+  if(n.k==='se')return n.senao?'else':'if';if(n.k==='elif')return'elif';if(n.k==='rep')return'for';if(n.k==='enq')return'while';
+  return'comandos';
 }
 /* condição de if, elif e while: o que comparar, como comparar e com qual valor — ou um booleano sozinho (x / not x) */
 function editorCondicao(E,n,c,sep,fim){
@@ -300,7 +313,7 @@ function referenciaTexto(c){
   const f=c.blocos.filter(b=>LANG.CMD[b]).map(b=>LANG.CMD[b].py+'()');
   const v=(c.vars||[]).map(d=>d.nome+' ('+LANG.TIPOS[d.t].rot+')').concat((c.sensores||[]).map(d=>d.nome+' (sensor, '+LANG.TIPOS[d.t].rot+')'));
   const e=['set','se','sese','elif','rep','enq'].filter(b=>LANG.permite(c,b==='sese'?'senao':b)).map(b=>({set:'x = valor',se:'if',sese:'else',elif:'elif',rep:'for',enq:'while'})[b]);
-  return'Funções: '+(f.join(', ')||'nenhuma')+(v.length?' · Variáveis: '+v.join(', '):'')+(e.length?' · Também: '+e.join(', '):'')+' · Recuo: 4 espaços (Tab).';
+  return'Funções: '+(f.join(', ')||'nenhuma')+(v.length?' · Variáveis: '+v.join(', '):'')+(e.length?' · Também: '+e.join(', '):'')+' · Recuo: 4 espaços (Tab). · Um pedaço do Python: sem print, listas, def nem and/or (📖 Guia › O que o editor aceita).';
 }
 function painelModoTexto(on){
   if(rodandoAgora())return;
@@ -310,7 +323,7 @@ function painelModoTexto(on){
 /* lê o texto do campo. Com erro, mostra a área de erro e continua no modo Escrever (silencioso: só ao fechar) */
 function lerTexto(silencioso){
   const c=PAINEL.cfg,r=LANG.ler($('pTxt').value,c);
-  if(r.erro){if(silencioso){PAINEL.texto=false;return false;}PAINEL.erroTexto=r.erro;mostrarErro({linha:r.erro.linha,titulo:r.erro.titulo,texto:r.erro.texto});SFX.erroProg();painelMsg('O texto tem um erro na linha '+r.erro.linha+'. Veja a explicação abaixo e corrija.','erro');marcarLinhaTexto(r.erro.linha);return false;}
+  if(r.erro){if(silencioso){PAINEL.texto=false;return false;}PAINEL.erroTexto=r.erro;mostrarErro(r.erro);SFX.erroProg();painelMsg('O texto tem um erro na linha '+r.erro.linha+'. Veja a explicação abaixo e corrija.','erro');marcarLinhaTexto(r.erro.linha);return false;}
   PAINEL.prog=r.prog;PAINEL.cur={pai:null,ramo:null,i:PAINEL.prog.length};PAINEL.erroTexto=null;programaMudou();
   painelMsg('Código lido: '+LANG.contarLinhas(PAINEL.prog)+(LANG.contarLinhas(PAINEL.prog)===1?' linha.':' linhas.')+' Toque em ▶ Executar.','');
   return true;
@@ -328,19 +341,33 @@ function novaExecucao(modo){
 }
 /* antes de executar no modo Escrever, o texto é lido e o painel volta às linhas (para mostrar a linha da vez) */
 function prepararTexto(){if(!PAINEL.texto)return true;if(!lerTexto(false))return false;PAINEL.texto=false;return true;}
+/* previsão: nas etapas que trazem código pronto, antes da primeira tentativa o jogador diz o que espera que aconteça;
+   no fim da tentativa, o painel confere. Dá para pular. */
+function pedirPrevisao(continuar){
+  const c=PAINEL.cfg;if(!c.previsao||G.learn[c.id]||PAINEL.previsao[c.id])return false;
+  const box=$('pPrev'),ops=box.querySelector('.ops');box.querySelector('.q').textContent='🔮 Previsão · '+c.previsao.pergunta;ops.textContent='';
+  const fim=v=>{PAINEL.previsao[c.id]=v;box.hidden=true;SFX.click();continuar();};
+  c.previsao.opcoes.forEach(op=>{const b=document.createElement('button');b.className='btn';b.textContent=op.t;b.onclick=()=>fim({t:op.t,ok:op.ok,conferir:true});ops.appendChild(b);});
+  const pb=document.createElement('button');pb.className='btn pular';pb.textContent='Pular';pb.onclick=()=>fim({pulou:true});ops.appendChild(pb);
+  box.hidden=false;painelMsg('Antes de executar, pense: o que este programa vai fazer? Escolha uma resposta (ou pule).','');aVista(box);
+  return true;
+}
+function conferirPrevisao(c,ok){const p=PAINEL.previsao[c.id];if(!p||!p.conferir)return'';p.conferir=false;
+  return'🔮 Sua previsão: «'+p.t+'» — '+(p.ok===ok?'você acertou! ':'o resultado foi outro; observe o mecanismo para entender por quê. ');}
 function painelExecutar(){
   if(rodandoAgora()){if(PAINEL.run.modo==='passo'){PAINEL.run.modo='exec';PAINEL.run.t=PAINEL.run.dur;renderPainel();}return;}
+  if(pedirPrevisao(painelExecutar))return;
   if(!prepararTexto())return;
   novaExecucao('exec');PAINEL.run.t=PAINEL.run.dur*0.6;renderPainel();painelMsg('Executando…','passo');
 }
 function painelPassoBtn(){
   if(rodandoAgora()&&PAINEL.run.modo==='exec')return;
-  if(!PAINEL.run||PAINEL.run.s.fim){if(!prepararTexto())return;novaExecucao('passo');}
+  if(!PAINEL.run||PAINEL.run.s.fim){if(pedirPrevisao(painelPassoBtn))return;if(!prepararTexto())return;novaExecucao('passo');}
   executarUm();
 }
 function painelParar(render){
   const r=PAINEL.run;if(!r)return;
-  if(!r.s.fim){PAINEL.parado={env:r.s.env,ws:r.s.ws,ev:r.ev,linha:r.linha};if(render!==false)painelMsg('Execução parada'+(r.linha?' na linha '+LANG.numeroLinha(r.s.prog,r.linha):'')+'. Toque em ↺ Reiniciar para voltar o mecanismo ao começo, ou edite o programa.','');}
+  if(!r.s.fim){PAINEL.parado={env:r.s.env,ws:r.s.ws,ev:r.ev,linha:r.linha};if(render!==false)painelMsg('Tentativa parada'+(r.linha?' na linha '+LANG.numeroLinha(r.s.prog,r.linha):'')+'. Toque em ↺ Reiniciar para começar outra tentativa (o mecanismo volta ao começo e o programa fica), ou edite o programa.','');}
   else PAINEL.parado={env:r.s.env,ws:r.s.ws,ev:r.ev,linha:r.linha,erroLinha:r.s.erro&&r.s.erro.linha};
   PAINEL.run=null;if(render!==false)renderPainel();
 }
@@ -367,6 +394,8 @@ function executarUm(){
   /* sons e mensagem do passo */
   if(ev.tipo==='cmd')SFX.passo(r.eventos.length);else if(ev.tipo==='set')SFX.atribui();else if(ev.tipo==='se')SFX.decide(ev.res);else if(ev.tipo==='rep'||ev.tipo==='repFim'||ev.tipo==='enq')SFX.volta();
   if(PAINEL.area&&PAINEL.area.aoEvento)PAINEL.area.aoEvento(ev,r.s);
+  /* a última instrução já mostra o resultado: sem um toque a mais só para "terminar" */
+  if(!r.s.fim&&LANG.soFaltaFim(r.s)){const f=LANG.passo(r.s);if(f){r.eventos.push(f);r.evFim=f;}}
   if(r.s.fim)terminouExecucao();
   else painelMsg(LANG.narrar(ev,r.s),'passo');
   renderPainel();
@@ -375,7 +404,7 @@ function terminouExecucao(){
   const r=PAINEL.run,s=r.s,c=PAINEL.cfg,sit=sitAtual(),sig=LANG.assinatura(PAINEL.prog);
   if(c.etapa==='demo'){
     PAINEL.demoVisto[c.id+':'+PAINEL.demoIdx+(c.demo[PAINEL.demoIdx].todas?':'+sit.id:'')]=true;
-    const fimMsg=s.ok?(LANG.narrar(r.ev,s)||'Fim do programa.'):LANG.explicar(s);
+    const fimMsg=s.ok?(LANG.narrar(r.evFim||r.ev,s)||'Fim do programa.'):LANG.explicar(s);
     /* com "todas", a demonstração passa sozinha para a próxima situação */
     const d=c.demo[PAINEL.demoIdx];
     if(d.todas&&PAINEL.sit<c.situacoes.length-1){painelMsg(fimMsg+' Agora a mesma demonstração na situação '+c.situacoes[PAINEL.sit+1].nome+'…','ok');
@@ -388,13 +417,17 @@ function terminouExecucao(){
   if(s.ok){
     PAINEL.passou[c.id][sit.id]=sig;delete PAINEL.falhou[c.id][sit.id];SFX.sucesso();mostrarErro(null);
     const falta=c.situacoes.filter(x=>PAINEL.passou[c.id][x.id]!==sig);
-    let t=(LANG.narrar(r.ev,s)||'')+(s.aviso?' '+s.aviso:'');
-    if(!falta.length){t=c.sucesso+(s.aviso?' '+s.aviso:'');painelMsg(t,'ok');if(!G.learn[c.id])concluirDesafio(c);else salvar(false);}
+    /* o programa que resolveu a etapa fica guardado para o diário */
+    if(!falta.length)G.solucoes[c.id]=LANG.clonar(PAINEL.prog);
+    const pv=conferirPrevisao(c,true);
+    let t=pv+(LANG.narrar(r.ev,s)||'')+(r.evFim&&r.evFim.msg&&r.evFim!==r.ev?' '+r.evFim.msg:'')+(s.aviso?' '+s.aviso:'');
+    if(!falta.length){t=pv+c.sucesso+(s.aviso?' '+s.aviso:'');painelMsg(t,'ok');if(!G.learn[c.id])concluirDesafio(c);else salvar(false);}
     else{painelMsg((t?t+' ':'')+'Deu certo em '+sit.nome+'. Agora teste o mesmo programa em '+falta.map(x=>x.nome).join(' e ')+'.','ok');}
   }else{
     PAINEL.falhou[c.id][sit.id]=sig;SFX.erroProg();
-    const x=LANG.explicarErro(s);mostrarErro(x);
-    painelMsg((x.linha?'O programa parou na linha '+x.linha+'.':'O programa terminou sem resolver.')+' Observe o mecanismo, leia o erro e corrija.','erro');
+    const x=LANG.explicarErro(s);mostrarErro(x);const pv=conferirPrevisao(c,false);
+    painelMsg(pv+(x.cat==='objetivo'?'O programa rodou até o fim, mas o objetivo ainda não foi alcançado. Observe o mecanismo, leia a explicação e corrija.'+(s.aviso?' '+s.aviso:'')
+      :(x.linha?'O programa parou na linha '+x.linha+'.':'O programa parou.')+' Observe o mecanismo, leia a explicação e corrija.'+(s.aviso?' '+s.aviso:'')),'erro');
   }
 }
 function concluirDesafio(c){

@@ -143,6 +143,7 @@ CONSTRUIR.steam=function(){
   A.objetivo=()=>objetivoTumba('steam','No Computador Ancestral (Oficina do Autômato, ao norte)');
   /* tabuleiro: desenha o percurso da etapa (a da execução, ou a próxima a fazer) */
   A.desenharChao=(g,t)=>desenharTabuleiro(A,g,t);
+  A.focoEvento=(ev,ws,cfg)=>{if(!ev.cmd||cfg.mundo!=='grade'||!ws)return null;const b=ev.anim&&ev.anim.bate,c=tabCelula(cfg,b?b.x:ws.x,b?b.y:ws.y);return{x:c.x+8,y:c.y-14};};
   A.aoEvento=(ev)=>{
     const a=ev.anim||{};
     if(a.anda)SFX.piston();if(a.bate||ev.tipo==='erro'){SFX.deny();R.treme=0.25;}

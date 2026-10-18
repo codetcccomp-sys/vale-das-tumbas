@@ -83,6 +83,8 @@ CONSTRUIR.atom=function(){
   /* Sala do Reator */
   /* a cor do núcleo mostra a temperatura (vermelho ≥ 80, laranja ≥ 50, verde abaixo) e muda com resfriar/ventilar */
   const corNucleo=()=>{if(est.temperatura===null)return'#5dff7a';if(est.manter)return'#5dff7a';let t=est.temperatura-(est.resfriar?40:0)-(est.ventilar?20:0);return t>=80?'#ff5a3a':t>=50?'#ffb43a':'#5dff7a';};
+  {const M={abrir:[20*16,10*16-44],carregar:[9*16+8,10*16-30],portao:[20*16,14*16-30],drenar:[24*16,14*16-22],resfriar:[14*16+8,10*16-68],ventilar:[11*16,12*16-14],manter:[17*16+8,9*16-26]};
+    A.focoEvento=ev=>{const m=ev.cmd&&M[ev.cmd];return m?{x:m[0],y:m[1]}:null;};}
   objeto(A,SPR.get('reator',0),14*16+8,10*16,{col:[-24,-20,24,0]}).desenho=(g,ob,t)=>{blit(g,SPR.get('reator',Math.floor(t*4)%2,corNucleo()),ob.x,ob.y,32,64);if(mostrar('temperatura'))etiqueta(g,ob.x,ob.y-70,'temperatura '+est.temperatura,corNucleo());};
   objeto(A,SPR.get('ventilador',0,false),11*16,12*16+12,{col:[-12,-6,12,0]}).desenho=(g,ob,t)=>blit(g,SPR.get('ventilador',Math.floor(t*12)%9,est.ventilar),ob.x,ob.y,15,32);
   objeto(A,SPR.get('luzStatus',false),17*16+8,9*16,{col:[-4,-3,4,0]}).desenho=(g,ob)=>blit(g,SPR.get('luzStatus',est.manter),ob.x,ob.y,6,20);
@@ -128,7 +130,7 @@ CONSTRUIR.atom=function(){
   };
   A.luzesExtra=t=>{luz(14*16+8,8*16,PAINEL.aberto&&PAINEL.area===A?110:52,1,corNucleo());if(est.manter)luz(17*16+8,8*16,24,1,'#5dff7a');for(const[x,y]of[[7,23],[21,23]])luz(x*16,y*16,30,0.7,'#5dff7a');};
   A.reiniciar=()=>{reiniciarGuardas(A);for(const pt of A.pontos)pt.aceso=false;canal.nivel=canal.alvo=8;addDiary('atom_enter',true);};
-  A.objetivo=()=>{if(G.p.y>21*16&&!assentado())return{t:'Saber: Decisões',s:'O canal está cheio. Use a válvula verde para drenar e atravesse pelos pontões.'};return objetivoTumba('atom','No painel do reator');};
+  A.objetivo=()=>{if(G.p.y>21*16&&!assentado())return{t:'Saber: Decisões',s:'O canal está cheio. Use a válvula verde para drenar e atravesse pelos pontões.',alvo:{x:6*16+8,y:25*16-12,txt:'Drenar o canal'}};return objetivoTumba('atom','No painel do reator');};
   A.aoEvento=(ev)=>{const a=ev.anim||{};if(a.comporta||a.portao)SFX.gate();if(a.carregador)SFX.sensor();if(a.dreno||a.resfriar)SFX.agua();if(a.ventilar)SFX.rotate();if(a.manter)SFX.sensor();if(a.falha||ev.tipo==='erro'){SFX.deny();R.treme=0.25;}if(ev.tipo==='se')faiscas(14*16+8,9*16,8,ev.res?['#5dff7a','#ffffff']:['#ff9a3a','#ffffff']);};
   A.aoConcluir=(cfg)=>{if(saberOk('atom'))setTimeout(()=>toast('O reator estabilizou: o portão da câmara do Núcleo atômico se abriu.','good'),600);};
   return A;

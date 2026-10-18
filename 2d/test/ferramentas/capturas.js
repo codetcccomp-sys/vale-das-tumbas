@@ -15,9 +15,12 @@ const limpo=()=>{toastClear();document.getElementById('zoneHint').hidden=true;};
     await ev(()=>{__vt.ir(TREINO.marca.x,TREINO.marca.y+40,'cima');__vt.quadros(30);});await ev(limpo);await foto('00-treino-patio');
     await ev(()=>__vt.usarEm(TREINO.lume.tx*16+8,TREINO.lume.ty*16+20,'cima'));await U.opcao('Como funciona a programação');await foto('01-treino-lume');
     await U.opcao('Até logo');await ev(()=>{__vt.G.treino.manivela=true;__vt.G.treino.passo=5;abrirGuia('variaveis');});await foto('02-guia-variaveis');
-    await ev(()=>mostrarTopico('if'));await foto('03-guia-if');
+    await ev(()=>mostrarTopico('contratos'));await foto('03-guia-regras-das-maquinas');
     await ev(()=>{fecharGuia();__vt.usarEm(TREINO.term.tx*16+8,TREINO.term.ty*16+30,'cima');__vt.velocidade(1);});
     await U.pb('acender_tocha()');await U.executar();await ev(limpo);await foto('04-treino-primeiro-comando');
+    /* a ordem importa: previsão antes de executar, erro explicado e conferência da previsão */
+    await U.etapa(1);await ev(()=>{__vt.velocidade(4);document.getElementById('pRun').click();});await page.waitForTimeout(200);await foto('04b-treino-previsao');
+    await U.prever(0);await U.esperarFim();await ev(limpo);await foto('04c-treino-ordem-erro');
   },'#vt-treino');
   /* ---------- vale e tumbas (celular em pé) ---------- */
   await sessao(412,860,2,true,'',async(U,foto,page)=>{const ev=U.ev;
@@ -26,8 +29,9 @@ const limpo=()=>{toastClear();document.getElementById('zoneHint').hidden=true;};
     await lugar(90.5,118,0.8);await foto('06-vale-noite-braseiros');
     await lugar(100,96,0.05);await foto('07-vale-manha-nevoa');
     await ev(()=>{const p=VALE.pois.ponte;__vt.G.time=0.25;__vt.ir(p.x*16,p.y*16+30,'cima');__vt.quadros(30);toastClear();});await foto('08-vale-ponte-leito-seco');
+    await ev(()=>{const T=TOMBS.steam;__vt.G.time=0.3;__vt.ir(T.door.x*16+8,(T.door.y+9)*16,'cima');__vt.quadros(30);toastClear();});await foto('08b-vale-entrada-emblema-alvo');
     /* Engrenagens: corrigir (erro na linha) e execução */
-    await ev(()=>{__vt.G.learn={t1:true,s0:true,s1:true};__vt.entrar('steam');__vt.usarEm(17*16+8,13*16+6,'cima');__vt.velocidade(4);toastClear();});
+    await ev(()=>{__vt.G.learn={t1:true,t2:true,s0:true,s1:true};__vt.entrar('steam');__vt.usarEm(17*16+8,13*16+6,'cima');__vt.velocidade(4);toastClear();});
     await U.executar();await foto('09-engrenagens-corrigir-erro');
     await ev(()=>{__vt.G.learn.s3=true;escolherDesafio(__vt.DESAFIO.s2);PAINEL.prog=[];PAINEL.cur={pai:null,ramo:null,i:0};renderPainel();});
     for(const c of['avancar()','avancar()','avancar()','virar_direita()','avancar()','avancar()','virar_direita()','avancar()','avancar()','ativar()'])await U.pb(c);
@@ -37,14 +41,19 @@ const limpo=()=>{toastClear();document.getElementById('zoneHint').hidden=true;};
     await ev(()=>{fecharPainel();Object.assign(__vt.G.learn,{s2:1,d0:1});__vt.entrar('diesel');__vt.G.abertas.push('diesel_luz');__vt.usarEm(14*16+8,13*16+6,'cima');escolherDesafio(__vt.DESAFIO.d1);PAINEL.prog=[];PAINEL.cur={pai:null,ramo:null,i:0};renderPainel();});
     await U.pb('variável = valor');await U.ch('True');await U.pb('variável = valor');await U.ch('2,5 L');await U.pb('variável = valor');await U.ch('5');await U.pb('variável = valor');await U.ch('"ABRIR"');
     await ev(()=>__vt.velocidade(2));await U.executar();await ev(limpo);await foto('11-motores-quatro-tipos');
-    await ev(()=>{Object.assign(__vt.G.learn,{d1:1,d2:1,d3:1,d4:1});escolherDesafio(__vt.DESAFIO.d5);});await U.executar();await ev(limpo);await foto('12-motores-erro-de-tipo');
+    await ev(()=>{Object.assign(__vt.G.learn,{d1:1,d2:1,d3:1,d4:1});escolherDesafio(__vt.DESAFIO.d5);});await U.executar();await ev(limpo);await foto('12-motores-regra-da-maquina');
+    /* aplicação independente: a bomba lê energia e combustivel e enche dois tanques */
+    await ev(()=>{Object.assign(__vt.G.learn,{d5:1});escolherDesafio(__vt.DESAFIO.d6);});
+    await U.escrever('energia = True\ncombustivel = 2.5\nabastecer_tanque()\ncombustivel = combustivel + 1.5\nabastecer_tanque()');
+    await ev(()=>{__vt.velocidade(1);document.getElementById('pRun').click();});await page.waitForTimeout(3400);await ev(limpo);await foto('12b-motores-bomba-aplicacao');
+    await ev(()=>painelParar(false));
     /* Reator: if, elif e else */
-    await ev(()=>{fecharPainel();Object.assign(__vt.G.learn,{d5:1,a0:1,a1:1,a2:1});__vt.entrar('atom');__vt.usarEm(14*16+8,14*16+6,'cima');escolherDesafio(__vt.DESAFIO.a3);PAINEL.prog=[];PAINEL.cur={pai:null,ramo:null,i:0};renderPainel();});
+    await ev(()=>{fecharPainel();Object.assign(__vt.G.learn,{d5:1,d6:1,a0:1,a1:1,a2:1});__vt.entrar('atom');__vt.usarEm(14*16+8,14*16+6,'cima');escolherDesafio(__vt.DESAFIO.a3);PAINEL.prog=[];PAINEL.cur={pai:null,ramo:null,i:0};renderPainel();});
     await U.pb('if … else');await U.ch('>=');await U.ch('80');await U.pb('resfriar()');await U.pb('elif');await U.ch('>=');await U.ch('50');await U.pb('ventilar()');await U.linhaTipo('senao');await U.pb('manter_estavel()');
     await U.sit(1);await ev(()=>{__vt.velocidade(1);document.getElementById('pRun').click();});await page.waitForTimeout(2600);await foto('13-reator-elif');
     await ev(()=>painelParar(false));
     /* Viva: for acende as quatro tochas; while rega o necessário */
-    await ev(()=>{fecharPainel();Object.assign(__vt.G.learn,{a3:1,a4:1});__vt.entrar('bio');__vt.usarEm(14*16+8,14*16+6,'cima');escolherDesafio(__vt.DESAFIO.b0);PAINEL.prog=[];PAINEL.cur={pai:null,ramo:null,i:0};renderPainel();});
+    await ev(()=>{fecharPainel();Object.assign(__vt.G.learn,{a3:1,a4:1,bd:1});__vt.entrar('bio');__vt.usarEm(14*16+8,14*16+6,'cima');escolherDesafio(__vt.DESAFIO.b0);PAINEL.prog=[];PAINEL.cur={pai:null,ramo:null,i:0};renderPainel();});
     await U.pb('for … in range(n)');await U.pb('acender_tocha()');await U.linhaTipo('no',0);await U.ch('+');await U.ch('+');
     await ev(()=>{__vt.velocidade(1);document.getElementById('pRun').click();});await page.waitForTimeout(3000);await foto('14-viva-for-tochas');
     await ev(()=>{painelParar(false);Object.assign(__vt.G.learn,{b0:1,b1:1,b2:1,b3:1});escolherDesafio(__vt.DESAFIO.b4);});
@@ -61,12 +70,15 @@ const limpo=()=>{toastClear();document.getElementById('zoneHint').hidden=true;};
   });
   /* ---------- celular deitado ---------- */
   await sessao(844,390,3,true,'L-',async(U,foto,page)=>{const ev=U.ev;
-    await ev(()=>{__vt.G.learn={t1:true,s0:true,s1:true,s3:true,d0:1,d1:1,d2:1,d3:1,d4:1,d5:1,a0:1,a1:1,a2:1};__vt.entrar('atom');__vt.usarEm(14*16+8,14*16+6,'cima');escolherDesafio(__vt.DESAFIO.a4);toastClear();});
+    await ev(()=>{__vt.G.learn={t1:true,t2:true,s0:true,s1:true,s3:true,d0:1,d1:1,d2:1,d3:1,d4:1,d5:1,d6:1,a0:1,a1:1,a2:1};__vt.entrar('atom');__vt.usarEm(14*16+8,14*16+6,'cima');escolherDesafio(__vt.DESAFIO.a4);toastClear();});
     await U.executar();await foto('20-deitado-painel-erro');
     await ev(()=>{fecharPainel();__vt.entrar('final');__vt.ir(14*16,12*16,'cima');__vt.quadros(10);toastClear();});await foto('21-deitado-cidade');});
   /* ---------- computador ---------- */
   await sessao(1366,768,1,false,'D-',async(U,foto,page)=>{const ev=U.ev;
     await ev(()=>{__vt.G.time=0.32;__vt.ir(91*16,140*16,'cima');__vt.quadros(10);toastClear();});await foto('22-computador-vale');
-    await ev(()=>abrirGuia('elif'));await foto('23-computador-guia');});
+    await ev(()=>abrirGuia('elif'));await foto('23-computador-guia');
+    /* área de erro: o Python tem print, o editor do jogo não */
+    await ev(()=>{fecharGuia();__vt.G.learn={t1:1,t2:1,s0:1,s1:1,s3:1,s2:1,d0:1,d1:1};__vt.entrar('diesel');__vt.G.abertas.push('diesel_luz');__vt.usarEm(14*16+8,13*16+6,'cima');escolherDesafio(__vt.DESAFIO.d2);toastClear();});
+    await U.escrever('quantidade = 5\nprint(quantidade)');await foto('24-computador-erro-subconjunto');});
   console.log('capturas em',OUT);
 })();

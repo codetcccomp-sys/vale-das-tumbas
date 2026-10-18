@@ -7,6 +7,11 @@ const t=suite('b1-percurso');
   const {browser,page,logs}=await open({viewport:{width:412,height:860},dpr:2,touch:true,hash:'#vt-treino'});
   const vigia=setTimeout(()=>{console.log('  FALHA  tempo esgotado');process.exitCode=1;browser.close();},360000);
   const U=ui(page),ev=U.ev;
+  /* recarrega a página e usa Continuar: as etapas, as relíquias e os programas que resolveram cada etapa voltam iguais */
+  const recarregar=async nome=>{const a=await ev(()=>({learn:JSON.stringify(__vt.G.learn),relics:JSON.stringify(__vt.G.relics),sol:Object.keys(__vt.G.solucoes).sort().join()}));
+    await page.reload();await page.waitForFunction(()=>window.__vt);await ev(()=>document.getElementById('btnContinue').click());await page.waitForTimeout(150);
+    const b=await ev(()=>({area:__vt.G.area.id,learn:JSON.stringify(__vt.G.learn),relics:JSON.stringify(__vt.G.relics),sol:Object.keys(__vt.G.solucoes).sort().join()}));
+    t.ok(b.area==='vale'&&a.learn===b.learn&&a.relics===b.relics&&a.sol===b.sol,'recarregar depois da '+nome+': etapas, relíquias e programas restaurados',{antes:a.sol,depois:b.sol,area:b.area});};
   try{
   /* ---------- pátio de treino ---------- */
   await ev(()=>document.getElementById('btnNew').click());
@@ -25,12 +30,21 @@ const t=suite('b1-percurso');
   lb=await ev(()=>__vt.usarEm(TREINO.term.tx*16+8,TREINO.term.ty*16+30,'cima'));await page.waitForTimeout(100);
   e=await U.painel();t.ok(!e.aberto,'o terminal pede o Guia antes de abrir o editor',lb);
   await ev(()=>document.getElementById('btnGuia').click());await page.waitForTimeout(100);
-  let gd=await ev(()=>({modo:__vt.G.mode,vis:!document.getElementById('guia').hidden,tops:document.querySelectorAll('#gTopicos .gtop').length}));t.ok(gd.modo==='guia'&&gd.vis&&gd.tops>=10,'o Guia de Programação abre pelo botão do HUD',gd);
+  let gd=await ev(()=>({modo:__vt.G.mode,vis:!document.getElementById('guia').hidden,grupos:document.querySelectorAll('#gTopicos .ggr').length,aqui:(document.querySelector('#gTopicos .ggr.aqui')||{}).textContent,tops:document.querySelectorAll('#gTopicos .gtop').length}));
+  t.ok(gd.modo==='guia'&&gd.vis&&gd.grupos===5&&/Sequência/.test(gd.aqui)&&gd.tops>=2,'o Guia de Programação abre pelo botão do HUD, no grupo do lugar (★ Sequência)',gd);
   await ev(()=>document.getElementById('gFechar').click());
   await ev(()=>__vt.usarEm(TREINO.term.tx*16+8,TREINO.term.ty*16+30,'cima'));await page.waitForTimeout(100);
   e=await U.painel();t.ok(e.aberto&&e.cfg==='t1','o terminal abre o editor de código no desafio do treino',e.cfg);
   await ev(()=>__vt.velocidade(8));await U.pb('acender_tocha()');let r=await U.executar();
-  e=await U.estado();t.ok(r.ok&&e.learn.t1,'primeiro comando: acender_tocha() acende a tocha e abre o portão',r.msg);
+  e=await U.estado();t.ok(r.ok&&e.learn.t1&&/tocha acendeu/.test(r.msg),'primeiro comando: acender_tocha() acende a tocha',r.msg);
+  /* a ordem importa: o código vem pronto (na ordem errada), o jogador prevê, executa, observa e corrige */
+  await U.etapa(1);r=await U.painel();t.ok(r.cfg==='t2'&&/erguer_portao\(\)\ndestravar_portao\(\)/.test(r.prog),'treino, etapa 2: o programa do portão já vem escrito',r.prog);
+  await ev(()=>document.getElementById('pRun').click());let pv=await ev(()=>({vis:!document.getElementById('pPrev').hidden,q:document.querySelector('#pPrev .q').textContent,run:!!PAINEL.run}));
+  t.ok(pv.vis&&/Previsão/.test(pv.q)&&!pv.run,'antes da primeira tentativa, o painel pede uma previsão (e ainda não executa)',pv);
+  await U.prever(0);await U.esperarFim();await page.waitForTimeout(60);r=await U.painel();let er=await U.erro();
+  t.ok(!r.ok&&/Sua previsão: «O portão sobe.»/.test(r.msg)&&/resultado foi outro/.test(r.msg)&&er&&/trava/.test(er.txt),'a previsão é conferida depois: o portão não subiu porque a trava estava fechada',[r.msg,er]);
+  await U.linha(2);await U.ch('↑ Subir');r=await U.executar();e=await U.estado();
+  t.ok(r.ok&&e.learn.t2&&/destravar_portao\(\)\nerguer_portao\(\)/.test(r.prog),'corrigida a ordem, o portão abre',r.prog);
   await ev(()=>fecharPainel());await page.waitForTimeout(900);
   await ev(()=>{__vt.ir(13*16,3*16,'cima');});await ev(()=>__vt.andar(0,-1,1.2));await U.transicao();
   e=await U.estado();tr=await ev(()=>__vt.G.treino.feito);t.ok(e.area==='vale'&&tr,'sai do pátio pelo portão aberto e chega ao vale',[e.area,tr]);
@@ -50,7 +64,7 @@ const t=suite('b1-percurso');
   r=await U.painel();t.ok(/avancar\(\)\navancar\(\)\nvirar_direita\(\)\navancar\(\)\nativar\(\)/.test(r.prog),'o programa aparece em Python, uma linha por instrução',r.prog);
   r=await U.executar();t.ok(r.ok&&(await U.estado()).learn.s1,'prática guiada: o autômato chega e ativa',r.msg);
   await U.etapa(2);r=await U.painel();t.ok(r.cfg==='s3'&&/virar_direita/.test(r.prog),'etapa de corrigir já vem com o código escrito',r.prog);
-  r=await U.executar();let er=await U.erro();t.ok(!r.ok&&er&&/linha 3/i.test(er.onde)&&/pedra/.test(er.tit+er.txt),'executar mostra onde parou: erro na linha 3, o autômato bateu',er);
+  r=await U.executar();er=await U.erro();t.ok(!r.ok&&er&&/linha 3/i.test(er.onde)&&/pedra/.test(er.tit+er.txt),'executar mostra onde parou: erro na linha 3, o autômato bateu',er);
   await U.linha(2);await U.ch('↓ Descer');r=await U.executar();t.ok(r.ok&&(await U.estado()).learn.s3,'corrigido descendo virar_direita(): executar → observar → corrigir',r.prog);
   await U.etapa(3);
   let w=await U.escrever('avancar()\navancar()\navancar()\nvirar_direita()\navancar()\navancar()\nvirar_direita()\navancar()\navancar()\nativar()');
@@ -59,6 +73,7 @@ const t=suite('b1-percurso');
   await ev(()=>fecharPainel());
   lb=await U.usarEm(13*16+8,4*16+12,'cima');e=await U.estado();t.ok(e.relics.steam&&e.saberes===1,'portão aberto e Engrenagem-mestra recolhida',[lb,e.relics]);
   lb=await U.usarEm(14*16,47*16+8,'baixo');await U.transicao();e=await U.estado();t.ok(e.area==='vale','sai da tumba pela escada',lb);
+  await recarregar('Tumba das Engrenagens');
   /* ---------- Motores: variáveis e tipos ---------- */
   p=await ev(()=>__vt.porta('diesel'));await U.usarEm(p.x,p.y);await U.transicao();e=await U.estado();t.ok(e.area==='diesel','Tumba dos Motores aberta depois da Sequência');
   for(let i=0;i<7;i++)await U.usarEm(8*16+8,24*16+20,'cima');
@@ -86,8 +101,15 @@ const t=suite('b1-percurso');
   await U.linha(1);await U.ch('12');r=await U.executar();er=await U.erro();t.ok(!r.ok&&er&&/maiúsculas/.test(er.txt),'próximo erro: "motor" em minúsculas',er);
   await U.linha(3);await U.ch('"MOTOR"');r=await U.executar();er=await U.erro();t.ok(!r.ok&&er&&/False/.test(er.txt),'próximo erro: freio solto é False',er);
   await U.linha(4);await U.ch('False');r=await U.executar();e=await U.estado();t.ok(r.ok&&e.learn.d5,'ficha do monta-cargas corrigida',r.prog);
+  /* aplicação independente: guardar, usar e alterar dados para a bomba encher dois tanques diferentes */
+  await U.etapa(6);r=await U.painel();t.ok(r.cfg==='d6'&&!r.prog,'Motores, etapa 7: a bomba de combustível começa sem código e sem guia',r);
+  await U.pb('variável = valor');await U.ch('True');await U.pb('variável = valor');await U.ch('"2.5"');r=await U.painel();
+  t.ok(/máquina recusou/.test(r.msg)&&/float/.test(r.msg),'"2.5" com aspas é recusado pelo contêiner float',r.msg);
+  await U.ch('2,5 L');await U.pb('abastecer_tanque()');await U.pb('variável = valor');await U.ch('combustivel (float)');await U.ch('combustivel + 1,5 L');await U.pb('abastecer_tanque()');
+  r=await U.executar();e=await U.estado();let tq=await ev(()=>painelVis().ws.tanques);
+  t.ok(r.ok&&e.learn.d6&&tq.join()==='2.5,4','a bomba lê energia e combustivel: tanques com 2.5 L e 4.0 L',[r.prog,tq]);
   await ev(()=>fecharPainel());lb=await U.usarEm(14*16+8,4*16+12,'cima');e=await U.estado();t.ok(e.relics.diesel&&e.saberes===2,'Vela de ignição recolhida',lb);
-  await U.usarEm(15*16,32*16+8,'baixo');await U.transicao();
+  await U.usarEm(15*16,32*16+8,'baixo');await U.transicao();await recarregar('Tumba dos Motores');
   /* ---------- Reator: if, elif e else ---------- */
   p=await ev(()=>__vt.porta('atom'));await U.usarEm(p.x,p.y);await U.transicao();e=await U.estado();t.ok(e.area==='atom','Tumba do Reator aberta');
   await ev(()=>__vt.ir(14*16+8,21*16+8,'cima'));let mv=await ev(()=>__vt.andar(0,-1,1.6));e=await U.estado();t.ok(e.hearts===2&&e.y>21*16,'com o canal cheio, atravessar cai na água e volta à entrada',[mv,e.hearts]);
@@ -114,28 +136,31 @@ const t=suite('b1-percurso');
   w=await U.escrever('if temperatura >= 80:\n    resfriar()\nelif temperatura >= 50:\n    ventilar()\nelse:\n    manter_estavel()');
   r=await U.executarTodas();e=await U.estado();t.ok(w.aceito&&e.learn.a4,'condição mais rigorosa primeiro: as quatro situações passam',r.msg);
   await ev(()=>fecharPainel());lb=await U.usarEm(14*16+8,4*16+12,'cima');e=await U.estado();t.ok(e.relics.atom&&e.saberes===3,'Núcleo atômico recolhido',lb);
-  await U.usarEm(15*16,31*16+8,'baixo');await U.transicao();
+  await U.usarEm(15*16,31*16+8,'baixo');await U.transicao();await recarregar('Tumba do Reator');
   /* ---------- Viva: for e while ---------- */
   p=await ev(()=>__vt.porta('bio'));await U.usarEm(p.x,p.y);await U.transicao();e=await U.estado();t.ok(e.area==='bio','Tumba Viva aberta');
   await U.usarEm(14*16+8,29*16+20,'cima');await page.waitForTimeout(200);await ev(()=>{for(let i=0;i<300;i++)passoJogo(1/60,performance.now());});
   for(const i of[2,0,3,1]){const B=[[8,27],[12,26],[17,26],[21,27]][i];await U.usarEm(B[0]*16+8,B[1]*16+20,'cima');}
   ab=await ev(()=>__vt.G.abertas.indexOf('bio_canto')>=0);t.ok(ab,'canção repetida na ordem: membrana aberta');
-  lb=await U.usarEm(14*16+8,14*16+6,'cima');await ev(()=>__vt.velocidade(8));e=await U.painel();t.ok(e.aberto&&e.cfg==='b0','computador da Tumba Viva: as quatro tochas',[lb,e.cfg]);
+  lb=await U.usarEm(14*16+8,14*16+6,'cima');await ev(()=>__vt.velocidade(8));e=await U.painel();t.ok(e.aberto&&e.cfg==='bd','computador da Tumba Viva: começa pela demonstração',[lb,e.cfg]);
+  await U.pb('Linha a linha');await U.esperarFim();await page.waitForTimeout(80);await U.pb('Com for');await U.esperarFim();await page.waitForTimeout(80);
+  e=await U.estado();let ac=await ev(()=>painelVis().ws.acesas);t.ok(e.learn.bd&&ac===4,'demonstração: com e sem for, as mesmas quatro tochas acendem',ac);
+  await U.pb('Continuar');r=await U.painel();t.ok(r.cfg==='b0','depois da demonstração, a prática guiada das tochas',r.cfg);
   await U.pb('for … in range(n)');await U.pb('acender_tocha()');await U.pb('acender_tocha()');r=await U.painel();
   t.ok(/só cabem|linhas/.test(r.msg)&&!/acender_tocha\(\)\n    acender_tocha/.test(r.prog),'o painel de 2 linhas não aceita repetir a linha: precisa do for',r.msg);
   await U.linhaTipo('no',0);await U.ch('+');await U.ch('+');
   r=await U.executar();let tochas=await ev(()=>painelVis().ws.acesas);e=await U.estado();t.ok(r.ok&&e.learn.b0&&tochas===4,'for i in range(4): acender_tocha() acende as quatro tochas, uma depois da outra',[r.prog,tochas]);
-  await U.etapa(1);await U.pb('for … in range(n)');await U.pb('irrigar()');await U.pb('avancar()');await U.linha(1);await U.ch('+');await U.ch('+');
+  await U.etapa(2);await U.pb('for … in range(n)');await U.pb('irrigar()');await U.pb('avancar()');await U.linha(1);await U.ch('+');await U.ch('+');
   r=await U.executar();t.ok(r.ok,'for range(4) irriga os quatro organismos',r.prog);
-  await U.etapa(2);r=await U.executar();er=await U.erro();t.ok(!r.ok&&er&&/vazia/.test(er.tit+er.txt),'corrigir: o for rega a terra vazia',er);
+  await U.etapa(3);r=await U.executar();er=await U.erro();t.ok(!r.ok&&er&&/vazia/.test(er.tit+er.txt),'corrigir: o for rega a terra vazia',er);
   await U.linha(1);for(let i=0;i<3;i++)await U.ch('−');await U.linha(3);await U.pb('avancar()');
   r=await U.executar();e=await U.estado();t.ok(r.ok&&e.learn.b2,'corrigido: range(3) com irrigar() e dois avancar()',r.prog);
-  await U.etapa(3);await U.pb('while');await U.ch('3');await U.pb('irrigar()');r=await U.executarTodas();e=await U.estado();
+  await U.etapa(4);await U.pb('while');await U.ch('3');await U.pb('irrigar()');r=await U.executarTodas();e=await U.estado();
   t.ok(e.learn.b3,'while umidade < 3 funciona com 0, 1 e 3 regas',r.msg);
-  await U.etapa(4);w=await U.escrever('for i in range(4):\n    while umidade < 3:\n        irrigar()\n    avancar()');
+  await U.etapa(5);w=await U.escrever('for i in range(4):\n    while umidade < 3:\n        irrigar()\n    avancar()');
   r=await U.executarTodas();e=await U.estado();t.ok(w.aceito&&e.learn.b4,'rotina automática com while dentro do for',[r.msg,r.prog]);
   await ev(()=>fecharPainel());lb=await U.usarEm(14*16+8,4*16+12,'cima');e=await U.estado();t.ok(e.relics.bio&&e.saberes===4,'Semente da vida recolhida: quatro saberes',lb);
-  await U.usarEm(15*16,36*16+8,'baixo');await U.transicao();
+  await U.usarEm(15*16,36*16+8,'baixo');await U.transicao();await recarregar('Tumba Viva');
   /* ---------- Cidade-Jardim ---------- */
   p=await ev(()=>__vt.porta('final'));await U.usarEm(p.x,p.y);await U.transicao();e=await U.estado();t.ok(e.area==='final','a porta da Cidade-Jardim abre com os quatro saberes');
   await U.usarEm(14*16+8,15*16+6,'cima');await ev(()=>__vt.velocidade(8));
@@ -145,6 +170,11 @@ const t=suite('b1-percurso');
   lb=await U.usarEm(14*16,5*16+4,'cima');await page.waitForTimeout(200);
   const fim=await ev(()=>({modo:__vt.G.mode,done:__vt.G.done,tela:!document.getElementById('fim').hidden}));t.ok(fim.tela&&fim.done,'árvore-matriz: cena final',[lb,fim]);
   await page.screenshot({path:require('path').join(__dirname,'shots','fim.png')});
+  /* o diário mostra, em cada saber, o conceito e o programa que o jogador escreveu */
+  const di=await ev(()=>{document.getElementById('fimOk')&&!document.getElementById('fim').hidden&&document.getElementById('fimOk').click();abrirDiario('saberes');
+    const c=[...document.querySelectorAll('#dLista .entry')].map(e=>({t:e.querySelector('h3').textContent,cod:(e.querySelector('pre')||{}).textContent||''}));fecharDiario();return c;});
+  const meus=di.filter(c=>/^Seu programa/.test(c.t));
+  t.ok(meus.length===4&&meus.some(c=>/abastecer_tanque\(\)/.test(c.cod))&&meus.some(c=>/for i in range\(4\):\n    while umidade < 3:/.test(c.cod)),'o diário guarda, em cada saber, o conceito e o programa do jogador (da aplicação independente)',meus.map(c=>c.t));
   /* ---------- salvar e continuar ---------- */
   const sv=await ev(()=>__vt.lerSave());const nD=await ev(()=>__vt.DESAFIO?Object.keys(__vt.DESAFIO).length:0);t.ok(sv&&sv.done&&Object.keys(sv.learn).length===nD&&sv.relics.bio&&sv.treino.feito,'save final guarda as '+nD+' etapas, o treino, as relíquias e o final',sv&&{learn:Object.keys(sv.learn).length,done:sv.done});
   await page.reload();await page.waitForFunction(()=>window.__vt);await ev(()=>document.getElementById('btnContinue').click());

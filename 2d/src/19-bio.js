@@ -95,7 +95,7 @@ CONSTRUIR.bio=function(){
   terminal(A,14,13,'bio',foco,'consoleBio','Usar o console da estufa');
   interacao(A,{x:14*16,y:7*16,r:30,label:()=>'Ler a placa da estufa',use:()=>{addDiary('oficina_bio');toast('A estufa repete a rotina que receber. O for conta as voltas; o while testa uma condição antes de cada volta e para quando ela dá False.');}});
   criarLume(A,17.5,13,'bio');
-  tochasProgresso(A,'bio',[[9,14],[10.5,14],[12,14],[17,14],[18.5,14]],'#c9a6ff');
+  tochasProgresso(A,'bio',[[9,14],[10.5,14],[12,14],[17,14],[18.5,14],[20,14]],'#c9a6ff');
   /* as quatro tochas de seiva da estufa: acendem uma depois da outra com o for (etapa b0) */
   const TOCHAS_BIO=[[9,7],[12,7],[16,7],[19,7]];
   const tochasAcesas=()=>{const vis=PAINEL.aberto&&PAINEL.area===A?painelVis():null;return vis&&vis.cfg.mundo==='tochas'?vis.ws.acesas:(G.learn.b0?4:0);};
@@ -122,7 +122,9 @@ CONSTRUIR.bio=function(){
     desenharEstufa(A,g,t);
   };
   A.reiniciar=()=>{reiniciarGuardas(A);for(const pt of A.pontos)pt.aceso=false;canto.pos=0;canto.fila=[];addDiary('bio_enter',true);};
-  A.objetivo=()=>{if(!aberto())return{t:'Saber: Repetições e automação',s:'Toque no coração da sala para ouvir a canção e repita a ordem nos bulbos.'};if(G.p.y>15*16&&G.p.y<23*16)addDiary('bio_spores',true);return objetivoTumba('bio','No console da estufa');};
+  A.objetivo=()=>{if(!aberto())return{t:'Saber: Repetições e automação',s:'Toque no coração da sala para ouvir a canção e repita a ordem nos bulbos.',alvo:{x:14*16+8,y:29*16-12,txt:'Ouvir a canção'}};if(G.p.y>15*16&&G.p.y<23*16)addDiary('bio_spores',true);return objetivoTumba('bio','No console da estufa');};
+  A.focoEvento=(ev,ws,cfg)=>{const a=ev.anim||{};if(a.tocha!==undefined){const p=TOCHAS_BIO[a.tocha];return p?{x:p[0]*16+8,y:p[1]*16-36}:null;}
+    if(cfg.mundo==='estufa'&&ws&&(ev.cmd||ev.tipo==='enq'))return{x:TRILHO.x*16+Math.min(ws.x,ws.fimX)*TRILHO.passo+8,y:TRILHO.y*16-34};return null;};
   A.aoEvento=(ev)=>{const a=ev.anim||{};if(a.tocha!==undefined){const p=[[9,7],[12,7],[16,7],[19,7]][a.tocha];SFX.lamp();faiscas(p[0]*16+8,p[1]*16-12,10,['#ffffff','#e8d0ff','#c9a6ff']);}if(a.rega!==undefined){SFX.rega();const x=TRILHO.x*16+a.rega*TRILHO.passo+8;gotas(x,TRILHO.y*16-6,6);}if(a.encharca||a.vazio||ev.tipo==='erro'){SFX.deny();R.treme=0.2;}};
   A.aoConcluir=(cfg)=>{if(saberOk('bio'))setTimeout(()=>toast('A estufa respira sozinha: a membrana da câmara da Semente da vida se abriu.','good'),600);};
   return A;

@@ -7,7 +7,7 @@ function carregar(arquivos,extra){
     '\n;this.__exp={LANG:typeof LANG!=="undefined"?LANG:null,DESAFIOS:typeof DESAFIOS!=="undefined"?DESAFIOS:null,DESAFIO:typeof DESAFIO!=="undefined"?DESAFIO:null,'+
     'MUNDOS:typeof MUNDOS!=="undefined"?MUNDOS:null,OBJ:typeof OBJ!=="undefined"?OBJ:null,classificar:typeof classificar!=="undefined"?classificar:null,'+
     'novoNo:typeof novoNo!=="undefined"?novoNo:null,guiaDe:typeof guiaDe!=="undefined"?guiaDe:null,rodarTodas:typeof rodarTodas!=="undefined"?rodarTodas:null,'+
-    'situacoesOk:typeof situacoesOk!=="undefined"?situacoesOk:null,SAVE2D:typeof SAVE2D!=="undefined"?SAVE2D:null,programaInicial:typeof programaInicial!=="undefined"?programaInicial:null};';
+    'situacoesOk:typeof situacoesOk!=="undefined"?situacoesOk:null,SAVE2D:typeof SAVE2D!=="undefined"?SAVE2D:null,programaInicial:typeof programaInicial!=="undefined"?programaInicial:null,desafiosDa:typeof desafiosDa!=="undefined"?desafiosDa:null};';
   vm.runInContext(codigo,ctx,{timeout:5000,filename:'src2d.js'});
   return ctx.__exp;
 }

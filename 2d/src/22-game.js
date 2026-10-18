@@ -76,8 +76,8 @@ function objetivo(){
   if(!G.area)return null;
   const prox=ORDEM_TUMBAS.find(k=>!saberOk(k));
   if(G.area.id==='vale'){
-    if(prox){const T=TOMBS[prox],S=SABERES[T.saber],n=ORDEM_TUMBAS.indexOf(prox)+1;return{t:'Etapa '+n+' de 5 · '+S.nome,s:T.name+' ('+({NE:'nordeste',O:'oeste',SO:'sudoeste',SE:'sudeste'}[T.label])+'), siga a trilha '+NOME_TRILHA[prox]+'.',alvo:{x:T.out.x*16+8,y:T.out.y*16},cor:T.col};}
-    if(!G.done)return{t:'Etapa 5 de 5 · Tudo junto',s:'Leve os quatro saberes à Cidade-Jardim, ao norte.',alvo:{x:PIR.x,y:PIR.y+16},cor:'#ffd24a'};
+    if(prox){const T=TOMBS[prox],S=SABERES[T.saber],n=ORDEM_TUMBAS.indexOf(prox)+1;return{t:'Etapa '+n+' de 5 · '+S.nome,s:T.name+' ('+({NE:'nordeste',O:'oeste',SO:'sudoeste',SE:'sudeste'}[T.label])+'), siga a trilha '+NOME_TRILHA[prox]+'.',alvo:{x:T.out.x*16+8,y:T.out.y*16-20,txt:T.name},cor:T.col};}
+    if(!G.done)return{t:'Etapa 5 de 5 · Tudo junto',s:'Leve os quatro saberes à Cidade-Jardim, ao norte.',alvo:{x:PIR.x,y:PIR.y-10,txt:'Cidade-Jardim'},cor:'#ffd24a'};
     return{t:'Vale restaurado',s:'Explore os segredos do vale: '+secCount()+'/12.'};
   }
   if(G.area.objetivo)return G.area.objetivo();
@@ -109,19 +109,24 @@ function mostrarAba(a){
     const lst=G.diary.slice().reverse();if(!lst.length)card('Ainda não há anotações','Explore o vale.');
     lst.forEach((id,i)=>{const e=ENTRIES[id];if(e)card(e.t,e.s,e.cod,e.cod?'saber':'',i<G.diaryNew);});
   }else if(a==='saberes'){
-    $('dInfo').textContent='Os conhecimentos das quatro tumbas. Cada relíquia desperta quando o saber é recuperado.';
+    $('dInfo').textContent='Cada tumba guarda um saber, e cada saber tem a sua relíquia: ela desperta quando todas as etapas da tumba são concluídas. Aqui ficam o conceito e o programa que você escreveu.';
     for(const k of RELIC_KEYS){const S=SABERES[TOMBS[k].saber],ok=saberOk(k),feitos=desafiosDa(k).filter(d=>G.learn[d.id]).length,tot=desafiosDa(k).length;
-      if(ok)card(S.nome+' · '+RELIC_INFO[k].name,S.resumo,S.exemplo,'saber');
-      else card(S.nome+' · '+TOMBS[k].name,(G.relics[k]?'Relíquia adormecida. ':'')+'Etapas concluídas: '+feitos+' de '+tot+'.',null,'bloq');}
+      if(ok){card(S.nome+' · '+RELIC_INFO[k].name,S.resumo,S.exemplo,'saber');const m=meuPrograma(k);if(m)card('Seu programa · '+m.cfg.titulo,'O programa que você escreveu e que resolveu esta etapa'+(m.cfg.etapa==='aplicacao'?', sem guia, numa situação nova.':'.'),m.cod,'saber');}
+      else card(S.nome+' · '+TOMBS[k].name,(G.relics[k]?'Relíquia adormecida. ':'')+'Etapas concluídas: '+plural(feitos,'etapa','etapas')+' de '+tot+'.',null,'bloq');}
     if(G.done)card(ENTRIES.saber_tudo.t,ENTRIES.saber_tudo.s,ENTRIES.saber_tudo.cod,'saber');
   }else if(a==='exemplos'){
-    $('dInfo').textContent='Os exemplos que você já viu ou montou. Eles também aparecem no botão Exemplos do painel.';
+    $('dInfo').textContent='Os exemplos das etapas que você já concluiu. Eles também ficam no Guia, em Ajuda › Seus exemplos.';
     const ex=exemplosVistos();if(!ex.length)card('Nenhum exemplo ainda','Os exemplos aparecem depois das demonstrações e de cada etapa concluída.');
     for(const e of ex)card(e.titulo,e.de,e.codigo,'saber');
   }else{
     $('dInfo').textContent=(secFragCount()>=4?'O mapa completo do vale.':'Reúna os fragmentos de mapa escondidos pelo vale: cada um revela um quarto ('+secFragCount()+'/4).')+' As trilhas coloridas saem da estrada e levam a cada tumba.';
     desenharMapaVale(mapa);
   }
+}
+/* o programa do jogador que melhor mostra o saber: o da etapa de aplicação (sem guia), ou o da última etapa resolvida */
+function meuPrograma(k){
+  const l=desafiosDa(k).filter(d=>d.etapa!=='demo'&&G.solucoes&&G.solucoes[d.id]&&G.solucoes[d.id].length);if(!l.length)return null;
+  const cfg=l.find(d=>d.etapa==='aplicacao')||l[l.length-1];return{cfg,cod:LANG.codigo(G.solucoes[cfg.id])};
 }
 function exemplosVistos(){const out=[];for(const d of DESAFIOS)if(G.learn[d.id]&&d.exemplo)out.push({titulo:d.exemplo.titulo,codigo:d.exemplo.codigo,de:TOMBS[d.tumba].name+' · '+d.titulo});return out;}
 
@@ -222,6 +227,8 @@ const areaExterna=A=>!!A&&(A.id==='vale'||A.id==='treino');
 function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
 function lsSet(k,v){try{localStorage.setItem(k,v);return true;}catch(e){return false;}}
 function lsDel(k){try{localStorage.removeItem(k);}catch(e){}}
+/* o navegador deixa guardar? (janela privada, armazenamento bloqueado ou cheio: o jogo segue, com aviso) */
+function armazenamentoOk(){try{localStorage.setItem('vt2d_teste','1');localStorage.removeItem('vt2d_teste');return true;}catch(e){return false;}}
 function lerJson(k){const r=lsGet(k);if(!r)return null;try{return JSON.parse(r);}catch(e){return null;}}
 function lerSave(){return SAVE2D.limpar(lerJson(SAVE2D_KEY));}
 function ler3d(){return SAVE2D.ler3d(lerJson(SAVE3D_KEY));}
@@ -230,7 +237,7 @@ function salvar(mostrar){
   if(G.mode==='menu')return false;
   const naTumba=G.area&&G.area.id!=='vale';
   const st={relics:G.relics,learn:G.learn,progs:G.progs,diary:G.diary,insc:G.insc,sec:G.sec,abertas:G.abertas,done:G.done,time:G.time,migr:G.migr,
-    pos:naTumba?null:{x:G.p.x/16,y:G.p.y/16},tomb:naTumba?G.curTomb:null,treino:G.treino,dicas:G.dicas,poi:G.poi,guia:G.guia};
+    pos:naTumba?null:{x:G.p.x/16,y:G.p.y/16},tomb:naTumba?G.curTomb:null,treino:G.treino,dicas:G.dicas,poi:G.poi,guia:G.guia,solucoes:G.solucoes};
   const ok=lsSet(SAVE2D_KEY,JSON.stringify(SAVE2D.montar(st)));
   if(!ok&&!saveAvisou){saveAvisou=true;toast(TXT.saveFail,'warn');}else if(ok&&mostrar)toast(TXT.saved);
   G.salvoEm=G.t;return ok;
@@ -238,12 +245,12 @@ function salvar(mostrar){
 function aplicarSave(s){
   G.relics=Object.assign({},s.relics);G.learn=Object.assign({},s.learn);G.progs=s.progs||{};G.diary=s.diary.slice();G.insc=s.insc;G.sec=s.sec;G.abertas=s.abertas.slice();
   G.done=s.done;G.time=s.time;G.migr=s.migr;
-  G.treino=Object.assign({},s.treino);G.dicas=Object.assign({},s.dicas);G.poi=Object.assign({},s.poi);G.guia=!!s.guia;G.lumeFalou=G.treino.passo>1;
+  G.treino=Object.assign({},s.treino);G.dicas=Object.assign({},s.dicas);G.poi=Object.assign({},s.poi);G.guia=!!s.guia;G.lumeFalou=G.treino.passo>1;G.solucoes=s.solucoes||{};
 }
 function resetEstado(){
   G.hearts=3;G.invuln=0;G.danoT=0;G.lantern=100;G.lanternOn=false;G.relics={steam:false,diesel:false,atom:false,bio:false};G.learn={};G.progs={};G.diary=[];G.diaryNew=0;
   G.insc={};G.sec={};G.abertas=[];G.done=false;G.time=0.12;G.migr=null;G.checkpoint=null;G.curTomb=null;G.nightSeen=false;$('btnDiary').classList.remove('new');
-  G.treino={feito:false,passo:0,manivela:false};G.dicas={};G.poi={};G.guia=false;G.lumeFalou=false;
+  G.treino={feito:false,passo:0,manivela:false};G.dicas={};G.poi={};G.guia=false;G.lumeFalou=false;G.solucoes={};
 }
 /* começa: novo jogo, continuar o save 2D ou migrar o save do 3D (sem mexer nele) */
 function iniciarJogo(modo){
@@ -282,9 +289,10 @@ function atualizarInicio(){
   const s=lerSave(),d3=s?null:ler3d();
   $('btnContinue').hidden=!s&&!d3;$('btnContinue').textContent=s?'Continuar':'Continuar com o progresso do 3D';
   $('btnNew').className=s||d3?'btn':'btn main';
-  $('startNote').textContent=s?'Continuar traz '+RELIC_KEYS.filter(k=>s.relics[k]).length+'/4 relíquias, '+Object.keys(s.learn).length+' etapas concluídas, '+Object.keys(s.sec).length+'/12 segredos e o diário'+(s.tomb?', a partir da porta da '+TOMBS[s.tomb].name:'')+'.'
+  $('startNote').textContent=s?'Continuar traz '+RELIC_KEYS.filter(k=>desafiosDa(k).every(d=>s.learn[d.id])).length+'/4 saberes (cada um com a sua relíquia), '+plural(Object.keys(s.learn).length,'etapa concluída','etapas concluídas')+', '+Object.keys(s.sec).length+'/12 segredos e o diário'+(s.tomb?', a partir da porta da '+TOMBS[s.tomb].name:'')+'.'
     :d3?'Encontramos um progresso do jogo 3D neste navegador: '+RELIC_KEYS.filter(k=>d3.relics[k]).length+'/4 relíquias e '+Object.keys(d3.sec).length+'/12 segredos. Dá para trazê-lo: as relíquias voltam adormecidas e despertam quando você recuperar o saber de cada tumba. O save do 3D não é alterado.'
     :'Os sistemas da cidade antiga funcionavam com instruções. Explore o vale, entre nas quatro tumbas e aprenda a programar as máquinas da civilização. O jogo salva sozinho.';
+  if(!armazenamentoOk())$('startNote').textContent+=' Atenção: este navegador não deixa guardar dados aqui, então o progresso não será salvo.';
   $('ctlStart').innerHTML=ctlHtml();$('ctlPause').innerHTML=ctlHtml();
   $('pSound').textContent=AU.on?TXT.soundOn:TXT.soundOff;atualizarTelaCheia();
 }
@@ -313,6 +321,14 @@ function ligarBotoes(){
   $('cfNo').onclick=()=>{acaoConfirma=null;if(G.modoConfirma==='menu')mostrarTela('scStart');else if(G.modoConfirma==='paused')mostrarTela('scPause');else{esconderTelas();if(G.mode!=='painel')G.mode=G.modoConfirma||'play';}};
   $('dFechar').onclick=fecharDiario;for(const b of document.querySelectorAll('.aba'))b.onclick=()=>mostrarAba(b.dataset.aba);
   $('fimOk').onclick=()=>{esconderTelas();G.mode='play';};
+  /* voltar de outro aplicativo: ao sair, o jogo pausa, salva e silencia; ao voltar, espera na pausa e o som retoma */
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden){if(G.mode==='play')pausar();if(G.mode!=='menu')salvar(false);limparEntrada();if(AU.ctx&&AU.ctx.state==='running')try{AU.ctx.suspend();}catch(e){}}
+    else if(AU.ctx&&AU.on&&AU.ctx.state==='suspended')try{AU.ctx.resume();}catch(e){}});
+  /* teclado virtual: quando a parte visível encolhe (o navegador não redimensiona a página), o painel sobe junto */
+  if(window.visualViewport){const vv=window.visualViewport,aj=()=>{const kb=Math.max(0,Math.round(innerHeight-vv.height-vv.offsetTop));
+    document.documentElement.style.setProperty('--kb',kb+'px');document.body.classList.toggle('teclado',kb>80);if(kb>80&&PAINEL.aberto){atualizarVista();const a=document.activeElement;if(a&&a.id==='pTxt')aVista(a);}};
+    vv.addEventListener('resize',aj);vv.addEventListener('scroll',aj);}
   document.addEventListener('fullscreenchange',atualizarTelaCheia);document.addEventListener('webkitfullscreenchange',atualizarTelaCheia);
 }
 
@@ -374,6 +390,7 @@ function desenharJogo(){
   if(A.ents)for(const e of A.ents)if(e.desenhar)e.desenhar();
   if(A.id==='vale'||A.mostraJogador!==false)desenharJogador();
   desenharFila();
+  desenharEncobertos(A);
   desenharParticulas();
   if(A.desenharTopo)A.desenharTopo(R.lg,G.t);
   /* luz */
@@ -392,10 +409,61 @@ function desenharJogo(){
     if(A.luzes)A.luzes(G.t);
     desenharLuz(A.escuro,A.tinta);
   }
+  desenharFocoEvento(A);
   if(A.desenharUi)A.desenharUi(R.lg,G.t);
   desenharSetaObjetivo();
   if(alvoInter&&G.mode==='play'){const it=alvoInter.it,y=Math.round(it.y-(it.alto||26)+R.oy+Math.sin(G.t*6)*1.5);R.lg.drawImage(SPR.get('seta','#ffd24a'),Math.round(it.x+R.ox-3),y);}
   apresentar();
+  atualizarMarcas();
+}
+/* durante a execução, um anel pulsante marca o mecanismo que a instrução da vez mexeu (vermelho quando deu erro) */
+function desenharFocoEvento(A){
+  if(G.mode!=='painel'||!A.focoEvento||!PAINEL.cfg)return;
+  const r=PAINEL.run,ev=r?r.ev:(PAINEL.parado?PAINEL.parado.ev:null);if(!ev)return;
+  const v=painelVis();if(!v)return;const p=A.focoEvento(ev,v.ws,v.cfg);if(!p)return;
+  const x=Math.round(p.x+R.ox),y=Math.round(p.y+R.oy),k=Math.floor(G.t*5)%2,cor=ev.tipo==='erro'?'#ff6a4a':'#ffd24a',g=R.lg;
+  P.anel(g,x,y+8,7+k,1,'#0b0705');P.anel(g,x,y+8,6+k,1,cor);
+  g.fillStyle='#0b0705';g.fillRect(x-3,y-6-k,7,2);g.fillRect(x-2,y-4-k,5,2);g.fillRect(x-1,y-2-k,3,2);
+  g.fillStyle=cor;g.fillRect(x-2,y-6-k,5,1);g.fillRect(x-1,y-4-k,3,1);g.fillRect(x,y-2-k,1,1);
+  R.focoEvento={x:p.x,y:p.y,erro:ev.tipo==='erro'};
+}
+/* contorno de 1 px por fora de um sprite (para mostrar o que está encoberto); calculado uma vez por sprite e cor */
+const CONTORNOS=new WeakMap();
+function contornoDe(img,cor){
+  let m=CONTORNOS.get(img);if(!m){m={};CONTORNOS.set(img,m);}if(m[cor])return m[cor];
+  const w=img.width,h=img.height,a=img.getContext('2d').getImageData(0,0,w,h).data,c=cnv(w+2,h+2),g=ctx2(c);g.fillStyle=cor;
+  const cheio=(x,y)=>x>=0&&y>=0&&x<w&&y<h&&a[(y*w+x)*4+3]>40;
+  for(let y=-1;y<=h;y++)for(let x=-1;x<=w;x++)if(!cheio(x,y)&&(cheio(x-1,y)||cheio(x+1,y)||cheio(x,y-1)||cheio(x,y+1)))g.fillRect(x+1,y+1,1,1);
+  return(m[cor]=c);
+}
+/* o explorador encobre um obstáculo (que fica atrás dele): o contorno do obstáculo aparece por cima;
+   o explorador está atrás de um objeto alto: o contorno dele aparece por cima do objeto */
+function desenharEncobertos(A){
+  const p=G.p;R.encobertos={obj:0,heroi:false};if(p.caindo>0||G.mode!=='play')return;
+  const hx0=p.x-11,hx1=p.x+11,hy0=p.y-40,hy1=p.y,g=R.lg;let atras=false;R.encobertos={obj:0,heroi:false};
+  for(const o of A.objs){
+    if(!o.on||!o.box||!o.box.on||!o.img)continue;
+    const x0=o.x-o.ax,y0=o.y-o.ay,ix=Math.min(hx1,x0+o.img.width)-Math.max(hx0,x0),iy=Math.min(hy1,y0+o.img.height)-Math.max(hy0,y0);
+    if(ix<=0||iy<=0)continue;
+    if(o.y+(o.camada||0)<=p.y){if(ix*iy>=o.img.width*o.img.height*0.25){
+      const img=o.frames?o.frames[Math.floor(G.t*o.fps)%o.frames.length]:o.img,px=Math.round(x0+R.ox),py=Math.round(y0+R.oy);
+      g.globalAlpha=0.5;g.drawImage(img,px,py);g.globalAlpha=0.9;g.drawImage(contornoDe(o.img,'#7ff0ff'),px-1,py-1);g.globalAlpha=1;R.encobertos.obj++;}}
+    else if(ix*iy>=260)atras=true;
+  }
+  if(atras){R.encobertos.heroi=true;const img=frameJogador();g.globalAlpha=0.8;g.drawImage(contornoDe(img,'#ffd24a'),Math.round(p.x-HEROI.ax+R.ox)-1,Math.round(p.y-HEROI.ay+R.oy)-1);g.globalAlpha=1;}
+}
+/* marcador do alvo da etapa e nome do objeto ao alcance (DOM, por cima do canvas, com texto legível e acentos) */
+const nomeDe=(it,lb)=>{const n=typeof it.nome==='function'?it.nome():it.nome;if(n)return n;const i=lb?lb.indexOf(': '):-1;return i>0?lb.slice(i+2):null;};
+function atualizarMarcas(){
+  const m=$('marcaAlvo'),n=$('nomeObj');
+  if(G.mode!=='play'||!G.area){m.hidden=true;n.hidden=true;return;}
+  const k=R.k/R.dpr,pos=(el,x,y)=>{el.style.left=Math.round((x+R.ox)*k)+'px';el.style.top=Math.round((y+R.oy)*k)+'px';};
+  const ok=(x,y)=>x+R.ox>4&&x+R.ox<R.W-4&&y+R.oy>10&&y+R.oy<R.H-4;
+  const it=alvoInter&&alvoInter.it,nome=it?nomeDe(it,alvoInter.lb):null;
+  const go=objetivo(),a=go&&go.alvo&&go.alvo.txt?go.alvo:null;
+  const mesmo=a&&it&&Math.hypot(it.x-a.x,it.y-a.y)<64;
+  if(nome){const y=it.y-(it.alto||26)-4;n.hidden=false;if(n.textContent!==nome)n.textContent=nome;n.classList.toggle('alvo',!!mesmo);pos(n,it.x,y);}else n.hidden=true;
+  if(a&&!mesmo&&ok(a.x,a.y)){m.hidden=false;if(m.textContent!==a.txt)m.textContent=a.txt;pos(m,a.x,a.y+Math.round(Math.sin(G.t*4)*1.5));}else m.hidden=true;
 }
 /* seta na borda da tela apontando para o objetivo (só no vale e quando ele está fora da tela) */
 function desenharSetaObjetivo(){

@@ -57,4 +57,13 @@ t.ok(nv&&!nv.fixed&&!nv.learn.a3&&nv.treino.passo===3&&nv.treino.manivela&&!nv.t
 const rv=S.limpar({v:1,rev:2,learn:{},treino:{feito:'x',passo:99},dicas:{s1:9,zz:1,s2:'a'},poi:{poco:true,nada:true},guia:'sim'});
 t.ok(rv&&rv.fixed&&rv.treino.passo===ctx.TP&&!rv.treino.feito&&!Object.keys(rv.dicas).length&&rv.poi.poco&&!rv.poi.nada&&!rv.guia,'campos novos estragados são limpos',rv&&{treino:rv.treino,dicas:rv.dicas,poi:rv.poi});
 t.ok(S.migrar(d3,livre).treino.feito,'quem vem do 3D não precisa do treino');
+/* revisão 3: t2 (ordem no treino), d6 (bomba dos Motores) e bd (demonstração da Viva) */
+const r2s=S.limpar({v:1,rev:2,learn:{t1:true,d0:true,d1:true,d2:true,d3:true,d4:true,d5:true,b0:true},treino:{feito:true,passo:8,manivela:true},diary:[]});
+t.ok(r2s&&r2s.learn.t2&&r2s.learn.d6&&r2s.learn.bd&&!r2s.fixed,'save da revisão 2: treino feito ganha t2, Motores completos ganham d6, Viva começada ganha bd',r2s&&Object.keys(r2s.learn));
+const r2m=S.limpar({v:1,rev:2,learn:{t1:true,d0:true,d1:true},treino:{feito:false,passo:8,manivela:true},diary:[]});
+t.ok(r2m&&!r2m.learn.t2&&!r2m.learn.d6&&!r2m.learn.bd,'save da revisão 2 pela metade: as etapas novas continuam por fazer',r2m&&Object.keys(r2m.learn));
+const r3=S.limpar(JSON.parse(JSON.stringify(S.montar({relics:{steam:false,diesel:false,atom:false,bio:false},learn:{t1:true},progs:{},diary:[],insc:{},sec:{},abertas:[],done:false,time:0.1,pos:null,tomb:null,
+  treino:{feito:true,passo:9,manivela:true},dicas:{},poi:{},guia:true,solucoes:{t1:[{id:1,k:'cmd',cmd:'tocha'}],zz:[1]}}))));
+t.ok(r3&&!r3.learn.t2&&r3.solucoes.t1&&r3.solucoes.t1.length===1&&!r3.solucoes.zz&&r3.fixed,'save da revisão 3: guarda o programa que resolveu cada etapa (e descarta o inválido), sem etapas de graça',r3&&{learn:r3.learn,sol:r3.solucoes});
+t.ok(S.montar({relics:{},learn:{},progs:{},diary:[],insc:{},sec:{},abertas:[],done:false,time:0,treino:{},dicas:{},poi:{},guia:false}).rev===3,'o save gravado é da revisão 3');
 t.done();

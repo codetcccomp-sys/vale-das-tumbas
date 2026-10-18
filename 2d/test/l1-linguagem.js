@@ -4,7 +4,7 @@ const {carregar,comLimite}=require('./vmload');
 const {suite}=require('./assert');
 const t=suite('l1-linguagem');
 const X=carregar(['02-lang.js','03-learn.js']);
-const {LANG,DESAFIO,DESAFIOS,MUNDOS,OBJ,rodarTodas,situacoesOk,guiaDe,novoNo}=X;
+const {LANG,DESAFIO,DESAFIOS,MUNDOS,OBJ,rodarTodas,situacoesOk,guiaDe,novoNo,desafiosDa}=X;
 const L=LANG.val;
 const lit=v=>({k:'lit',val:v}),vr=n=>({k:'var',nome:n}),cmd=c=>({k:'cmd',cmd:c});
 const se=(a,op,b,entao,senao,elifs)=>{const n={k:'se',cond:{a,op,b},entao,senao:senao===undefined?null:senao};if(elifs)n.elifs=elifs.map(([a2,op2,b2,corpo])=>({k:'elif',cond:{a:a2,op:op2,b:b2},corpo}));return n;};
@@ -19,9 +19,9 @@ t.ok(LANG.fmt(L('int',5))==='5'&&LANG.fmt(L('str','5'))==='"5"','5 e "5" aparece
 t.ok(LANG.fmt(L('float',5))==='5.0'&&LANG.fmt(L('float',3.14))==='3.14','decimal sempre com ponto',[LANG.fmt(L('float',5)),LANG.fmt(L('float',3.14))]);
 t.ok(LANG.fmt(L('bool',true))==='True'&&LANG.fmt(L('bool',false))==='False'&&LANG.fmt(null)==='vazio','True, False e vazio');
 t.ok(LANG.fmt(L('float',0.1+0.2))==='0.3','decimal aproximado mostrado com até 4 casas',LANG.fmt(L('float',0.1+0.2)));
-t.ok(['int','float','str','bool'].map(LANG.rotulo).join('|')==='int (inteiro)|float (decimal)|string (texto)|boolean (verdadeiro ou falso)','os quatro tipos com os nomes int, float, string e boolean');
+t.ok(['int','float','str','bool'].map(LANG.rotulo).join('|')==='int (inteiro)|float (decimal)|str (texto, a string)|bool (booleano)','os quatro tipos com os nomes do Python (int, float, str, bool) e em português');
 t.ok(!LANG.valValido(L('int',2.5))&&!LANG.valValido(L('str','a"b'))&&!LANG.valValido(L('float',Infinity))&&!LANG.valValido({t:'x',v:1})&&LANG.valValido(L('bool',false)),'valores inválidos recusados');
-t.ok(/era esperado um número inteiro/i.test(LANG.compativel('int',L('str','5')))&&/texto/.test(LANG.compativel('int',L('str','5')))&&LANG.compativel('int',L('int',5))===null,'variável de inteiro recusa "5" e explica',LANG.compativel('int',L('str','5')));
+{const m=LANG.compativel('int',L('str','5'));t.ok(/máquina recusou/.test(m)&&/só aceita int/.test(m)&&/"5" é um texto \(str\)/.test(m)&&/Em Python a atribuição seria permitida/.test(m)&&LANG.compativel('int',L('int',5))===null,'contêiner int recusa "5": mostra o valor recebido, o tipo exigido e que a regra é da máquina, não do Python',m);}
 t.ok(/5\.0/.test(LANG.compativel('float',L('int',5))),'variável de decimal recusa 5 e sugere 5.0');
 t.ok(/sem aspas/.test(LANG.compativel('bool',L('str','True')))&&/disponível/.test(LANG.compativel('bool',L('str','True'))),'"True" com aspas é texto, não booleano');
 
@@ -31,13 +31,17 @@ t.ok(LANG.avaliar({k:'op',op:'+',a:vr('a'),b:lit(L('int',3))},e1).val.v===8,'som
 const r2=LANG.avaliar({k:'op',op:'+',a:vr('a'),b:vr('b')},e1).val;t.ok(r2.t==='float'&&r2.v===7.5,'inteiro + decimal dá decimal',r2);
 t.ok(LANG.avaliar({k:'op',op:'+',a:vr('s'),b:lit(L('int',1))},e1).erro.tipo==='tipoOp','texto + número é erro (sem conversão)');
 t.ok(LANG.avaliar(vr('v'),e1).erro.tipo==='semValor','ler variável vazia é erro');
-t.ok(LANG.comparar({a:vr('s'),op:'==',b:lit(L('int',5))},e1).erro.tipo==='cmpTipos','"5" == 5 é erro de tipos, não False escondido');
+{const c=LANG.comparar({a:vr('s'),op:'==',b:lit(L('int',5))},e1),d=LANG.comparar({a:vr('s'),op:'!=',b:lit(L('int',5))},e1);
+  t.ok(c.res===false&&c.misto&&d.res===true,'como no Python: "5" == 5 é False e "5" != 5 é True (com aviso de tipos misturados)',[c,d]);}
 t.ok(LANG.comparar({a:vr('a'),op:'==',b:lit(L('int',5))},e1).res===true&&LANG.comparar({a:vr('a'),op:'<',b:lit(L('int',5))},e1).res===false,'comparações numéricas');
 t.ok(LANG.comparar({a:vr('f'),op:'==',b:lit(L('bool',false))},e1).res===true,'False == False é True');
-t.ok(LANG.comparar({a:vr('s'),op:'<',b:lit(L('str','6'))},e1).erro.tipo==='cmpOrdem','texto só com == e !=');
-t.ok(LANG.comparar({a:vr('f'),op:'==',b:lit(L('int',0))},e1).erro.tipo==='cmpTipos','False não é igual a 0 (tipos diferentes)');
+t.ok(LANG.comparar({a:vr('s'),op:'<',b:lit(L('str','6'))},e1).res===true&&LANG.comparar({a:lit(L('str','abrir')),op:'<',b:lit(L('str','ABRIR'))},e1).res===false,'como no Python: textos se comparam em ordem alfabética ("5" < "6")');
+t.ok(LANG.comparar({a:vr('s'),op:'<',b:lit(L('int',6))},e1).erro.tipo==='cmpOrdem','como no Python: < entre texto e número é TypeError');
+t.ok(LANG.comparar({a:vr('f'),op:'==',b:lit(L('int',0))},e1).res===true&&LANG.comparar({a:lit(L('bool',true)),op:'>',b:lit(L('int',0))},e1).res===true,'como no Python: False == 0 e True > 0 (bool vale 0 e 1)');
 t.ok(LANG.comparar({a:vr('f'),op:'bool'},e1).res===false&&LANG.comparar({a:vr('f'),op:'not'},e1).res===true,'condição booleana: f e not f');
-t.ok(LANG.comparar({a:vr('a'),op:'bool'},e1).erro.tipo==='condNaoBool','um número sozinho não é condição (precisa comparar)');
+t.ok(LANG.comparar({a:vr('a'),op:'bool'},e1).res===true&&LANG.comparar({a:lit(L('int',0)),op:'bool'},e1).res===false&&LANG.comparar({a:lit(L('str','')),op:'not'},e1).res===true,'como no Python: if 5 é True, if 0 é False, not "" é True');
+{const s=LANG.iniciar({vars:[{nome:'s',t:'str',ini:L('str','5')}]},{init:()=>({}),fim:()=>({ok:true})},{},LANG.renumerar([{k:'se',cond:{a:vr('s'),op:'==',b:lit(L('int',5))},entao:[],senao:null}]));const ev=LANG.passo(s);
+  t.ok(ev.res===false&&/nunca são iguais/.test(LANG.narrar(ev,s))&&/nunca são iguais/.test(s.aviso||''),'comparar texto com número avisa que em Python eles nunca são iguais',[LANG.narrar(ev,s),s.aviso]);}
 t.ok(LANG.fmtCond({a:vr('f'),op:'not'})==='not f'&&LANG.fmtCond({a:vr('f'),op:'bool'})==='f'&&LANG.fmtCond({a:vr('a'),op:'>=',b:lit(L('int',5))})==='a >= 5','condições escritas como em Python');
 
 /* ---------- interpretador com um mundo de teste ---------- */
@@ -64,11 +68,13 @@ t.ok(r.s.erro&&r.s.erro.tipo==='variavelFor','guardar na variável do for é rec
 r=LANG.executar(cfg,M,{n:3},ids([rep(0,[cmd('nada')])]));
 t.ok(r.s.ok&&r.s.ws.acoes.length===0,'range(0) não executa o bloco');
 r=LANG.executar(cfg,M,{n:3},ids([set('x',lit(L('str','5')))]));
-{const x=E(r.s);t.ok(r.s.erro.tipo==='tipoIncompativel'&&/era esperado um número inteiro \(int\)/.test(x.titulo)&&/texto/.test(x.texto)&&/precisa receber um número/.test(x.texto),'erro de tipo com título e explicação: era esperado um número inteiro',x);}
+{const x=E(r.s);t.ok(r.s.erro.tipo==='tipoIncompativel'&&x.cat==='maquina'&&/x só aceita int \(inteiro\)/.test(x.titulo)&&/"5", que é um texto \(str\)/.test(x.texto)&&/Em Python, x = "5" seria permitido/.test(x.texto)&&x.guia==='int'&&!/TypeError/.test(x.titulo),'texto no contêiner int: regra da máquina (não TypeError do Python), com valor recebido e tipo exigido',x);}
+{const c={vars:[{nome:'x',t:'int'}],blocos:['set']};const q=LANG.ler('x = "5"',c);const r3=LANG.executar(c,{init:()=>({}),fim:()=>({ok:true})},{},q.prog);
+  t.ok(!q.erro&&r3.s.erro.tipo==='tipoIncompativel','x = "5" é Python válido: o texto é lido; quem recusa é a máquina, ao executar',q.erro);}
 r=LANG.executar(cfg,M,{n:3},ids([set('n',lit(L('int',1)))]));
 t.ok(r.s.erro.tipo==='somenteLeitura','sensor não aceita atribuição');
 r=LANG.executar(cfg,M,{n:3},ids([cmd('nada'),set('x',{k:'op',op:'+',a:vr('x'),b:lit(L('int',1))})]));
-t.ok(r.s.erro.tipo==='semValor'&&E(r.s).linha===2&&/NameError/.test(E(r.s).titulo),'x = x + 1 com x vazio: NameError na linha 2',E(r.s));
+t.ok(r.s.erro.tipo==='semValor'&&E(r.s).linha===2&&/NameError/.test(E(r.s).titulo)&&E(r.s).cat==='python','x = x + 1 com x vazio: NameError (erro de Python) na linha 2',E(r.s));
 r=LANG.executar(cfg,M,{n:3},ids([set('x',lit(L('int',1))),set('x',{k:'op',op:'+',a:vr('x'),b:lit(L('int',4))})]));
 t.ok(r.s.ok&&r.s.env.x.val.v===5&&r.eventos[1].antes.v===1,'reatribuição troca o conteúdo (1 → 5)');
 r=LANG.executar(cfg,M,{n:7},ids([se(vr('n'),'>=',lit(L('int',5)),[cmd('nada')],[cmd('dec')])]));
@@ -81,7 +87,9 @@ const caminho=n=>{const x=LANG.executar(cfg,M,{n},cadeia());return{ac:x.s.ws.aco
 t.ok(caminho(60).ac==='dec'&&caminho(60).testes===2&&caminho(30).ac==='liga'&&caminho(30).testes===3&&caminho(5).ac==='nada'&&caminho(5).testes===3&&caminho(90).testes===1,'if/elif/else: testa de cima para baixo e executa só o primeiro caminho verdadeiro',[caminho(60),caminho(30),caminho(5)]);
 r=LANG.executar(cfg,M,{n:30},cadeia());t.ok(r.eventos[1].elif&&r.eventos[1].linha===LANG.elifsDe(r.s.prog[0])[0].id&&LANG.numeroLinha(r.s.prog,r.eventos[2].linha)===5,'cada elif tem a própria linha (para marcar no painel)',r.eventos.map(e=>e.linha));
 r=LANG.executar(cfg,M,{n:3},ids([cmd('nada'),cmd('boom'),cmd('nada')]));
-t.ok(!r.s.ok&&r.s.erro.linha===2&&r.s.ws.acoes.length===2,'erro do mundo para na linha responsável');
+t.ok(!r.s.ok&&r.s.erro.linha===2&&r.s.ws.acoes.length===2&&E(r.s).cat==='mecanismo','erro do mundo para na linha responsável (o mecanismo não conseguiu)',E(r.s));
+{const Mf={init:()=>({}),cmd:()=>({}),fim:()=>({ok:false,erro:{tipo:'x',titulo:'Faltou chegar.',msg:'o autômato parou antes.'}})};const rf=LANG.executar(cfg,Mf,{},ids([cmd('nada')]));
+  t.ok(E(rf.s).cat==='objetivo'&&!E(rf.s).linha,'programa que roda até o fim sem resolver: "objetivo ainda não alcançado", sem culpar uma linha',E(rf.s));}
 r=LANG.executar(cfg,M,{n:3},[]);t.ok(r.s.erro.tipo==='vazio','programa vazio explica o que fazer');
 r=LANG.executar(cfg,M,{n:3},ids([set('x',null)]));t.ok(r.s.erro.tipo==='incompleta','linha incompleta é explicada');
 
@@ -90,6 +98,14 @@ r=LANG.executar(cfg,M,{n:3},ids([set('x',null)]));t.ok(r.s.erro.tipo==='incomple
   const a=LANG.executar(cfg,M,{n:3},p);
   const s=LANG.iniciar(cfg,M,{n:3},p),evs=[];let e;while((e=LANG.passo(s))){evs.push(e);JSON.stringify(s.env);}
   t.ok(JSON.stringify(a.eventos)===JSON.stringify(evs)&&JSON.stringify(a.s.ws)===JSON.stringify(s.ws),'Executar e Passo produzem os mesmos eventos e o mesmo mundo',evs.length);}
+
+/* ---------- fim do Passo a passo: depois da última instrução visível só falta conferir o resultado ---------- */
+{const s=LANG.iniciar(cfg,M,{n:3},ids([cmd('nada')]));t.ok(!LANG.soFaltaFim(s),'antes de executar, ainda há instrução');LANG.passo(s);
+  t.ok(LANG.soFaltaFim(s)&&!s.fim,'programa de uma linha: depois dela só falta conferir (o painel faz isso no mesmo toque)');
+  const s2=LANG.iniciar(cfg,M,{n:3},ids([rep(2,[cmd('nada')])]));const seq=[];let e;while(!s2.fim){e=LANG.passo(s2);seq.push(e.tipo+(LANG.soFaltaFim(s2)?'*':''));}
+  t.ok(seq.join()==='rep,cmd,rep,cmd,repFim*,fim','no for, o fim da volta aparece como passo e só depois dele falta conferir',seq.join());
+  const s3=LANG.iniciar(cfg,M,{n:7},ids([se(vr('n'),'>=',lit(L('int',5)),[cmd('nada')],[cmd('dec')])]));const q=[];while(!s3.fim){e=LANG.passo(s3);q.push(e.tipo+(LANG.soFaltaFim(s3)?'*':''));}
+  t.ok(q.join()==='se,cmd*,fim','no if, o fim do bloco não gasta passo: depois da última instrução só falta conferir',q.join());}
 
 /* ---------- como o código aparece ---------- */
 {const p=ids([set('x',lit(L('int',0))),rep(4,[cmd('liga')]),se(vr('n'),'>=',lit(L('int',80)),[cmd('dec')],[cmd('nada')],[[vr('n'),'>=',lit(L('int',50)),[cmd('liga')]]]),enq({k:'var',nome:'ok'},'not',null,[set('ok',lit(L('bool',true)))])]);
@@ -103,12 +119,23 @@ r=LANG.executar(cfg,M,{n:3},ids([set('x',null)]));t.ok(r.s.erro.tipo==='incomple
 {const ERRS=[
   ['avancar_x()','NameError',1],['diminuir','parênteses',1],['if n > 1\n    ligar()','dois-pontos',1],['  ligar()','IndentationError',1],['for i in range(2):\nligar()','vazio',1],
   ['x = "5','aspas',1],['x = 0,75','vírgula',1],['ok = true','maiúscula',1],['else:\n    ligar()','else sem if',1],['n = 3','sensor',1],['ligar(3)','não recebe',1],['If n > 1:\n    ligar()','minúsculas',1],
-  ['x == 5','== compara',1],['if x = 5:\n    ligar()','= dentro da condição',1],['while x < 3:\n    ligar()\n  ligar()','IndentationError',3],['y = 2','não há variável',1],['se n > 1:\n    ligar()','inglês',1],
+  ['x == 5','== compara',1],['if x = 5:\n    ligar()','= dentro da condição',1],['while x < 3:\n    ligar()\n  ligar()','IndentationError',3],['y = 2','não é uma variável desta sala',1],['se n > 1:\n    ligar()','inglês',1],
   ['if n > 1:\n    ligar()\nelse:\n    ligar()\nelif n > 2:\n    ligar()','elif depois do else',5],['for i in range(2, 5):\n    ligar()','range',1],['for x in range(2):\n    ligar()','não pode usar',1],['if n and ok:\n    ligar()','and e or',1]];
   const falhas=[];for(const[src,txt,ln]of ERRS){const q=LANG.ler(src,cfg);const m=q.erro&&(q.erro.titulo+' '+q.erro.texto);if(!q.erro||q.erro.linha!==ln||m.indexOf(txt)<0)falhas.push([src,q.erro&&q.erro.linha,m]);}
   t.ok(!falhas.length,'código escrito com erro: '+ERRS.length+' erros comuns explicados na linha certa',falhas);
+  /* de onde vem cada erro: do Python, do pedaço que o editor aceita, de uma regra da máquina ou uma linha sem efeito */
+  const CATS=[['avancar_x()','python'],['if n > 1\n    ligar()','python'],['  ligar()','python'],['ok = true','python'],['ligar(3)','python'],['if x = 5:\n    ligar()','python'],
+    ['print("oi")','subconjunto'],['if n and ok:\n    ligar()','subconjunto'],['for i in range(2, 5):\n    ligar()','subconjunto'],['x = 2 * 3','subconjunto'],['def f():\n    ligar()','subconjunto'],['x = 0,75','subconjunto'],['if 1 < n < 5:\n    ligar()','subconjunto'],
+    ['n = 3','maquina'],['y = 2','maquina'],['for x in range(2):\n    ligar()','maquina'],['x == 5','semEfeito'],['diminuir','semEfeito'],['x','semEfeito']];
+  const cf=[];for(const[src,cat]of CATS){const q=LANG.ler(src,cfg);if(!q.erro||q.erro.cat!==cat||!LANG.CAT[cat])cf.push([src,q.erro&&q.erro.cat,cat,q.erro&&q.erro.titulo]);}
+  t.ok(!cf.length,'cada erro escrito diz de onde vem: Python, o que o editor não tem, regra da máquina ou linha sem efeito ('+CATS.length+' casos)',cf);
+  {const q=LANG.ler('y = 2',cfg);t.ok(/Em Python, y = … criaria uma variável nova/.test(q.erro.texto),'y = 2 com nome novo: explica que o Python criaria a variável e que a regra é do jogo',q.erro);}
+  {const q=LANG.ler('print("oi")',cfg);t.ok(/print\(\) existe no Python/.test(q.erro.titulo)&&q.erro.guia==='editor','print() existe no Python, mas não neste editor (e o Guia abre em "O que o editor aceita")',q.erro);}
+  {const q=LANG.ler('x = 0,75',cfg);t.ok(/tupla/.test(q.erro.texto)&&/0\.75/.test(q.erro.texto),'0,75: explica que em Python a vírgula separa valores e sugere 0.75',q.erro);}
+  {const q=LANG.ler('if n:\n    ligar()',cfg);t.ok(!q.erro,'if n: (um número como condição) é Python válido',q.erro);}
+  t.ok(/pedaço do Python/.test(LANG.SUBCONJUNTO)&&/print/.test(LANG.SUBCONJUNTO),'uma frase diz qual pedaço do Python o editor aceita',LANG.SUBCONJUNTO);
   const semElif={vars:cfg.vars,sensores:cfg.sensores,blocos:['se','liga','nada']};
-  const q=LANG.ler('if n > 1:\n    ligar()\nelif n > 0:\n    esperar()',semElif);t.ok(q.erro&&/ainda não usamos elif/.test(q.erro.titulo),'estrutura que a etapa ainda não usa é recusada com explicação',q.erro);
+  const q=LANG.ler('if n > 1:\n    ligar()\nelif n > 0:\n    esperar()',semElif);t.ok(q.erro&&/elif existe no Python, mas esta etapa não usa/.test(q.erro.titulo)&&q.erro.cat==='subconjunto','estrutura que a etapa ainda não usa é recusada com explicação',q.erro);
   const q2=LANG.ler('# comentário\nx = 5  # guarda 5\n\nligar()',cfg);t.ok(!q2.erro&&q2.prog.length===2,'comentários e linhas vazias são ignorados',q2.erro);
   const q3=LANG.ler('ligar()\nligar()\nligar()',{blocos:['liga'],maxLinhas:2});t.ok(q3.erro&&/aceita 2/.test(q3.erro.titulo),'limite de linhas também no código escrito',q3.erro);}
 
@@ -143,6 +170,7 @@ r=LANG.executar(cfg,M,{n:3},ids([set('x',null)]));t.ok(r.s.erro.tipo==='incomple
 /* ---------- soluções de cada desafio ---------- */
 const SOL={
   t1:[cmd('tocha')],
+  t2:[cmd('destravar'),cmd('erguer')],
   s1:[cmd('fwd'),cmd('fwd'),cmd('right'),cmd('fwd'),cmd('act')],
   s3:[cmd('fwd'),cmd('fwd'),cmd('right'),cmd('fwd'),cmd('fwd'),cmd('act')],
   s2:[cmd('fwd'),cmd('fwd'),cmd('fwd'),cmd('right'),cmd('fwd'),cmd('fwd'),cmd('right'),cmd('fwd'),cmd('fwd'),cmd('act')],
@@ -151,6 +179,7 @@ const SOL={
   d3:[set('quantidade',lit(L('int',5))),cmd('separar')],
   d4:[set('quantidade',lit(L('int',5))),cmd('separar'),set('quantidade',{k:'op',op:'+',a:vr('quantidade'),b:lit(L('int',3))}),cmd('separar')],
   d5:[set('carga',lit(L('int',12))),set('oleo',lit(L('float',0.75))),set('codigo',lit(L('str','MOTOR'))),set('freio',lit(L('bool',false))),cmd('mc')],
+  d6:[set('energia',lit(L('bool',true))),set('combustivel',lit(L('float',2.5))),cmd('abastecer'),set('combustivel',{k:'op',op:'+',a:vr('combustivel'),b:lit(L('float',1.5))}),cmd('abastecer')],
   a1:[se(vr('energia'),'>=',lit(L('int',5)),[cmd('abrir')],[cmd('carregar')])],
   a2:[set('limite',lit(L('int',4))),se(vr('nivel'),'<',vr('limite'),[cmd('portao')],[cmd('drenar')])],
   a3:[se(vr('temperatura'),'>=',lit(L('int',80)),[cmd('resfriar')],[cmd('manter')],[[vr('temperatura'),'>=',lit(L('int',50)),[cmd('ventilar')]]])],
@@ -162,6 +191,21 @@ const SOL={
   b4:[rep(4,[enq(vr('umidade'),'<',lit(L('int',3)),[cmd('irrigar')]),cmd('avancar')])],
   c1:[set('regadas',lit(L('int',0))),rep(5,[se(vr('solo'),'==',lit(L('str','seco')),[cmd('irrigar'),set('regadas',{k:'op',op:'+',a:vr('regadas'),b:lit(L('int',1))})]),cmd('avancar')]),cmd('acender')]
 };
+/* soluções alternativas válidas também passam (o jogo confere o resultado, não uma resposta única) */
+{const alt={d6:[set('energia',lit(L('bool',true))),set('combustivel',lit(L('float',2.5))),cmd('abastecer'),set('combustivel',lit(L('float',4))),cmd('abastecer')],
+  t2:[cmd('destravar'),cmd('destravar'),cmd('erguer')],s1:[cmd('right'),cmd('right'),cmd('right'),cmd('right'),cmd('fwd'),cmd('fwd'),cmd('right'),cmd('fwd'),cmd('act')]};
+  const ruins=[];for(const id in alt){const res=rodarTodas(DESAFIO[id],ids(alt[id]));if(!res.every(x=>x.ok))ruins.push([id,res.map(x=>LANG.explicar(x.s))]);}
+  t.ok(!ruins.length,'soluções alternativas que cumprem as regras também são aceitas (d6 com 4.0 direto, t2, s1 girando)',ruins);}
+{const r=rodarTodas(DESAFIO.d6,ids([set('energia',lit(L('bool',false))),set('combustivel',lit(L('float',2.5))),cmd('abastecer')]))[0];
+  t.ok(!r.ok&&r.s.erro.tipo==='semEnergia'&&E(r.s).cat==='mecanismo','bomba com energia False não liga (o mecanismo não conseguiu)',E(r.s));
+  const r2=rodarTodas(DESAFIO.d6,ids([set('energia',lit(L('bool',true))),set('combustivel',lit(L('float',2.5))),cmd('abastecer'),cmd('abastecer')]))[0];
+  t.ok(!r2.ok&&r2.s.erro.tipo==='tanqueErrado'&&/combustivel no momento/.test(E(r2.s).texto),'sem alterar combustivel, o segundo tanque recebe 2.5 L: o erro explica que a máquina lê a variável na hora',E(r2.s));}
+{const d=DESAFIO.bd;t.ok(d&&d.etapa==='demo'&&d.demo.length===2&&d.demo.every(x=>{const r=LANG.executar(d,MUNDOS[d.mundo],d.situacoes[0],x.prog);return r.s.ok&&r.s.ws.acesas===4;})&&LANG.contarLinhas(d.demo[1].prog)===2&&LANG.contarLinhas(d.demo[0].prog)===4,'Tumba Viva: demonstração com e sem for acende as mesmas 4 tochas (4 linhas × 2 linhas)');}
+{const ruins=['t2','s3','d5','a4','b2'].filter(id=>{const p=DESAFIO[id].previsao;return!p||!p.pergunta||p.opcoes.length<2||!p.opcoes.some(o=>o.ok)||!p.opcoes.some(o=>!o.ok);});
+  t.ok(!ruins.length,'as etapas com código pronto pedem uma previsão antes de executar (com uma resposta certa e uma errada)',ruins);}
+/* cada tumba tem demonstração, prática guiada e um desafio independente (aplicação) */
+{const falta=['steam','diesel','atom','bio'].filter(k=>{const e=desafiosDa(k).map(d=>d.etapa);return!(e.indexOf('demo')>=0&&e.indexOf('guiada')>=0&&e.indexOf('aplicacao')>=0);});
+  t.ok(!falta.length,'as quatro tumbas têm demonstração, prática guiada e aplicação independente',falta);}
 const semSol=DESAFIOS.filter(d=>d.etapa!=='demo'&&!SOL[d.id]).map(d=>d.id);t.ok(!semSol.length,'toda etapa jogável tem solução conferida',semSol);
 for(const id in SOL){
   const cfgD=DESAFIO[id],p=ids(SOL[id]);
@@ -225,8 +269,11 @@ const ERR=[
   ['b4',[rep(4,[cmd('irrigar'),cmd('avancar')])],'encharcou',2,'B'],
   ['c1',[rep(5,[cmd('irrigar'),cmd('avancar')]),cmd('acender')],'encharcou',2,'A'],
   ['c1',[set('regadas',lit(L('int',0))),rep(5,[se(vr('solo'),'==',lit(L('str','seco')),[cmd('irrigar')]),cmd('avancar')]),cmd('acender')],'contagem',6,'A'],
-  ['c1',[rep(5,[se(vr('solo'),'==',lit(L('int',1)),[cmd('irrigar')]),cmd('avancar')])],'cmpTipos',2]
+  ['c1',[rep(5,[se(vr('solo'),'==',lit(L('int',1)),[cmd('irrigar')]),cmd('avancar')])],'seco',null]
 ];
+/* solo == 1 compara texto com número: em Python dá False sempre; o programa não rega e o jogo avisa o motivo */
+{const rr=LANG.executar(DESAFIO.c1,MUNDOS.jardim,DESAFIO.c1.situacoes[0],ids([rep(5,[se(vr('solo'),'==',lit(L('int',1)),[cmd('irrigar')]),cmd('avancar')])]));
+  t.ok(!rr.s.ok&&E(rr.s).cat==='objetivo'&&/nunca são iguais/.test(rr.s.aviso||''),'solo == 1: o if nunca entra (como no Python) e o aviso explica',rr.s.aviso);}
 for(const[id,prog,tipo,linha,sit]of ERR){
   const cfgD=DESAFIO[id],p=ids(JSON.parse(JSON.stringify(prog))),si=sit?cfgD.situacoes.find(x=>x.id===sit):cfgD.situacoes[0];
   const rr=LANG.executar(cfgD,MUNDOS[cfgD.mundo],si,p);const x=E(rr.s);

@@ -11,11 +11,11 @@ const TILE=16;
 
 /* ====================== textos (pt-BR) ====================== */
 const TXT={
-  welcome:'Boas-vindas ao Vale das Tumbas. Os sistemas da cidade antiga dormem: recupere os conhecimentos guardados nas quatro tumbas.',
+  welcome:'Boas-vindas ao Vale das Tumbas. Os sistemas da cidade antiga dormem. Em cada tumba, conclua as etapas de programação para recuperar um saber: a relíquia da tumba desperta com ele.',
   welcomeTreino:'Boas-vindas ao Vale das Tumbas! Antes das tumbas, um treino rápido: siga o objetivo no alto da tela.',
   saved:'Progresso salvo: relíquias, saberes, programas, diário, segredos e posição no vale.',
   saveFixed:'Parte do salvamento estava danificada. O que pôde ser aproveitado foi recuperado.',
-  saveFail:'Não foi possível salvar o progresso neste navegador.',
+  saveFail:'Não foi possível salvar neste navegador (o armazenamento está bloqueado ou cheio). Dá para jogar normalmente, mas o progresso se perde ao fechar a página.',
   soundOn:'Som: ligado',soundOff:'Som: desligado',
   enterTomb:'Entrando na tumba...',backValley:'Voltando ao vale...',
   deathTomb:'Os perigos da tumba te venceram.',
@@ -56,7 +56,8 @@ const RELIC_KEYS=['steam','diesel','atom','bio'];
 /* lugares que têm desafios mas não são tumbas */
 const LUGARES={treino:'Pátio de Treino'};
 const nomeLugar=k=>TOMBS[k]?TOMBS[k].name:LUGARES[k]||k;
-const TREINO_PASSOS=8;
+const TREINO_PASSOS=9;
+const mai1=t=>t?t[0].toUpperCase()+t.slice(1):t;
 
 /* inscrições noturnas (as mesmas do 3D) e segredos do vale (4 fragmentos, 5 baús, 3 inscrições de dia) */
 const INSC=[
@@ -78,7 +79,7 @@ const POIS=[
   {id:'observ',x:66,y:110,t:'Observatório em ruínas',s:'A cúpula caiu, mas a luneta ainda aponta para o norte. Num caderno de medições: "temperatura 82 → resfriar · 61 → ventilar · 33 → nada. Testar do mais quente para o mais frio."'},
   {id:'estatua',x:97,y:118,t:'Estátua da Engenheira',s:'Uma estátua segura uma tábua de pedra com quatro palavras gravadas: = guarda · if pergunta · for repete · while espera.'},
   {id:'poco',x:113,y:135,t:'Poço antigo',s:'Você soltou uma pedrinha e contou: 1, 2, 3, 4... tchibum! A borda tem um aviso: "Conte as voltas antes de descer o balde: range(4) dá quatro."'},
-  {id:'carroca',x:120,y:69,t:'Carroça tombada',s:'Engrenagens espalhadas pela areia, cada uma marcada com um número inteiro. Um bilhete preso na roda: "5 peças é int; 2,5 litros é float; \"MOTOR\" é string."'}
+  {id:'carroca',x:120,y:69,t:'Carroça tombada',s:'Engrenagens espalhadas pela areia, cada uma marcada com um número inteiro. Um bilhete preso na roda: "5 peças é int; 2,5 litros é float; \"MOTOR\" é str, a string."'}
 ];
 const POI_IDS=POIS.map(p=>p.id);
 

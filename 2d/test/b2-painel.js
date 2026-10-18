@@ -67,7 +67,7 @@ const t=suite('b2-painel');
   await U.pb('while');await U.ch('3');await U.sit(2);
   const t0=Date.now();const rr=await U.executar();const er=await U.erro();
   t.ok(rr.erro==='semParada'&&Date.now()-t0<20000,'while sem nada que mude a umidade para no limite de voltas (sem travar)',rr.erro);
-  t.ok(er&&/while não parou/.test(er.tit)&&/continuou verdadeira/.test(er.txt)&&/mudar o valor testado/.test(er.txt),'a área de erro explica por que a repetição não parou e o que fazer',er);
+  t.ok(er&&/não parou/.test(er.tit)&&/Limite de segurança/.test(er.onde)&&/continuou verdadeira/.test(er.txt)&&/mudar o valor testado/.test(er.txt),'a área de erro explica por que a repetição não parou e o que fazer',er);
   /* ---------- exploração pausada com o painel aberto ---------- */
   await ev(()=>{fecharPainel();__vt.entrar('steam');__vt.G.lanternOn=true;__vt.G.lantern=50;});
   await ev(()=>{__vt.ir(19*16,31*16,'cima');__vt.andar(-1,0,0.4,true);});
