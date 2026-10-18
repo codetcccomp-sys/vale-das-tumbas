@@ -1,6 +1,7 @@
 /* ====================== gancho de teste ======================
-   Só existe quando a página abre com #vt no endereço: os testes automáticos usam window.__vt para ler o estado e
-   para teletransportar o explorador. O jogo normal não cria nada disso. */
+   Só entra na compilação de testes (build/teste/, ver build.sh): a versão pública não leva este arquivo.
+   Nela, quando a página abre com #vt no endereço, os testes automáticos usam window.__vt para ler o estado e
+   para teletransportar o explorador. */
 function ganchoTeste(){
   window.__vtPularTreino=location.hash.indexOf('treino')<0;
   window.__vt={G,R,AREAS,TOMBS,LANG,DESAFIO,SAVE2D,PAINEL,IN,

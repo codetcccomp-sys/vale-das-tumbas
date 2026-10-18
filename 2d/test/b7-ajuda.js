@@ -100,7 +100,8 @@ const t=suite('b7-ajuda');
   er=await erroDe('a1','if energia >= 5\n    abrir_comporta()');t.ok(er&&/linha 1/i.test(er.onde)&&/SyntaxError/.test(er.tit)&&/:/.test(er.tit+er.txt),'faltou o dois-pontos: SyntaxError na linha 1',er);
   /* Passo a passo: na última instrução, o resultado aparece no mesmo toque, e o mecanismo afetado fica marcado */
   await ev(()=>{escolherDesafio(__vt.DESAFIO.a1);});await U.escrever('abrir_comporta()');await U.sit(0);
-  await ev(()=>document.getElementById('pStep').click());await page.waitForTimeout(150);
+  /* a1 pede uma previsão antes da primeira tentativa: a resposta vem na hora e o passo seguinte executa */
+  await ev(()=>document.getElementById('pStep').click());await U.prever(1);await ev(()=>document.getElementById('pStep').click());await page.waitForTimeout(150);
   const ps=await ev(()=>({fim:!!PAINEL.run&&PAINEL.run.s.fim,ok:!!PAINEL.run&&PAINEL.run.s.ok,msg:$('pMsg').textContent,foco:__vt.R.focoEvento}));
   t.ok(ps.fim&&ps.ok&&/Deu certo em A/.test(ps.msg),'Passo a passo: no programa de uma linha, um toque executa a instrução e já mostra o resultado',ps);
   t.ok(ps.foco&&Math.abs(ps.foco.x-20*16)<4&&!ps.foco.erro,'o mecanismo que a instrução mexeu (a comporta) fica marcado na sala',ps.foco);

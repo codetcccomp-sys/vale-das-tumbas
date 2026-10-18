@@ -125,6 +125,8 @@ function mostrarErro(x){
 }
 /* rola o painel até o elemento ficar visível acima da barra fixa de linhas e controles (telas baixas) */
 function aVista(el){
+  /* celular deitado: o painel vira duas colunas e quem rola é a coluna da esquerda */
+  if(getComputedStyle($('painel')).display==='grid'){try{el.scrollIntoView({block:'nearest'});}catch(e){}return;}
   const P=$('painel'),r=el.getBoundingClientRect(),p=P.getBoundingClientRect(),f=$('pRodape').getBoundingClientRect();
   const escondido=r.bottom+6-f.top;
   if(escondido>0)P.scrollTop+=Math.min(escondido,r.top-p.top-4);else if(r.top<p.top)P.scrollTop-=p.top-r.top+4;
@@ -466,16 +468,25 @@ function novaExecucao(modo){
 }
 /* antes de executar no modo Escrever, o texto é lido e o painel volta às linhas (para mostrar a linha da vez) */
 function prepararTexto(){if(!PAINEL.texto)return true;if(!lerTexto(false))return false;PAINEL.texto=false;return true;}
-/* previsão: nas etapas que trazem código pronto, antes da primeira tentativa o jogador diz o que espera que aconteça;
-   no fim da tentativa, o painel confere. Dá para pular. */
+/* previsão: antes da primeira tentativa o jogador diz o que espera que aconteça. Nas etapas que trazem código pronto,
+   o painel confere no fim da tentativa. Nas práticas guiadas (previsão com "explica"), a pergunta é sobre o que o
+   programa faz numa situação ou numa variação: a resposta vem na hora, e a execução seguinte serve para conferir.
+   Dá para pular. */
 function pedirPrevisao(continuar){
   const c=PAINEL.cfg;if(!c.previsao||G.learn[c.id]||PAINEL.previsao[c.id])return false;
-  const box=$('pPrev'),ops=box.querySelector('.ops');box.querySelector('.q').textContent='🔮 Previsão · '+c.previsao.pergunta;ops.textContent='';
-  const fim=v=>{PAINEL.previsao[c.id]=v;box.hidden=true;SFX.click();continuar();};
-  c.previsao.opcoes.forEach(op=>{const b=document.createElement('button');b.className='btn';b.textContent=op.t;b.onclick=()=>fim({t:op.t,ok:op.ok,conferir:true});ops.appendChild(b);});
+  const P=c.previsao,box=$('pPrev'),ops=box.querySelector('.ops');box.querySelector('.q').textContent='🔮 Previsão · '+P.pergunta;ops.textContent='';
+  const fim=v=>{PAINEL.previsao[c.id]=v;box.hidden=true;SFX.click();
+    if(P.explica&&!v.pulou){painelMsg('🔮 '+(v.ok?'Você acertou! ':'Não é bem isso. ')+P.explica,v.ok?'ok':'');return;}
+    continuar();};
+  P.opcoes.forEach(op=>{const b=document.createElement('button');b.className='btn';rotuloCodigo(b,op.t);b.onclick=()=>fim({t:op.t,ok:op.ok,conferir:!P.explica});ops.appendChild(b);});
   const pb=document.createElement('button');pb.className='btn pular';pb.textContent='Pular';pb.onclick=()=>fim({pulou:true});ops.appendChild(pb);
   box.hidden=false;painelMsg('Antes de executar, pense: o que este programa vai fazer? Escolha uma resposta (ou pule).','');aVista(box);
   return true;
+}
+/* nome de função num botão estreito: quebra só depois de um _ (nunca no meio da palavra nem antes dos parênteses) */
+function rotuloCodigo(b,t){
+  if(!/^[a-z_]+\(\)$/.test(t)){b.textContent=t;return;}
+  b.textContent='';t.split(/(?<=_)/).forEach((p,i)=>{if(i)b.appendChild(document.createElement('wbr'));const s=document.createElement('span');s.style.whiteSpace='nowrap';s.textContent=p;b.appendChild(s);});
 }
 function conferirPrevisao(c,ok){const p=PAINEL.previsao[c.id];if(!p||!p.conferir)return'';p.conferir=false;
   return'🔮 Sua previsão: «'+p.t+'» — '+(p.ok===ok?'você acertou! ':'o resultado foi outro; observe o mecanismo para entender por quê. ');}

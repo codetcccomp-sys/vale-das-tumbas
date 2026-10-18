@@ -100,6 +100,23 @@ Cada item foi conferido no jogo antes. O que já existia está marcado; o que fa
 - Tela limpa no celular e Guia: `b13-tela`. Antes/depois: `capturas/F-celular-antes-depois.png`.
 - Celular real e iniciantes: **não realizados** (roteiros nas seções 2 e 3).
 
+### J — Documento de 18/10/2026: "Plano de melhorias" (execução, fases 1 a 4)
+O plano manda validar com pessoas antes de mexer no ritmo e no texto. Por isso, nesta rodada, só a **Fase 1** e o **A04**
+(P1 de aprendizagem) foram feitos; o resto ficou registrado, sem mudança no jogo. Testes novos: `b15-plano` e 3 verificações
+em `l1-linguagem`.
+| Item | Situação |
+|---|---|
+| A01 · Isolar ferramentas internas de teste | **Feito.** O `build.sh` gera a versão pública sem o arquivo do gancho (`23-teste.js`) e a de testes em `build/teste/`; o build falha se o gancho aparecer na pública. Aberta com `#vt`, a pública não cria `window.__vt` nem nada que mude fase, posição ou progresso (b15). Os testes automáticos usam a versão de testes. |
+| A02 · Celular real | **Pendente (precisa de aparelho).** Formulário 1 em `FORMULARIOS_VALIDACAO.md`. |
+| A03 · 3 a 5 iniciantes | **Pendente (precisa de pessoas).** Formulário 2 (ficha por pessoa, por etapa, explicação 0–2 e uma variação de transferência por tumba) e Formulário 3 (padrões). |
+| A04 · Menos imitação | **Feito.** Previsão em uma prática guiada de cada tumba (s1, d3, a1, b3), com resposta na hora e conferência na execução seguinte; alternativas plausíveis na paleta de a1 (`if` sem `else`, `==`, `<`) e b3 (`for`, `<=`), que falham em alguma situação (l1). t1 continua com uma instrução só (é a primeira apresentação); d0 e a0 são demonstrações (o jogador não monta código); d1 e d2 já tinham valores que não servem (fusível desligado, galão 3,14, placa "5", "abrir"). |
+| B01–B04 · Ritmo, textos, acabamento, orientação | **Aguardando os testes**, como o plano pede ("aplicar após a primeira rodada"). Os formulários anotam porta selada, textos pulados e onde a pessoa trava. |
+| C01 · QA manual | **Pendente (aparelho real).** Itens 10–16 e a parte de computador do Formulário 1 (interrupções, áudio, fluidez, teclado, leitor de tela). |
+| C02 · Créditos | **Pendente.** Depende da equipe: quem desenhou a personagem, o que foi autorizado e a separação entre arte original e adaptação. |
+| C03 · Ponte com Python real | Parcial (já existia): o Guia diz que o editor é um pedaço do Python e o que ele não tem; erros dizem quando "em Python seria permitido". Exemplos comparativos e desafios finais fora do jogo: **pendentes** (P3). |
+| C04 · Relatório exportável | **Pendente** (P3). |
+| Fase 1 · Conferir a compilação e rodar os testes | **Feito**: suíte inteira passando (seção 4). |
+
 ## 1. O documento, item por item
 
 ### P1 — Relação entre o jogo e o Python
@@ -207,4 +224,4 @@ Anote o aparelho, o navegador e o que falhou (com captura de tela).
 ## 4. Testes automáticos executados
 `2d/test/rodar.sh` (Node + Chromium sem janela): l1-linguagem, l2-save, b1-percurso, b2-painel, b3-save, b4-telas,
 b5-perigos, b6-personagem, b7-ajuda, b8-leitura, b9-validacoes e, nesta atualização, b10-recompensa, b11-terminal,
-b12-vale-som, b13-tela e b14-mvp: **785 verificações, todas passando**. O README lista o que cada um confere.
+b12-vale-som, b13-tela, b14-mvp e b15-plano: **799 verificações, todas passando**. O README lista o que cada um confere.

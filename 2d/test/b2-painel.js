@@ -64,7 +64,7 @@ const t=suite('b2-painel');
   for(let i=0;i<5;i++)await U.pb('irrigar()');st=await ev(()=>({n:LANG.contarLinhas(PAINEL.prog),msg:$('pMsg').textContent}));
   t.ok(st.n===4&&/só 4 linhas/.test(st.msg),'painel com 4 linhas recusa a quinta e explica',st);
   await ev(()=>{escolherDesafio(__vt.DESAFIO.b3);PAINEL.prog=[];PAINEL.cur={pai:null,ramo:null,i:0};renderPainel();__vt.velocidade(8);});
-  await U.pb('while');await U.ch('3');await U.sit(2);
+  await U.pb('while');await U.ch('<');await U.ch('3');await U.sit(2);
   const t0=Date.now();const rr=await U.executar();const er=await U.erro();
   t.ok(rr.erro==='semParada'&&Date.now()-t0<20000,'while sem nada que mude a umidade para no limite de voltas (sem travar)',rr.erro);
   t.ok(er&&/não parou/.test(er.tit)&&/Limite de segurança/.test(er.onde)&&/continuou verdadeira/.test(er.txt)&&/mudar o valor testado/.test(er.txt),'a área de erro explica por que a repetição não parou e o que fazer',er);

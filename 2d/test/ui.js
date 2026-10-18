@@ -38,7 +38,10 @@ function ui(page){
     async esperarFim(max){for(let i=0;i<(max||400);i++){const r=await ev(()=>{const r=PAINEL.run;return!r||r.s.fim;});if(r)return;await page.waitForTimeout(50);}throw new Error('execução não terminou');},
     /* responde a previsão, se o painel pedir uma (por padrão, a primeira opção) */
     async prever(i){return ev(i=>{const b=document.getElementById('pPrev');if(b.hidden)return null;const o=[...b.querySelectorAll('.ops .btn')];const e=o[i===undefined?0:i];const t=e.textContent;e.click();return t;},i);},
-    async executar(prev){await ev(()=>document.getElementById('pRun').click());const p=await U.prever(prev);if(p!==null)await page.waitForTimeout(20);await U.esperarFim();await page.waitForTimeout(60);return ev(()=>__vt.painelEstado());},
+    async executar(prev){await ev(()=>document.getElementById('pRun').click());const p=await U.prever(prev);if(p!==null)await page.waitForTimeout(20);
+      /* previsão das práticas guiadas: a resposta vem na hora e a execução espera um novo toque em Executar */
+      if(p!==null&&await ev(()=>!PAINEL.run))await ev(()=>document.getElementById('pRun').click());
+      await U.esperarFim();await page.waitForTimeout(60);return ev(()=>__vt.painelEstado());},
     async executarTodas(){const n=await ev(()=>PAINEL.cfg.situacoes.length);let r;for(let i=0;i<n;i++){await U.sit(i);r=await U.executar();if(!r.ok)return r;}return r;},
     estado:()=>ev(()=>__vt.estado()),
     painel:()=>ev(()=>__vt.painelEstado()),

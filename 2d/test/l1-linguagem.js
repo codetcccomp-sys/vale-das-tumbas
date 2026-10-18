@@ -291,4 +291,14 @@ t.ok(novoNo(DESAFIO.d1,'set',[]).nome==='energia'&&novoNo(DESAFIO.b0,'rep').var=
 let okObj=true;for(const d of DESAFIOS){for(const o of(d.objetos||[]))if(!OBJ[o])okObj=false;const ids2=d.situacoes.map(s=>s.id);if(new Set(ids2).size!==ids2.length)okObj=false;for(const b of d.blocos)if(!X.LANG.CMD[b]&&['set','se','sese','elif','rep','enq'].indexOf(b)<0)okObj=false;}
 t.ok(okObj,'objetos, situações e funções dos desafios bem definidos');
 t.ok(Object.keys(LANG.CMD).every(k=>/^[a-z_]+$/.test(LANG.CMD[k].py)),'nomes de função em estilo Python (minúsculas e _)');
+/* plano de melhorias A04: menos resolução por imitação */
+{const sem=['seq','dados','decisoes','automacao'].filter(sb=>!DESAFIOS.some(d=>d.saber===sb&&d.etapa==='guiada'&&d.previsao&&d.previsao.explica&&
+    d.previsao.opcoes.filter(o=>o.ok).length===1&&d.previsao.opcoes.filter(o=>!o.ok).length>=2));
+  t.ok(!sem.length,'cada conceito tem uma previsão numa prática guiada (s1, d3, a1, b3), com uma resposta certa e duas alternativas plausíveis',sem);}
+{const passa=(id,p)=>rodarTodas(DESAFIO[id],ids(p)).every(x=>x.ok),c5=lit(L('int',5)),c3=lit(L('int',3));
+  const a1=DESAFIO.a1,b3=DESAFIO.b3;
+  t.ok(a1.blocos.indexOf('se')>=0&&a1.ops.length>=3&&!passa('a1',[se(vr('energia'),'>=',c5,[cmd('abrir')])])&&!passa('a1',[se(vr('energia'),'==',c5,[cmd('abrir')],[cmd('carregar')])])&&
+    passa('a1',[se(vr('energia'),'<',c5,[cmd('carregar')],[cmd('abrir')])]),'a1: a paleta traz o if sem else e outros operadores; o if sozinho e o == falham, e a decisão invertida com < também vale');
+  t.ok(b3.blocos.indexOf('rep')>=0&&b3.ops.indexOf('<=')>=0&&[1,2,3].every(n=>!passa('b3',[rep(n,[cmd('irrigar')])]))&&!passa('b3',[enq(vr('umidade'),'<=',c3,[cmd('irrigar')])])&&
+    passa('b3',[enq(vr('umidade'),'<',c3,[cmd('irrigar')])]),'b3: a paleta traz o for e o <=; um for com número fixo e o while com <= falham, só o while < 3 resolve');}
 t.done();

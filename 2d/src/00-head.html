@@ -200,6 +200,7 @@ body.teclado #painel{bottom:var(--kb,0px);top:auto;height:auto;max-height:calc(1
 /* celular deitado (tela baixa): duas colunas — à esquerda o desafio (etapas, variáveis, enunciado, erro), à direita o
    programa com a paleta e os botões; cada coluna rola por conta própria */
 @media (orientation:landscape) and (max-height:560px){
+  #pPrev .q{font-size:13px;margin-bottom:4px}#pPrev .ops{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}#pPrev .btn{min-height:36px;font-size:13px;padding:3px 6px;white-space:normal;overflow-wrap:break-word}
   #painel{display:grid;grid-template-columns:minmax(0,0.85fr) minmax(0,1.3fr);grid-template-rows:auto minmax(0,1fr) auto;gap:5px 10px;overflow:hidden}
   body.painel.pAmplo #painel{width:min(80vw,1000px)}
   #pTopo{grid-column:1/-1}

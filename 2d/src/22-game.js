@@ -530,7 +530,8 @@ function boot(){
   G.area=AREAS.vale;posicionar(AREAS.vale.spawn.x,AREAS.vale.spawn.y-40,'cima');camSeguir(G.p.x,G.p.y,0,G.area,true);
   atualizarInicio();mostrarTela('scStart');focoPrimeiro('scStart');
   $('boot').hidden=true;
-  if(location.hash.indexOf('vt')>=0)ganchoTeste();
+  /* o gancho de teste só existe na compilação de testes (build/teste/); a versão pública não o contém */
+  if(typeof ganchoTeste==='function'&&location.hash.indexOf('vt')>=0)ganchoTeste();
   requestAnimationFrame(t=>{ultimo=t;requestAnimationFrame(quadro);});
 }
 function desenharLogo(){
