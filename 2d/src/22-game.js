@@ -15,15 +15,20 @@ function saberesCount(){return RELIC_KEYS.filter(saberOk).length;}
 function relicEstado(k){return!G.relics[k]?0:saberOk(k)?2:1;}
 
 /* ====================== avisos (mesmo sistema do 3D: sem repetição, com prioridade e tempo de leitura) ====================== */
-const TOASTS={on:[],queue:[],last:new Map()};
+/* acao: número da ação do jogador (AÇÃO, VER, LUZ) que gerou o aviso; o aviso de uma ação nova tira os das anteriores */
+const TOASTS={on:[],queue:[],last:new Map(),acao:0,naAcao:false};
 function toastMs(text,kind){return Math.min(9500,Math.max(kind==='warn'?5200:4300,text.length*62));}
+const telaCompacta=()=>innerWidth<=620||innerHeight<=520;
 function toast(text,kind){
-  R.hudTopo=0;const now=performance.now(),pri=kind==='warn'?2:kind==='good'?1:0;
+  R.hudTopo=0;const now=performance.now(),pri=kind==='warn'?2:kind==='good'?1:0,acao=TOASTS.naAcao?TOASTS.acao:0;
+  /* o jogador já passou para outro item: o aviso do item anterior sai em vez de empilhar */
+  if(acao){for(const t of TOASTS.on.slice())if(t.acao&&t.acao<acao&&t.text!==text)toastOut(t,now,true);
+    for(let i=TOASTS.queue.length-1;i>=0;i--)if(TOASTS.queue[i].acao&&TOASTS.queue[i].acao<acao)TOASTS.queue.splice(i,1);}
   const same=TOASTS.on.find(t=>t.text===text);
-  if(same){same.count++;same.until=Math.max(same.until,now+Math.max(2500,toastMs(text,kind)*0.6));same.n.textContent='×'+same.count;same.n.hidden=false;return same.el;}
-  const q=TOASTS.queue.find(t=>t.text===text);if(q){q.count++;return null;}
-  const lt=TOASTS.last.get(text);if(lt!==undefined&&now-lt<1200)return null;
-  TOASTS.queue.push({text,kind,pri,t:now,count:1});TOASTS.queue.sort((a,b)=>b.pri-a.pri||a.t-b.t);
+  if(same){if(acao)same.acao=acao;same.count++;same.until=Math.max(same.until,now+Math.max(2500,toastMs(text,kind)*0.6));same.n.textContent='×'+same.count;same.n.hidden=false;return same.el;}
+  const q=TOASTS.queue.find(t=>t.text===text);if(q){if(acao)q.acao=acao;q.count++;return null;}
+  const lt=TOASTS.last.get(text);if(!acao&&lt!==undefined&&now-lt<1200)return null;
+  TOASTS.queue.push({text,kind,pri,t:now,count:1,acao});TOASTS.queue.sort((a,b)=>b.pri-a.pri||(b.acao?1:0)-(a.acao?1:0)||a.t-b.t);
   while(TOASTS.queue.length>4)TOASTS.queue.pop();
   toastPump(now);const shown=TOASTS.on.find(t=>t.text===text);return shown?shown.el:null;
 }
@@ -31,19 +36,23 @@ function toastShow(it,now){
   const el=document.createElement('div');el.className='toast'+(it.kind?' '+it.kind:'');el.setAttribute('role',it.pri===2?'alert':'status');
   const tx=document.createElement('span');tx.textContent=it.text;const n=document.createElement('b');n.className='n';n.hidden=it.count<2;n.textContent='×'+it.count;
   el.appendChild(tx);el.appendChild(n);$('msgs').appendChild(el);
-  TOASTS.on.push({el,n,text:it.text,kind:it.kind,pri:it.pri,born:now,until:now+toastMs(it.text,it.kind),count:it.count});
+  TOASTS.on.push({el,n,text:it.text,kind:it.kind,pri:it.pri,born:now,until:now+toastMs(it.text,it.kind),count:it.count,acao:it.acao||0});
 }
-function toastOut(t,now){const i=TOASTS.on.indexOf(t);if(i>=0)TOASTS.on.splice(i,1);TOASTS.last.set(t.text,now);t.el.classList.add('out');setTimeout(()=>{if(t.el.parentNode)t.el.parentNode.removeChild(t.el);},450);}
+/* ja: sai na hora (trocado por outro aviso), sem a animação que deixaria o novo aviso aparecer mais abaixo e depois subir */
+function toastOut(t,now,ja){const i=TOASTS.on.indexOf(t);if(i>=0)TOASTS.on.splice(i,1);TOASTS.last.set(t.text,now);if(ja){t.el.remove();return;}t.el.classList.add('out');setTimeout(()=>{if(t.el.parentNode)t.el.parentNode.removeChild(t.el);},450);}
 function toastPump(now){
   while(TOASTS.queue.length){
-    const nx=TOASTS.queue[0],max=innerHeight<=520?2:3;
-    if(TOASTS.on.length>=max){let v=null;for(const t of TOASTS.on)if(now-t.born>2000&&t.pri<=nx.pri&&(!v||t.pri<v.pri||(t.pri===v.pri&&t.born<v.born)))v=t;
-      if(!v&&nx.pri===2)for(const t of TOASTS.on)if(t.pri<2&&(!v||t.pri<v.pri))v=t;if(!v)break;toastOut(v,now);}
+    const nx=TOASTS.queue[0],max=telaCompacta()?2:3;
+    /* sai o de menor prioridade e mais antigo; o aviso de uma ação aparece na hora, sem tirar outro aviso da mesma ação */
+    if(TOASTS.on.length>=max){let v=null;for(const t of TOASTS.on)if((nx.acao?t.acao!==nx.acao:now-t.born>2000)&&t.pri<=nx.pri&&(!v||t.pri<v.pri||(t.pri===v.pri&&t.born<v.born)))v=t;
+      if(!v&&nx.pri===2)for(const t of TOASTS.on)if(t.pri<2&&(!v||t.pri<v.pri))v=t;if(!v)break;toastOut(v,now,true);}
     TOASTS.queue.shift();toastShow(nx,now);
   }
 }
 function toastTick(now){for(const t of TOASTS.on.slice())if(now>=t.until)toastOut(t,now);if(TOASTS.queue.length)toastPump(now);if(TOASTS.last.size>40)for(const[k,v]of TOASTS.last)if(now-v>10000)TOASTS.last.delete(k);}
-function toastClear(){for(const t of TOASTS.on.slice())toastOut(t,performance.now());TOASTS.queue.length=0;TOASTS.last.clear();}
+/* uma ação do jogador (AÇÃO, VER, LUZ): os avisos que ela gerar substituem os das ações anteriores e aparecem na hora */
+function comoAcao(f){TOASTS.acao++;TOASTS.naAcao=true;try{f();}finally{TOASTS.naAcao=false;}}
+function toastClear(){for(const t of TOASTS.on.slice())toastOut(t,performance.now(),true);TOASTS.queue.length=0;TOASTS.last.clear();}
 
 /* ====================== HUD ====================== */
 const HUDI={};
@@ -53,13 +62,14 @@ function hudInit(){
   const h=$('hearts');for(let i=0;i<3;i++){const im=document.createElement('img');im.className='px';im.alt='';h.appendChild(im);}
   const r=$('relics');for(const k of RELIC_KEYS){const im=document.createElement('img');im.className='px';im.alt=RELIC_INFO[k].name;im.dataset.k=k;r.appendChild(im);}
   HUDI.rel={};for(const k of RELIC_KEYS)HUDI.rel[k]=[0,1,2].map(e=>url(escalar(SPR.get('reliquia',k,e),2)));
+  $('goal').onclick=alternarObjetivo;
 }
 function escalar(c,k){const o=cnv(c.width*k,c.height*k),g=ctx2(o);g.drawImage(c,0,0,o.width,o.height);return o;}
 let hudKey='';
 function atualizarHud(){
   if((G.t%0.5)<0.02||!R.hudTopo){const r=$('hl').getBoundingClientRect();R.hudTopo=r.bottom>0?Math.round(r.bottom*R.dpr/R.k):0;
-    /* telas largas: a pilha de avisos começa logo abaixo do HUD de cima (nas estreitas e nas baixas o CSS a põe em outro lugar) */
-    const m=$('msgs');if(innerWidth>620&&innerHeight>520)m.style.top=Math.round(Math.max(r.bottom,$('hr').getBoundingClientRect().bottom)+8)+'px';else m.style.top='';}
+    /* a pilha de avisos começa logo abaixo do HUD de cima, longe do explorador (nas telas baixas o CSS a põe ao lado) */
+    const m=$('msgs');if(innerHeight>520)m.style.top=Math.round(Math.max(r.bottom,$('hr').getBoundingClientRect().bottom)+8)+'px';else m.style.top='';}
   const rel=RELIC_KEYS.map(relicEstado).join('');
   const key=G.hearts+'|'+rel+'|'+(G.area&&G.area.id);
   if(key!==hudKey){hudKey=key;
@@ -68,8 +78,18 @@ function atualizarHud(){
     $('relicTxt').textContent=saberesCount()+'/4 saberes';
   }
   if(G.area&&G.area.id!=='vale'){$('lantern').classList.toggle('off',!G.lanternOn);$('ltxt').textContent=G.lanternOn?'acesa':'apagada';}
-  const go=objetivo();if(go!==atualizarHud.go){atualizarHud.go=go;const el=$('goal');el.innerHTML='';if(go){const b=document.createElement('b');b.textContent=go.t;el.appendChild(b);el.appendChild(document.createTextNode(go.s));el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');}}
+  /* o que o explorador leva na mão (cápsula do pátio dos Motores): fica no HUD em vez de virar aviso */
+  const nm=G.area&&G.area.naMao?G.area.naMao():null,nk=nm?nm.t:'';
+  if(nk!==atualizarHud.nk){atualizarHud.nk=nk;const e=$('mao');e.hidden=!nm;e.textContent='';if(nm){const s=document.createElement('span');s.textContent='Na mão';const b=document.createElement('b');b.textContent=nm.t;b.style.color=nm.cor||'';e.appendChild(s);e.appendChild(b);}}
+  /* objetivo: refeito (e pisca) só quando o texto muda; nas telas pequenas encolhe para o título e uma linha depois de
+     alguns segundos, e tocar nele abre de novo */
+  const go=objetivo(),gk=go?go.t+'\n'+go.s:'',el=$('goal');
+  if(gk!==atualizarHud.gk){atualizarHud.gk=gk;el.textContent='';el.classList.remove('curto');GOAL.t=performance.now();
+    if(go){const b=document.createElement('b');b.textContent=go.t;const s=document.createElement('span');s.className='gs';s.textContent=go.s;el.appendChild(b);el.appendChild(s);el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');}}
+  else if(go&&!el.classList.contains('curto')&&telaCompacta()&&performance.now()-GOAL.t>GOAL.ms){el.classList.add('curto');R.hudTopo=0;}
 }
+const GOAL={t:0,ms:9000};
+function alternarObjetivo(){const el=$('goal');if(el.classList.contains('curto')){el.classList.remove('curto');GOAL.t=performance.now();}else if(telaCompacta())el.classList.add('curto');R.hudTopo=0;SFX.click();}
 /* objetivo: sempre a próxima etapa de aprendizagem */
 function objetivo(){
   if(!G.area)return null;
@@ -366,14 +386,14 @@ function passoJogo(dt,now){
     if(take('diario')){abrirDiario();return;}
     if(take('mapa')){abrirDiario('mapa');return;}
     if(take('guia')){abrirGuia();return;}
-    if(take('vista'))alternarVista();
-    if(take('lanterna')&&A.id!=='vale'&&A.id!=='final'){G.lanternOn=!G.lanternOn;SFX.click();toast(G.lanternOn?'Lanterna acesa: perto das paredes, ela revela marcas de luz.':'Lanterna apagada.');}
+    if(take('vista'))comoAcao(alternarVista);
+    if(take('lanterna')&&A.id!=='vale'&&A.id!=='final')comoAcao(()=>{G.lanternOn=!G.lanternOn;SFX.click();toast(G.lanternOn?'Lanterna acesa: perto das paredes, ela revela marcas de luz.':'Lanterna apagada.');});
     if(A.id==='vale'){G.time=(G.time+dt/DAY_LEN)%1;const n=noiteAgora();if(n>0.6&&!G.nightSeen){G.nightSeen=true;toast(TXT.nightHint);addDiary('night',true);}}
     if(G.invuln>0)G.invuln-=dt;
     if(G.danoT>0)G.danoT-=dt;
     atualizarJogador(dt);
     procurarInteracao();
-    if(take('usar')&&alvoInter){G.p.usar=HEROI_CONFIG.animacoes.usar.duracao;SFX.use();alvoInter.it.use();}
+    if(take('usar')&&alvoInter){G.p.usar=HEROI_CONFIG.animacoes.usar.duracao;SFX.use();const it=alvoInter.it;comoAcao(()=>it.use());}
     acSalvar+=dt;if(acSalvar>20&&A.id==='vale'){acSalvar=0;salvar(false);}
   }else if(G.mode==='diario'){if(take('pausa')||take('diario'))fecharDiario();}
   else if(G.mode==='paused'){if(take('pausa'))retomar();}
@@ -475,13 +495,14 @@ const nomeDe=(it,lb)=>{const n=typeof it.nome==='function'?it.nome():it.nome;if(
 function atualizarMarcas(){
   const m=$('marcaAlvo'),n=$('nomeObj');
   if(G.mode!=='play'||!G.area){m.hidden=true;n.hidden=true;return;}
-  const k=R.k/R.dpr,pos=(el,x,y)=>{el.style.left=Math.round((x+R.ox)*k)+'px';el.style.top=Math.round((y+R.oy)*k)+'px';};
+  /* a etiqueta não passa da borda da tela (o centro é preso a meia largura dela) */
+  const k=R.k/R.dpr,pos=(el,x,y)=>{const w=(el._w||0)/2+4;el.style.left=Math.round(clamp((x+R.ox)*k,w,Math.max(w,innerWidth-w)))+'px';el.style.top=Math.round((y+R.oy)*k)+'px';};
   const ok=(x,y)=>x+R.ox>4&&x+R.ox<R.W-4&&y+R.oy>10&&y+R.oy<R.H-4;
   const it=alvoInter&&alvoInter.it,nome=it?nomeDe(it,alvoInter.lb):null;
   const go=objetivo(),a=go&&go.alvo&&go.alvo.txt?go.alvo:null;
   const mesmo=a&&it&&Math.hypot(it.x-a.x,it.y-a.y)<64;
-  if(nome){const y=it.y-(it.alto||26)-4;n.hidden=false;if(n.textContent!==nome)n.textContent=nome;n.classList.toggle('alvo',!!mesmo);pos(n,it.x,y);}else n.hidden=true;
-  if(a&&!mesmo&&ok(a.x,a.y)){m.hidden=false;if(m.textContent!==a.txt)m.textContent=a.txt;pos(m,a.x,a.y+Math.round(Math.sin(G.t*4)*1.5));}else m.hidden=true;
+  if(nome){const y=it.y-(it.alto||26)-4;n.hidden=false;if(n.textContent!==nome||!n._w){n.textContent=nome;n._w=n.offsetWidth;}n.classList.toggle('alvo',!!mesmo);pos(n,it.x,y);}else n.hidden=true;
+  if(a&&!mesmo&&ok(a.x,a.y)){m.hidden=false;if(m.textContent!==a.txt||!m._w){m.textContent=a.txt;m._w=m.offsetWidth;}pos(m,a.x,a.y+Math.round(Math.sin(G.t*4)*1.5));}else m.hidden=true;
 }
 /* seta na borda da tela apontando para o objetivo (só no vale e quando ele está fora da tela) */
 function desenharSetaObjetivo(){

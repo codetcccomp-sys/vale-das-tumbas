@@ -65,6 +65,17 @@ de mudar o código. A transcrição está fora do repositório; aqui vai o que f
 | Tédio e duração | Tratados como questão própria (estrutura, atalhos, pátio dos Motores), não com música. Precisam de teste com o público. |
 | Ouvido? | **Não.** O navegador de teste não tem saída de som: os testes conferem que as notas são agendadas por região, o abafamento e os volumes; a qualidade musical precisa ser ouvida. |
 
+### H — Retorno do celular real: poluição de tela e caixa de texto pequena
+Quatro capturas de um celular em pé (pátio dos Motores e Guia). Reproduzido no navegador de teste com 412×915 e densidade 2;
+comparação em `capturas/F-celular-antes-depois.png`.
+| Relato | O que estava acontecendo | O que mudou |
+|---|---|---|
+| Avisos empilhados ao mexer em vários itens | Cada interação somava um aviso (até três de uma vez no celular), e eles ficavam no meio da tela, por cima do explorador e das cápsulas. Pegar uma cápsula também gerava aviso. A primeira recusa do disjuntor tinha 5 linhas. | O aviso de uma interação nova (AÇÃO, VER, LUZ) **substitui** o da anterior, na hora e no mesmo lugar; repetir a mesma interação continua contando ×2. No celular, **no máximo dois avisos**, mais compactos (13 px), **logo abaixo do HUD** (longe do explorador). A cápsula na mão foi para o HUD (**Na mão "2.5" (str)**, com a cor do tipo) e não gera mais aviso. A observação "Regra desta máquina…" aparece só na primeira recusa. |
+| Caixa do objetivo grande | Além de ocupar 4 linhas, ela era **refeita a cada quadro** (defeito): a animação de destaque recomeçava sem parar, por isso a moldura amarela grossa ficava sempre acesa. | O objetivo só é refeito (e pisca uma vez) quando o texto muda. No celular, depois de 9 s ele **encolhe para o título e uma linha** (com ▸); tocar nele abre o texto inteiro de novo. |
+| Marcadores sobre o HUD e cortados | O "◆ Disjuntor" ficava por cima dos avisos e saía da borda da tela. | Marcas do mundo ficam por baixo do HUD e dos avisos e nunca passam da borda. O texto da ação nas tumbas subiu para não ficar por baixo do botão **VER**. |
+| Caixa de texto do Guia pequena | **Defeito de layout**: o quadro **Exemplo** encolhia dentro da área que rola e mostrava só uma faixa (o código ficava cortado). Os assuntos do grupo ocupavam até 5 fileiras de botões. | Nenhum bloco do conteúdo encolhe mais (o exemplo aparece inteiro, no celular, deitado e no computador). No celular, os assuntos ficam **numa fileira que rola para o lado** (o aberto fica à vista) e o cabeçalho é mais baixo: o conteúdo passou de 59% para **77% da caixa**. Tocar num grupo já abre o primeiro assunto dele. |
+| Testado | `b13-tela` (22 verificações): HUD da cápsula, substituição dos avisos, limite e posição, objetivo (não refeito, encolhe, abre), marcador dentro da tela e por baixo do HUD, texto da ação × VER/LUZ/AÇÃO, Guia em pé, deitado e no computador. Não testado num celular de verdade. |
+
 ### Entrega (seção 7 do documento)
 - Resumo: esta seção 0 e o README. Testes: seção 4. Investigação da coleta antecipada e do áudio: tabelas P0 e G.
 - Tutorial, puzzles alterados e salvamento: `b1-percurso` (o jogo inteiro, com o pátio novo e recarga depois de cada tumba).
@@ -158,6 +169,7 @@ Faça num Android (Chrome) e num iPhone (Safari), em pé e deitado, com som liga
 9. Fechar a aba, abrir de novo e tocar em **Continuar**: o progresso volta.
 10. Ouvir: a trilha do vale (de dia e à noite), a de cada tumba, passos, pássaros, grilos, fogo e água, sons do painel; na pausa, mexer em Música e Efeitos.
 11. Nos Motores: ler a placa com !, levar uma cápsula errada e uma certa às máquinas, atravessar a ponte; no terminal, usar Comandos e variáveis e o modo Escrever com o teclado aberto; testar 🔍 Ver a sala.
+12. Ainda no pátio, mexer depressa em várias cápsulas e máquinas: no máximo dois avisos, abaixo do HUD, sem cobrir o explorador; a cápsula da mão aparece no HUD; depois de uns 9 s o objetivo encolhe e abre com um toque. No Guia, conferir que o exemplo de código aparece inteiro e que a fileira de assuntos rola para o lado.
 Anote o aparelho, o navegador e o que falhou (com captura de tela).
 
 ## 3. Roteiro de teste com iniciantes (3 a 5 pessoas)

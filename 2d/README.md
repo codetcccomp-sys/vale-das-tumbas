@@ -40,7 +40,8 @@ ao pátio a qualquer momento (numa visita depois do treino, o portão já está 
   índice é compacto e agrupado — **Sequência** (comandos, sequência), **Dados** (variáveis, os quatro tipos, regras das
   máquinas, int, float, str, bool), **Decisões** (comparações, if, else, elif), **Repetições** (for, while) e **Ajuda**
   (recuo, tipos de erro, o que o editor aceita, palavras do jogo, seus exemplos) — e o grupo da tumba atual vem marcado
-  com ★ e aberto. Cada
+  com ★ e aberto; tocar num grupo abre o primeiro assunto dele, e no celular os assuntos ficam numa fileira que rola para o
+  lado, para o texto ficar com a maior parte da altura. Cada
   assunto tem ícone, uma frase, um exemplo de código colorido, o resultado (o que acontece) passo a passo e a ligação com o jogo — por
   exemplo `quantidade = 5` ("Uma variável funciona como uma caixa usada para guardar uma informação") e
   `if porta_aberta:` / `    entrar()` ("O comando IF verifica uma condição antes de executar uma ação"). No painel, o Guia já
@@ -69,6 +70,10 @@ ao pátio a qualquer momento (numa visita depois do treino, o portão já está 
   desenhos dos construtores que só aparecem com a luz bem perto da parede (duas por tumba, opcionais), que contam como eles
   pensavam o saber da tumba e ficam no diário. As salas ficaram mais claras e a borda das luzes é suave, para não esconder
   o que precisa ser lido; com o painel aberto, a sala clareia mais.
+- **Avisos e HUD sem poluir a tela** — o aviso de uma interação nova (AÇÃO, VER, LUZ) substitui o da anterior; repetir a mesma
+  conta ×2. No celular, no máximo dois avisos, compactos, logo abaixo do HUD. O que o explorador leva na mão (a cápsula do
+  pátio dos Motores) fica no HUD. O objetivo pisca só quando muda; no celular, depois de 9 s encolhe para o título e uma
+  linha, e um toque abre de novo.
 - **Alvo da etapa e nome dos objetos** — o próximo objeto a usar tem um marcador com símbolo, texto curto e cor (◆ Programe
   aqui, ◆ Manivela, ◆ Tumba das Engrenagens); ao chegar perto de algo, o nome dele aparece em cima. Quando o explorador
   encobre um obstáculo, o obstáculo aparece por cima, semitransparente e com contorno; atrás de uma coluna alta, o contorno
@@ -248,6 +253,7 @@ Precisam de `node` e do pacote `playwright` com o Chromium: `npm install` e `npx
 | `b10-recompensa.js` | navegador | a relíquia de cada uma das 4 tumbas não sai antes das etapas, encostando no portão (27 posições) com teclado, toque e controle; a regra central recusa; depois das etapas, coleta uma vez, sem repetir o diário, e continua salva depois de recarregar |
 | `b11-terminal.js` | navegador | placa com ! vira pista no diário e no terminal, fixar a pista, editor amplo, Comandos e variáveis nos dois modos (tipo e valor atual), paleta no modo Escrever, escrever no cursor com recuo e trecho selecionado, elif no recuo do if, Guia sem perder texto/cursor/seleção, Ver a sala guardado, aviso de pista não lida, riscos parados com o painel aberto, pistas depois de recarregar |
 | `b12-vale-som.js` | navegador | câmera afastada por padrão, de perto com o painel aberto e guardada; lanterna sem gasto, marcas de luz só com ela acesa e perto, no diário; estações de atalho adormecidas e acordadas, viagem ao acampamento, quadro do acampamento; luzes do vale que dependem do saber; trilha sonora por região (vale, noite, tumba), mais baixa com o painel, volumes de música e efeitos separados e guardados, som desligado |
+| `b13-tela.js` | navegador | tela limpa no celular: cápsula da mão no HUD (sem aviso), aviso da interação nova substitui o anterior (×2 na mesma), no máximo dois avisos compactos abaixo do HUD e acima do explorador, objetivo refeito só quando muda, encolhe e abre com um toque, marcador inteiro na tela e por baixo do HUD, texto da ação longe de VER/LUZ/AÇÃO, Guia com o exemplo inteiro e o conteúdo com a maior parte da altura (em pé, deitado e no computador), grupo abre o primeiro assunto |
 | `b9-validacoes.js` | navegador | armazenamento bloqueado (aviso e jogo seguindo), sair para outro aplicativo e voltar (pausa e salva), teclado virtual simulado (painel, código e Executar acima dele), sem rolagem horizontal |
 | `b6-personagem.js` | navegador | quadros de todas as direções e animações, linha do chão e altura coerentes, espelho, colisão nos pés, passagem de 1 tile, porta da tumba, atrás/na frente do pilar, transições repouso → caminhada → repouso, interação e dano, folha exportada igual à do jogo |
 | `b7-ajuda.js` | navegador | Guia na tela inicial, no HUD, na tecla G, na pausa e no painel (os dez assuntos com exemplo); pular e revisitar o treino; câmera na tecla C (começa afastada); Lume no acampamento e na tumba com dicas em ordem que não entregam o programa; pontos de interesse no diário; Reiniciar depois de um erro; a área de erro diz a origem (Python, regra da máquina, o que o editor não tem) e leva ao assunto do Guia em um toque, sem perder o programa; Passo a passo que mostra o resultado na última instrução e marca o mecanismo afetado |

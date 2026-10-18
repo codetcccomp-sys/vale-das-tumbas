@@ -123,11 +123,15 @@ function renderIndice(grupo){
   guiaGrupo=grupo;const L=$('gTopicos');L.textContent='';const aqui=grupoAtual();
   const gs=document.createElement('div');gs.className='ggrupos';
   for(const gr of GUIA_GRUPOS){const b=document.createElement('button');b.className='btn ggr'+(gr.id===grupo?' on':'')+(gr.id===aqui?' aqui':'');b.dataset.g=gr.id;
-    b.textContent=(gr.id===aqui?'★ ':'')+gr.t;b.title=gr.id===aqui?'Assuntos desta tumba':'';b.onclick=()=>{renderIndice(gr.id);SFX.click();};gs.appendChild(b);}
+    b.textContent=(gr.id===aqui?'★ ':'')+gr.t;b.title=gr.id===aqui?'Assuntos desta tumba':'';
+    /* escolher um grupo já abre o primeiro assunto dele (o texto embaixo sempre combina com o grupo marcado) */
+    b.onclick=()=>{const T=GUIA.find(g=>g.id===guiaAtual);if(T&&T.g===gr.id)renderIndice(gr.id);else mostrarTopico(GUIA.find(g=>g.g===gr.id).id);SFX.click();};gs.appendChild(b);}
   L.appendChild(gs);
   const ch=document.createElement('div');ch.className='gchips';
   for(const g of GUIA.filter(x=>x.g===grupo)){const b=document.createElement('button');b.className='btn gtop'+(g.id===guiaAtual?' on':'');b.dataset.t=g.id;b.textContent=g.t;b.onclick=()=>{mostrarTopico(g.id);SFX.click();};ch.appendChild(b);}
   L.appendChild(ch);
+  /* na fileira que rola, o assunto aberto fica à vista */
+  const on=ch.querySelector('.on');if(on&&ch.scrollWidth>ch.clientWidth)ch.scrollLeft=Math.max(0,on.offsetLeft-(ch.clientWidth-on.offsetWidth)/2);
 }
 function mostrarTopico(id){
   guiaAtual=id;const T=GUIA.find(g=>g.id===id)||GUIA[0];

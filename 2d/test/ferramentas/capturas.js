@@ -3,7 +3,8 @@
 // uso: node test/ferramentas/capturas.js  (gera em capturas/)
 const {open}=require('../lib');const {ui}=require('../ui');const path=require('path'),fs=require('fs');
 const OUT=path.resolve(__dirname,'..','..','capturas');fs.mkdirSync(OUT,{recursive:true});
-for(const f of fs.readdirSync(OUT))if(/\.png$/.test(f))fs.unlinkSync(path.join(OUT,f));
+/* as comparações antes/depois (C-, F-) são montadas à parte e ficam */
+for(const f of fs.readdirSync(OUT))if(/\.png$/.test(f)&&!/^[CF]-/.test(f))fs.unlinkSync(path.join(OUT,f));
 async function sessao(W,H,dpr,toque,pref,fn,hash){const {browser,page,logs}=await open({viewport:{width:W,height:H},dpr,touch:toque,hash});const U=ui(page);
   const foto=async n=>{await page.waitForTimeout(350);await page.screenshot({path:path.join(OUT,pref+n+'.png')});};
   await U.ev(()=>document.getElementById('btnNew').click());await U.ev(()=>{toastClear();document.getElementById('zoneHint').hidden=true;});

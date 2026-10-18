@@ -116,9 +116,12 @@ CONSTRUIR.diesel=function(){
   /* uma cápsula no chão: pegar (ou trocar pela que está na mão: a da mão fica no lugar dela) */
   for(const[id]of PD.capsulas){
     const it=interacao(A,{x:0,y:0,r:16,alto:22,nome:()=>{const c=pat.caps[id];return'Cápsula '+LANG.fmt(c.val);},label:()=>{const c=pat.caps[id];if(c.em||pat.carrega===id)return null;return(pat.carrega?'Trocar pela cápsula ':'Pegar a cápsula ')+rot(c.val);},
-      use:()=>{const c=pat.caps[id];if(pat.carrega){const m=pat.caps[pat.carrega];m.x=c.x;m.y=c.y;}pat.carrega=id;SFX.frag();toast('Na mão: cápsula '+rot(c.val)+'. Leve até a máquina que aceita esse tipo.');}});
+      use:()=>{const c=pat.caps[id];if(pat.carrega){const m=pat.caps[pat.carrega];m.x=c.x;m.y=c.y;}pat.carrega=id;SFX.frag();}});
     Object.defineProperty(it,'x',{get:()=>pat.caps[id].x});Object.defineProperty(it,'y',{get:()=>pat.caps[id].y+4});
   }
+  /* a cápsula da mão aparece no HUD (e sobre a cabeça do explorador), sem aviso a cada troca */
+  const corTipo={int:'#6fd3ff',float:'#5dff7a',str:'#e9dcbc',bool:'#ffb43a'};
+  A.naMao=()=>pat.carrega?{t:rot(pat.caps[pat.carrega].val),cor:corTipo[pat.caps[pat.carrega].val.t]}:null;
   /* as máquinas: ler a etiqueta, ou pôr a cápsula da mão (recusa com explicação quando o tipo ou o valor não servem) */
   for(const k in MQ){const m=MQ[k],x=m.tx*16+8,y=m.ty*16+14;
     const spr=k==='disjuntor'?'disjuntor':k==='bomba'?'bombaHidro':'painelSenha';
@@ -137,7 +140,9 @@ CONSTRUIR.diesel=function(){
     if(m.precisa&&!feita(m.precisa)){SFX.deny();toast(m.nome+' está sem energia. Primeiro ligue o '+MQ[m.precisa].nome.toLowerCase()+'.','warn');return;}
     if(v.t!==m.tipo){SFX.deny();R.treme=0.15;addDiary('diesel_tipos',true);
       const aspas=v.t==='str'&&/^(True|False|-?\d+(\.\d+)?)$/.test(v.v)?' Com aspas, '+LANG.fmt(v)+' é texto, mesmo parecendo '+(/^(True|False)$/.test(v.v)?'um booleano':'um número')+'.':'';
-      toast(m.nome+' recusou '+LANG.fmt(v)+': é '+LANG.tipoDe(v)+', e '+m.ele+' só aceita '+LANG.rotulo(m.tipo)+'.'+aspas+' (Regra desta máquina: em Python, uma variável pode guardar qualquer tipo.)','warn');return;}
+      /* a observação sobre o Python vem só na primeira recusa, para o aviso não ficar enorme */
+      const regra=pat.regra?'':' (Regra desta máquina: em Python, uma variável pode guardar qualquer tipo.)';pat.regra=true;
+      toast(m.nome+' recusou '+LANG.fmt(v)+': é '+LANG.tipoDe(v)+', e '+m.ele+' só aceita '+LANG.rotulo(m.tipo)+'.'+aspas+regra,'warn');return;}
     if(v.v!==m.val){SFX.deny();
       toast(m.tipo==='str'?m.nome+' leu '+LANG.fmt(v)+' e não abriu: a senha é '+ped+'. Em texto, maiúsculas e minúsculas contam: '+LANG.fmt(v)+' == '+ped+' é False.':m.nome+' aceitou o tipo, mas pede '+ped+'.','warn');return;}
     c.em=k;pat.carrega=null;G.abertas.push(m.flag);SFX.sensor();SFX.maquina();faiscas(m.tx*16+8,m.ty*16-6,12,['#fff6c0','#5dff7a']);
