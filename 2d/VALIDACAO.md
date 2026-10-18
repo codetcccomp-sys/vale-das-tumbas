@@ -80,6 +80,7 @@ comparação em `capturas/F-celular-antes-depois.png`.
 - Resumo: esta seção 0 e o README. Testes: seção 4. Investigação da coleta antecipada e do áudio: tabelas P0 e G.
 - Tutorial, puzzles alterados e salvamento: `b1-percurso` (o jogo inteiro, com o pátio novo e recarga depois de cada tumba).
 - Comandos, variáveis e pistas durante a digitação: `b11-terminal`. Antes/depois de uma tumba: `capturas/C-motores-antes-depois.png`.
+- Tela limpa no celular e Guia: `b13-tela`. Antes/depois: `capturas/F-celular-antes-depois.png`.
 - Celular real e iniciantes: **não realizados** (roteiros nas seções 2 e 3).
 
 ## 1. O documento, item por item
@@ -188,5 +189,5 @@ Anote o aparelho, o navegador e o que falhou (com captura de tela).
 
 ## 4. Testes automáticos executados
 `2d/test/rodar.sh` (Node + Chromium sem janela): l1-linguagem, l2-save, b1-percurso, b2-painel, b3-save, b4-telas,
-b5-perigos, b6-personagem, b7-ajuda, b8-leitura, b9-validacoes e, nesta atualização, b10-recompensa, b11-terminal e
-b12-vale-som: **745 verificações, todas passando**. O README lista o que cada um confere.
+b5-perigos, b6-personagem, b7-ajuda, b8-leitura, b9-validacoes e, nesta atualização, b10-recompensa, b11-terminal,
+b12-vale-som e b13-tela: **767 verificações, todas passando**. O README lista o que cada um confere.
