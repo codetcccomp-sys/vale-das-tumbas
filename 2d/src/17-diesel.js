@@ -135,7 +135,8 @@ CONSTRUIR.diesel=function(){
   }
   const usarMaquina=k=>{const m=MQ[k],ped=LANG.fmt(LV(m.tipo,m.val))+(m.unid||'');
     if(feita(k)){toast(m.nome+' já está funcionando: '+m.faz+'.');return;}
-    if(!pat.carrega){SFX.page();toast(m.nome+': aceita '+LANG.rotulo(m.tipo)+' e pede '+ped+'. '+mai1(m.ele)+' '+m.faz+'.');return;}
+    /* a etiqueta abre num painel legível (fica aberto até o jogador fechar), com o contrato e o valor pedido */
+    if(!pat.carrega){SFX.page();falar('Aceita: '+LANG.rotulo(m.tipo)+'. Pede: '+ped+'. '+mai1(m.ele)+' '+m.faz+'. Pegue a cápsula com esse valor e esse tipo e traga até aqui.',[{t:'Entendi',main:true}],'Etiqueta · '+m.nome,'placaPista');return;}
     const c=pat.caps[pat.carrega],v=c.val;
     if(m.precisa&&!feita(m.precisa)){SFX.deny();toast(m.nome+' está sem energia. Primeiro ligue o '+MQ[m.precisa].nome.toLowerCase()+'.','warn');return;}
     if(v.t!==m.tipo){SFX.deny();R.treme=0.15;addDiary('diesel_tipos',true);

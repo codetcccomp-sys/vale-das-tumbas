@@ -145,6 +145,20 @@ no teclado físico, Ctrl+Enter executa, Ctrl+Shift+Enter dá um passo, Ctrl+. pa
 Cada etapa concluída também acende uma tocha de progresso na sala da tumba, e o diário guarda, em cada saber, o conceito e o
 programa que o próprio jogador escreveu (o da aplicação independente).
 
+**Mecanismos da sala (opcionais, um por tumba, sem código novo).** Usam objetos que já existiam no cenário e só o conceito
+que a tumba já ensina; valem para a visita (entrar de novo devolve ao começo) e nunca bloqueiam o caminho:
+- **Engrenagens — três alavancas (sequência).** Vapor, freio e trava, perto dos pistões. O *Manual dos pistões* diz a regra
+  ("o freio só segura com o vapor já fechado; a trava só encaixa com o freio já puxado"); na ordem certa os pistões param
+  nesta visita. Fora de ordem, as alavancas voltam (sem dano). Sem isso, passa-se esperando a luz de aviso, como antes.
+- **Reator — painel de blindagem (if/else).** O medidor mostra a radiação do turno (sorteada entre 3, 4, 7 e 8) e a placa
+  *Regra da blindagem*: se for 6 ou mais, ligar a blindagem; senão, abrir a ventilação. A escolha certa contém a radiação
+  das manchas nesta visita; a errada não faz nada e o painel explica a comparação (`7 >= 6` dá True).
+- **Viva — bomba de seiva (while).** A cápsula começa com 0, 1 ou 2; enquanto estiver abaixo de 3, bombear; em 3, parar.
+  Passar de 3 vaza (sem dano) e recomeça do zero. Com 3 certinho, os clones da sala da canção ficam calmos: errar a canção
+  não os acorda (chegar perto continua acordando).
+- **Motores** já tinham o pátio das cápsulas; a etiqueta de cada máquina agora abre num painel que fica aberto (tipo aceito
+  e valor pedido), em vez de um aviso que some.
+
 ### A linguagem do jogo (um pedaço de Python)
 - O código aparece e se escreve como em Python: `avancar()`, `quantidade = 5`, `if energia >= 5:`, `elif`, `else:`,
   `for i in range(4):`, `while umidade < 3:`, `not freio`, blocos com 4 espaços de recuo. No painel, o fim de cada bloco
@@ -171,7 +185,12 @@ referência recolhível nos dois modos: funções, variáveis (tipo aceito e val
 estruturas e as pistas lidas na sala. No celular: o enunciado aparece inteiro quando cabe (senão, "▾ ler o resto"; com 3
 linhas ou mais no programa ele recolhe sozinho); com um erro no modo Escrever, a referência recolhe e o campo de código fica
 à vista junto da área de erro; deitado, o painel vira duas colunas (o desafio à esquerda, o programa com a paleta e os
-botões à direita). Há dois jeitos de programar:
+botões à direita). Em celular pequeno em pé (até 760 px de altura, ex.: 360 × 640), o painel fica compacto: o programa vem
+logo depois da tarefa e do enunciado (Comandos e variáveis, recolhível, vai para baixo dele), os controles cabem em duas
+fileiras (os botões auxiliares mostram só a palavra; abaixo de 400 px, sem ícone) e nenhum texto do painel fica abaixo de
+11 px. Nas Engrenagens e nas estufas (Viva e Cidade-Jardim), uma faixa **legível** mostra o tabuleiro ou os canteiros em
+texto — seta do autômato, ◆ destino, ■ pedra, rastro; "seco", "úmido", "fonte" — e acompanha a execução, em vez de só os
+pixels da sala. Há dois jeitos de programar:
 - **Por toques**, sem arrastar: tocar numa linha da paleta (`avancar()`, `variável = valor`, `if`, `if … else`, `elif`,
   `for … in range(n)`, `while`) escreve no cursor ▸; tocar numa linha a seleciona e abre o editor dela (subir, descer,
   remover, escolher o valor, a condição, o número de voltas, `+ elif`, `+ else`).
@@ -309,6 +328,7 @@ Precisam de `node` e do pacote `playwright` com o Chromium: `npm install` e `npx
 | `b15-plano.js` | navegador | plano de melhorias: a versão pública aberta com `#vt`, `#vt-treino` e `#vt-treino-historia` não cria nenhum objeto interno e segue o caminho normal; previsão das práticas guiadas (pergunta antes de executar, resposta e explicação na hora, Executar seguinte confere sem perguntar de novo, Pular executa direto); o `if` sem `else` da paleta não resolve a comporta |
 | `l3-relatorio.js` | lógica (Node) | relatório de aprendizagem: partida nova sem números inventados, totais, etapa antiga "sem registro", pendentes, os seis lugares com o conceito, TXT e CSV com os mesmos números e sem dados pessoais |
 | `b16-melhorias.js` | navegador | tarefa da etapa, previsão sobre o programa do jogador (b3) com o caminho da execução e a situação escolhida, sensor marcado "antes → depois" no Passo, situação ↻ depois de mudar o programa, botões de execução e Ctrl+Enter, Dica sugerida após três erros seguidos, funções do jogo × Python no painel e no Guia, relatório no Diário com TXT e CSV baixados e salvos no save, lembrete sem progresso |
+| `b17-exploracao.js` | navegador | editor em 360 × 640 em sete etapas (programa à vista ao abrir, Executar na tela, controles em duas fileiras, nenhum rótulo cortado, textos ≥ 11 px, sem rolagem para o lado); alavancas das Engrenagens (ordem errada volta sem dano, ordem certa para os pistões, manual legível, reinício por visita); painel de blindagem do Reator (radiação, regra, escolha errada explicada, escolha certa protege, caminho do senão); bomba de seiva da Viva (nível, parar cedo, vazar, clones calmos diante da canção errada); tabuleiro e canteiros em texto no painel; etiqueta dos Motores em painel |
 | `b9-validacoes.js` | navegador | armazenamento bloqueado (aviso e jogo seguindo), sair para outro aplicativo e voltar (pausa e salva), teclado virtual simulado (painel, código e Executar acima dele), sem rolagem horizontal |
 | `b6-personagem.js` | navegador | quadros de todas as direções e animações, linha do chão e altura coerentes, espelho, colisão nos pés, passagem de 1 tile, porta da tumba, atrás/na frente do pilar, transições repouso → caminhada → repouso, interação e dano, folha exportada igual à do jogo |
 | `b7-ajuda.js` | navegador | Guia na tela inicial, no HUD, na tecla G, na pausa e no painel (os dez assuntos com exemplo); pular e revisitar o treino; câmera na tecla C (começa afastada); Lume no acampamento e na tumba com dicas em ordem que não entregam o programa; pontos de interesse no diário; Reiniciar depois de um erro; a área de erro diz a origem (Python, regra da máquina, o que o editor não tem) e leva ao assunto do Guia em um toque, sem perder o programa; Passo a passo que mostra o resultado na última instrução e marca o mecanismo afetado |

@@ -134,6 +134,12 @@ body.painel.pAmplo #painel{height:76%}
 .sit{flex:none;font:700 13px var(--f);padding:6px 10px;min-height:38px;border:2px solid #0b0705;background:#2a1e14;color:var(--paper);cursor:pointer}
 .sit.atual{box-shadow:inset 0 0 0 2px var(--ice);background:#20303a}.sit.ok::before{content:'✔ ';color:var(--ok)}.sit.erro::before{content:'✖ ';color:var(--alert)}.sit.velho{border-style:dashed;border-color:#8a7a4a}
 #pVars{display:flex;gap:6px;overflow-x:auto;flex:none;scrollbar-width:none}#pVars::-webkit-scrollbar{display:none}
+#pCena{flex:none;display:flex;overflow-x:auto;scrollbar-width:none}#pCena[hidden]{display:none}#pCena::-webkit-scrollbar{display:none}
+.tab{flex:none;display:flex;gap:8px;align-items:center;padding:4px 6px;background:#20160e;border:2px solid #0b0705}
+.tabg{display:grid;gap:2px}.tabg i{width:24px;height:24px;display:flex;align-items:center;justify-content:center;font:800 15px/1 var(--mono);font-style:normal;background:#3a2a1a;color:#ffe9a0}
+.tabg i.r{background:#14100c;color:#8a7a62}.tabg i.g{background:#6a4a10;color:#ffd24a}.tabg i.a{background:#c8743a;color:#fff}.tabg i.t{color:#ffb455}
+.tabl{margin:0;font:600 12px/1.35 var(--f);color:var(--paper2);max-width:170px;white-space:normal}
+.trilho .tabg i.c{width:auto;min-width:28px;padding:0 4px;font-size:13px}.trilho .tabg i.ok{background:#1e4a24;color:#c8ffc8}.trilho .tabg i.a{background:#c8743a;color:#fff}.trilho .tabg i.fim{background:#2a2040;color:#c9a6ff}.trilho .tabg i.fim.a{background:#c8743a;color:#fff}
 .var{flex:none;display:flex;flex-direction:column;gap:1px;padding:4px 8px;border:2px solid #0b0705;background:#24303a;min-width:86px}
 .var .nm{font:700 13px var(--mono);color:#fff}.var .tp{font:700 10px var(--f);letter-spacing:.06em;color:var(--ice);text-transform:uppercase}
 .var .vl{font:800 15px var(--mono);color:var(--gold)}.var.vazio .vl{color:#8a8a8a;font-style:italic;font-weight:600}.var.vazio{border-style:dashed;border-color:#5a6a7a;background:#1c242c}
@@ -198,6 +204,27 @@ body.teclado #painel{bottom:var(--kb,0px);top:auto;height:auto;max-height:calc(1
 /* telas baixas: a área de erro rola por dentro e os botões fixos ficam mais baixos (sem perder o tamanho de toque) */
 @media (max-height:600px){#pErro{max-height:6.2em}}
 /* telas de celular: área de erro e referência mais baixas, para o código continuar à vista */
+/* celular em pé: a fileira de apoio (velocidade, Dica, Guia, Escrever, Limpar) cabe numa linha só; Limpar fica só com o ícone */
+@media (orientation:portrait) and (max-width:480px){#pClear .tx{display:none}#pClear{flex:0 0 auto!important;min-width:44px!important}#pCtl .btn:not(.ex){min-height:40px}#pCtl .ic{margin-right:1px}}
+@media (orientation:portrait) and (max-width:400px){#pDica .ic,#pGuia .ic,#pModo .ic{display:none}}
+@media (orientation:portrait) and (max-width:340px){#pCtl .btn.ex .ic{display:none}#pCtl{gap:4px}}
+/* celular pequeno em pé (360×640 e parecidos): painel mais compacto, para o programa aparecer junto com a tarefa,
+   a paleta e Executar, sem rolar; textos com pelo menos 12 px */
+@media (orientation:portrait) and (max-height:760px){
+  #painel{gap:4px;padding-top:4px}body.painel.pAmplo #painel{height:78%}
+  #pFechar,#pLayout{min-height:36px;padding:4px 10px}#pTit b{font-size:14px}#pTit span{font-size:11px}
+  .etp{min-height:30px;padding:4px 8px;font-size:13px}.sit{min-height:32px;padding:4px 10px}
+  .var{flex-direction:row;align-items:baseline;gap:6px;padding:3px 8px;min-width:0}.var .tp{font-size:11px}.var .vl{font-size:14px}
+  #pTarefa{font-size:13px;padding:4px 8px}
+  #pMsg{max-height:2.9em;padding:4px 8px}#pMsg.aberto{max-height:none}
+  #pMsgMais{position:relative;z-index:1;margin-top:-30px;min-height:28px;padding:2px 10px;font-size:12px}
+  #pRefBox>summary{min-height:34px}#pProg{min-height:80px}
+  #pRodape{gap:4px}
+  #pRef{font-size:12px;line-height:1.3;margin:0 0 2px}
+  .trilho .tabl{display:none}.tab{padding:3px 6px}.tabg i{width:20px;height:20px;font-size:13px}.tabl{font-size:11px;line-height:1.25}
+  /* o programa vem logo depois da tarefa e do enunciado; Comandos e variáveis (recolhível) fica embaixo dele */
+  #pProg,#pTexto{order:1}#pEdit{order:2}#pRefBox{order:3}
+}
 @media (max-height:960px) and (orientation:portrait){#pErro{max-height:7.2em}#pErro .gbtn{min-height:36px;padding:3px 10px}#pRefC{max-height:22vh}#pTxt{min-height:7.6em}}
 /* celular deitado (tela baixa): duas colunas — à esquerda o desafio (etapas, variáveis, enunciado, erro), à direita o
    programa com a paleta e os botões; cada coluna rola por conta própria */
@@ -315,6 +342,7 @@ body.modal #toqueUi{display:none}
     <div id="pEtapas"></div>
     <div id="pFixas" hidden></div>
     <div id="pSits"></div>
+    <div id="pCena" hidden></div>
     <div id="pVars"></div>
     <div id="pTarefa" role="note"></div><div id="pPrev" hidden><p class="q"></p><pre class="cod" hidden></pre><div class="ops"></div></div><div id="pMsg" role="status" aria-live="polite"></div><button class="btn" id="pMsgMais" type="button" hidden></button>
     <div id="pErro" hidden role="alert"><b class="onde"></b><p class="tit"></p><p class="txt"></p><p class="dica"></p><button class="btn gbtn" type="button"></button></div>
@@ -328,7 +356,7 @@ body.modal #toqueUi{display:none}
     <div id="pRodape"><div id="pPaleta"></div>
     <div id="pCtl">
       <button class="btn verde ex" id="pRun" title="Uma tentativa inteira: roda todas as instruções (Ctrl+Enter)"><span class="ic">▶</span> Executar</button><button class="btn azul ex" id="pStep" title="Roda uma instrução por toque; na última, mostra o resultado (Ctrl+Shift+Enter)"><span class="ic">⏭</span> Passo</button><button class="btn vermelho ex" id="pStop" title="Interrompe a tentativa (Ctrl+.)"><span class="ic">■</span> Parar</button><button class="btn ambar ex" id="pReset" title="Nova tentativa: o mecanismo volta ao começo e o programa continua igual (Alt+R)"><span class="ic">↺</span> Reiniciar</button><span class="quebra" aria-hidden="true"></span>
-      <button class="btn" id="pDica" title="Uma dica do Lume por vez: conceito, caminho, quase a solução"><span class="ic">💡</span> Dica</button><button class="btn" id="pGuia" title="Abre o Guia no assunto desta etapa; o programa não se perde"><span class="ic">📖</span> Guia</button><button class="btn" id="pModo" title="Escrever o programa como texto Python"><span class="ic">✎</span> Escrever</button><button class="btn" id="pClear" title="Apaga as linhas do programa (pede confirmação)">Limpar</button><button class="btn" id="pVel" title="Velocidade">1×</button>
+      <button class="btn" id="pDica" title="Uma dica do Lume por vez: conceito, caminho, quase a solução"><span class="ic">💡</span> Dica</button><button class="btn" id="pGuia" title="Abre o Guia no assunto desta etapa; o programa não se perde"><span class="ic">📖</span> Guia</button><button class="btn" id="pModo" title="Escrever o programa como texto Python"><span class="ic">✎</span> Escrever</button><button class="btn" id="pClear" title="Limpar: apaga as linhas do programa (pede confirmação)" aria-label="Limpar o programa"><span class="ic">🗑</span><span class="tx"> Limpar</span></button><button class="btn" id="pVel" title="Velocidade">1×</button>
     </div></div>
   </div>
 

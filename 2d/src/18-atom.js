@@ -79,6 +79,23 @@ CONSTRUIR.atom=function(){
   const valv=(tx,ty,cor,nome,alvo)=>{const o=objeto(A,SPR.get('valvula',cor,0),tx*16+8,ty*16+14,{col:[-6,-4,6,0]});o.desenho=(g,ob,t)=>blit(g,SPR.get('valvula',cor,canal.bomba>0?Math.floor(t*8)%4:0),ob.x,ob.y,ob.ax,ob.ay);
     interacao(A,{x:tx*16+8,y:ty*16+20,r:22,label:()=>nome,use:()=>{canal.alvo=alvo;canal.bomba=1.6;SFX.valve();SFX.pump();addDiary('atom_water',true);toast(alvo<5?'A água do canal está baixando: os pontões vão assentar no fundo.':'A água do canal está subindo.');}});};
   valv(6,25,'#5dff7a','Válvula verde (drenar o canal)',2);valv(23,25,'#ff9a3a','Válvula laranja (encher o canal)',8);
+  /* painel de blindagem (decisão): o medidor marca a radiação desta visita; a regra, escrita em palavras, é um if/else.
+     A escolha certa contém as manchas de radiação do canal nesta visita (ficam inofensivas). Errar não fere:
+     o painel explica a comparação e deixa tentar de novo. Opcional. */
+  const RADS=[3,4,7,8];A.radiacao=RADS[Math.floor(Math.random()*RADS.length)];A.blindado=false;
+  const escolherBlindagem=op=>{
+    const R=A.radiacao,alta=R>=6,certo=alta?'blindagem':'ventilacao';
+    if(op===certo){A.blindado=true;SFX.sensor();SFX.gate();addDiary('atom_blindagem');fecharFala();
+      toast((alta?'Radiação '+R+': '+R+' >= 6 é True, então a blindagem ligou.':'Radiação '+R+': '+R+' >= 6 é False, então o caminho do senão abriu a ventilação.')+' As manchas do canal estão contidas nesta visita.','good');}
+    else{SFX.deny();falar('Com radiação '+R+', a pergunta "'+R+' >= 6?" dá '+(alta?'True':'False')+': a regra manda '+(alta?'ligar a blindagem (o caminho do se)':'abrir a ventilação (o caminho do senão)')+'. Nada aconteceu; escolha de novo.',opcoesBlindagem(),'Painel de blindagem','placaPista');}
+  };
+  const opcoesBlindagem=()=>[{t:'Ligar a blindagem',fn:()=>escolherBlindagem('blindagem')},{t:'Abrir a ventilação',fn:()=>escolherBlindagem('ventilacao')},{t:'Sair'}];
+  {const x=11*16+8,y=24*16+14;
+    const o=objeto(A,SPR.get('valvula','#ffd24a',0),x,y,{col:[-6,-4,6,0]});
+    o.desenho=(g,ob,t)=>{blit(g,SPR.get('valvula',A.blindado?'#5dff7a':'#ffd24a',A.blindado?Math.floor(t*6)%4:0),ob.x,ob.y,ob.ax,ob.ay);etiqueta(g,ob.x,ob.y-26,'radiação '+A.radiacao,A.blindado?'#9aff9a':'#ffd24a');};
+    interacao(A,{x,y:y+6,r:20,alto:26,nome:'Painel de blindagem',label:()=>A.blindado?null:'Usar o painel de blindagem (radiação '+A.radiacao+')',
+      use:()=>falar('Medidor: radiação '+A.radiacao+'. Regra do turno: SE a radiação for 6 ou mais, ligue a blindagem; SENÃO, abra a ventilação. O que o painel deve fazer?',opcoesBlindagem(),'Painel de blindagem','placaPista')});}
+  placaLeitura(A,9*16+8,24*16+14,'Regra da blindagem',()=>'SE a radiação for 6 ou mais, ligue a BLINDAGEM; SENÃO, abra a VENTILAÇÃO. O medidor do painel mostra a radiação desta visita (agora: '+A.radiacao+'). Com a escolha certa, as manchas de radiação perto das válvulas ficam inofensivas. (Opcional.)','#9aff9a');
   guardiao(A,{tx:22,ty:16,sala:[3,16,27,26],spr:(ac,f)=>sprRoboAtom(ac,f),msg:TXT.hit.bot,diario:'atom_guard',vel:50,ouve:()=>canal.bomba>0});
   /* Sala do Reator */
   /* a cor do núcleo mostra a temperatura (vermelho ≥ 80, laranja ≥ 50, verde abaixo) e muda com resfriar/ventilar */
@@ -109,7 +126,7 @@ CONSTRUIR.atom=function(){
     if(canal.bomba>0)canal.bomba-=dt;
     canal.nivel+=Math.sign(canal.alvo-canal.nivel)*Math.min(Math.abs(canal.alvo-canal.nivel),dt*3);
     /* radiação: fere quem fica parado nela */
-    const p=G.p;if(G.mode==='play'&&A.kind(Math.floor(p.x/16),Math.floor(p.y/16))==='rad'){A.radT=(A.radT||0)+dt;if(A.radT>1.8){A.radT=0;ferir(TXT.hit.rad);addDiary('atom_rad');}if(Math.random()<dt*12)AU.geiger=8;}else{A.radT=0;AU.geiger=1.2;}
+    const p=G.p;if(G.mode==='play'&&!A.blindado&&A.kind(Math.floor(p.x/16),Math.floor(p.y/16))==='rad'){A.radT=(A.radT||0)+dt;if(A.radT>1.8){A.radT=0;ferir(TXT.hit.rad);addDiary('atom_rad');}if(Math.random()<dt*12)AU.geiger=8;}else{A.radT=0;AU.geiger=1.2;}
     /* máquinas do painel */
     let vis=PAINEL.aberto&&PAINEL.area===A?painelVis():null;if(vis&&vis.cfg.mundo!=='reator')vis=null;
     const c=vis?vis.cfg:(desafiosDa('atom').find(d=>!G.learn[d.id])||DESAFIO.a2),ws=vis?vis.ws:MUNDOS.reator.init(c.situacoes[0]);
@@ -129,7 +146,7 @@ CONSTRUIR.atom=function(){
       blit(g,SPR.get('pontao'),pt.tx*16+8+off,pt.ty*16+13+(assentado()?1:0),8,12);}
   };
   A.luzesExtra=t=>{luz(14*16+8,8*16,PAINEL.aberto&&PAINEL.area===A?110:52,1,corNucleo());if(est.manter)luz(17*16+8,8*16,24,1,'#5dff7a');for(const[x,y]of[[7,23],[21,23]])luz(x*16,y*16,30,0.7,'#5dff7a');};
-  A.reiniciar=()=>{reiniciarGuardas(A);for(const pt of A.pontos)pt.aceso=false;canal.nivel=canal.alvo=8;addDiary('atom_enter',true);};
+  A.reiniciar=()=>{reiniciarGuardas(A);for(const pt of A.pontos)pt.aceso=false;canal.nivel=canal.alvo=8;A.blindado=false;A.radiacao=RADS[Math.floor(Math.random()*RADS.length)];addDiary('atom_enter',true);};
   A.objetivo=()=>{if(G.p.y>21*16&&!assentado())return{t:'Saber: Decisões',s:'O canal está cheio. Use a válvula verde para drenar e atravesse pelos pontões.',alvo:{x:6*16+8,y:25*16-12,txt:'Drenar o canal'}};return objetivoTumba('atom','No painel do reator');};
   A.aoEvento=(ev)=>{const a=ev.anim||{};if(a.comporta||a.portao)SFX.gate();if(a.carregador)SFX.sensor();if(a.dreno||a.resfriar)SFX.agua();if(a.ventilar)SFX.rotate();if(a.manter)SFX.sensor();if(a.falha||ev.tipo==='erro'){SFX.deny();R.treme=0.25;}if(ev.tipo==='se')faiscas(14*16+8,9*16,8,ev.res?['#5dff7a','#ffffff']:['#ff9a3a','#ffffff']);};
   A.aoConcluir=(cfg)=>{if(saberOk('atom'))setTimeout(()=>toast('O reator estabilizou: o portão da câmara do Núcleo atômico se abriu.','good'),600);};

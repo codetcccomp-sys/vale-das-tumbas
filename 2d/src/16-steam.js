@@ -104,7 +104,28 @@ CONSTRUIR.steam=function(){
   for(const[x,y]of[[6,15],[21,15],[10,25],[17,25]]){const o=objeto(A,SPR.get('engrParede',0),x*16+8,y*16+14,{});o.frames=[0,1,2,3,4,5,6,7,8,9,10,11].map(f=>SPR.get('engrParede',f));o.fps=6;}
   /* pistões: cada linha desce em ritmo, com a luz de aviso antes */
   const PER=3.0,linhas=[36,38,40];
-  const estadoPistao=(ty,t)=>{const k=linhas.indexOf(ty),u=((t+k*1.0)%PER+PER)%PER;return u<1.8?0:u<2.4?1:2;};
+  const estadoPistao=(ty,t)=>{if(A.pistoesParados)return 0;const k=linhas.indexOf(ty),u=((t+k*1.0)%PER+PER)%PER;return u<1.8?0:u<2.4?1:2;};
+  /* alavancas dos pistões (sequência): no salão de entrada, três alavancas param os pistões nesta visita se forem
+     puxadas na ordem que o manual explica por dependências (vapor → freio → trava). A ordem da esquerda para a
+     direita NÃO é a resposta: é preciso ler e pensar. Fora de ordem, todas voltam (sem dano). É opcional: dá para
+     passar pelos pistões esperando a luz de aviso. */
+  const ALV=[{k:'freio',nome:'FREIO',x:16},{k:'trava',nome:'TRAVA',x:17.5},{k:'vapor',nome:'VAPOR',x:19}],ORDEM=['vapor','freio','trava'];
+  const MOTIVO={freio:'o freio não segura com o vapor ainda aberto',trava:'a trava só encaixa com o freio já puxado'};
+  A.alavancas=[];A.pistoesParados=false;
+  const puxar=a=>{
+    const L=A.alavancas;if(A.pistoesParados||L.indexOf(a.k)>=0)return;
+    if(ORDEM[L.length]===a.k){L.push(a.k);SFX.valve();
+      if(L.length===ORDEM.length){A.pistoesParados=true;SFX.gate();addDiary('steam_alavancas');
+        toast('Vapor, freio, trava: na ordem certa, os pistões pararam. O corredor está seguro nesta visita.','good');}
+      else toast('Alavanca '+a.nome+' puxada ('+L.length+' de 3).');}
+    else{L.length=0;SFX.deny();vapor(17.5*16+8,45*16,4);toast('As alavancas voltaram: '+(MOTIVO[a.k]||'o vapor fecha primeiro')+'. A ordem importa.','warn');}
+  };
+  for(const a of ALV){const x=a.x*16+8,y=45*16+14;
+    const o=objeto(A,SPR.get('alavanca','#c8743a',false),x,y,{col:[-6,-4,6,0]});
+    o.desenho=(g,ob)=>{blit(g,SPR.get('alavanca','#c8743a',A.alavancas.indexOf(a.k)>=0||A.pistoesParados),ob.x,ob.y,8,23);etiqueta(g,ob.x,ob.y-27,a.nome,'#ffd890');};
+    interacao(A,{x,y:y+6,r:16,alto:26,nome:'Alavanca '+a.nome,label:()=>A.pistoesParados?null:'Puxar a alavanca '+a.nome,use:()=>puxar(a)});}
+  placaLeitura(A,19*16+8,43*16+14,'Manual dos pistões',
+    'Para parar os pistões com segurança: o FREIO só segura com o VAPOR já fechado, e a TRAVA só encaixa com o FREIO já puxado. Descubra a ordem e puxe as três alavancas. (Opcional: sem isso, dá para passar esperando a luz de aviso apagar.)','#c8743a');
   for(const p of pistoes){const o=objeto(A,SPR.get('pistao',0),p.tx*16+8,p.ty*16+16,{camada:-6});o.desenho=(g,ob,t)=>blit(g,SPR.get('pistao',estadoPistao(p.ty,A.relogio)),ob.x,ob.y,ob.ax,ob.ay);}
   /* placas da ponte: decalque por cima do fosso; cobrem o vão enquanto inteiras */
   for(const pl of placas){const o=objeto(A,SPR.get('placa',pl.tipo,0),pl.tx*16+8,pl.ty*16+14,{camada:-30});o.ay=14;o.desenho=(g,ob)=>blit(g,SPR.get('placa',pl.tipo,pl.est),ob.x,ob.y,8,14);}
@@ -140,7 +161,7 @@ CONSTRUIR.steam=function(){
     for(const lv of linhas)if(estadoPistao(lv,A.relogio)===2&&estadoPistao(lv,A.relogio-dt)!==2&&Math.abs(G.p.y-lv*16)<200)SFX.piston();
     if(Math.random()<dt*1.5)vapor(14*16+(Math.random()-0.5)*90,8*16,1);
   };
-  A.reiniciar=()=>{for(const pl of placas){pl.est=0;pl.t=0;}reiniciarGuardas(A);for(const pt of A.pontos)pt.aceso=false;addDiary('steam_enter',true);};
+  A.reiniciar=()=>{for(const pl of placas){pl.est=0;pl.t=0;}A.alavancas.length=0;A.pistoesParados=false;reiniciarGuardas(A);for(const pt of A.pontos)pt.aceso=false;addDiary('steam_enter',true);};
   A.objetivo=()=>objetivoTumba('steam','No Computador Ancestral (Oficina do Autômato, ao norte)');
   /* tabuleiro: desenha o percurso da etapa (a da execução, ou a próxima a fazer) */
   A.desenharChao=(g,t)=>desenharTabuleiro(A,g,t);

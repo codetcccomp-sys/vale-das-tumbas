@@ -132,6 +132,19 @@ continuam. Testes novos: `l3-relatorio` e `b16-melhorias`; `l1`, `l2`, `b1`, `b7
 | 8 · Preservação | Personagem, sprites, história e eras intactos; save antigo compatível; gancho fora da versão pública; sem bibliotecas novas; mesmo `vercel.json`. | Conferido (l2, b3, b6, b15) |
 | 9 · Testes | Os 12 itens pedidos têm teste automático (movimento e colisões: b6/b8; objetos: b5/b8; comandos certos e errados: l1/b1/b2; reinício: b2; previsões e alternativas: l1/b15/b16; quatro ambientes e história até a Cidade-Jardim: b1; save: l2/b3; resoluções: b4/b14; editor no celular: b9/b14; exportação: l3/b16; versão pública sem ferramentas: b15). | 847 verificações passando |
 
+### L — Pedido "três melhorias" (celular 360 × 640, interações nas tumbas, legibilidade)
+Só estas três; nada recriado. Personagem e sprites intocados, nenhuma tumba nova, etapas, dicas, previsões e relatório
+iguais, save sem campo novo (o estado das interações vale só para a visita). Teste novo: `b17-exploracao` (23 verificações).
+| Melhoria | O que foi feito | Situação |
+|---|---|---|
+| 1 · Editor em 360 × 640 | Painel compacto em celular em pé até 760 px de altura: o programa vem logo depois da tarefa (Comandos e variáveis recolhível passa para baixo); controles em duas fileiras (botões auxiliares só com a palavra; ícones somem abaixo de 400 px; os de execução abaixo de 340 px); "Limpar" deixou de ser cortado; textos do painel ≥ 11 px. Medido ao abrir o painel em t1, s2, d1, a3, a5, b4 e c1: programa à vista com 55 a 155 px (antes: em todas as 7, o programa começava abaixo dos botões, com 99 a 269 px a rolar e controles em três fileiras; agora 0 a 72 px a rolar, só para chegar a Comandos e variáveis), Executar sempre na tela, sem rolagem para o lado. | Feito (b17; b4, b9, b14 e b16 continuam passando). Toque real: pendente. |
+| 2 · Interações nas tumbas | Uma por tumba, opcional, com objetos que já existiam e só o conceito da própria tumba: **alavancas** vapor/freio/trava param os pistões das Engrenagens (sequência); **painel de blindagem** do Reator, com radiação sorteada e regra se/senão, contém a radiação (if/else); **bomba de seiva** da Viva, bombear enquanto < 3, acalma os clones diante da canção errada (while). Erro nunca fere nem trava; ninguém precisa delas para passar. | Feito (b17). Ritmo com iniciantes: pendente. |
+| 3 · Legibilidade | Informação essencial dos puzzles em painéis de texto (DOM, com o tamanho do painel de diálogo), não só em pixels: *Manual dos pistões*, *Regra da blindagem*, *Bomba de seiva*, etiqueta das máquinas dos Motores (antes um aviso que sumia); tabuleiro das Engrenagens e canteiros da Viva/Cidade-Jardim em texto dentro do painel de programação, acompanhando a execução. | Feito (b17). Leitura em tela real: pendente. |
+
+**Limites desta validação:** Chromium sem janela com aparelhos simulados (tamanho, densidade e toque), sem celular físico,
+sem teclado virtual real, sem som ouvido e sem iniciantes. "Menos interações físicas" foi lido como poucas interações leves
+e opcionais (três toques na ordem, uma escolha, até três bombeadas), sem novas caminhadas obrigatórias.
+
 ## 1. O documento, item por item
 
 ### P1 — Relação entre o jogo e o Python
@@ -239,4 +252,4 @@ Anote o aparelho, o navegador e o que falhou (com captura de tela).
 ## 4. Testes automáticos executados
 `2d/test/rodar.sh` (Node + Chromium sem janela): l1-linguagem, l2-save, b1-percurso, b2-painel, b3-save, b4-telas,
 b5-perigos, b6-personagem, b7-ajuda, b8-leitura, b9-validacoes e, nesta atualização, b10-recompensa, b11-terminal,
-b12-vale-som, b13-tela, b14-mvp, b15-plano e, nesta atualização, l3-relatorio e b16-melhorias: **847 verificações, todas passando**. O README lista o que cada um confere.
+b12-vale-som, b13-tela, b14-mvp, b15-plano, l3-relatorio, b16-melhorias e, nesta atualização, b17-exploracao: **870 verificações, todas passando**. O README lista o que cada um confere.

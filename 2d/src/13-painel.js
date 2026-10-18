@@ -175,7 +175,8 @@ function renderPainel(){
   $('pClear').hidden=demo;$('pDica').hidden=demo||!c.dicas;$('pModo').hidden=demo;
   $('pRun').disabled=rodando&&PAINEL.run.modo==='exec';$('pStep').disabled=rodando&&PAINEL.run.modo==='exec';$('pStop').disabled=!rodando;
   $('pReset').disabled=!PAINEL.run&&!PAINEL.parado;$('pClear').disabled=rodando||(!PAINEL.prog.length&&!c.inicial);$('pModo').disabled=rodando;
-  $('pClear').textContent=c.inicial?'↺ Código original':'Limpar';
+  {const b=$('pClear'),t=c.inicial?'Código original':'Limpar';rotuloBotao(b,c.inicial?'↺':'🗑',t);b.lastChild.remove();const s=document.createElement('span');s.className='tx';s.textContent=' '+t;b.appendChild(s);
+    b.setAttribute('aria-label',c.inicial?'Voltar ao código original':'Limpar o programa');b.title=c.inicial?'Código original: volta o programa ao que veio escrito (pede confirmação)':'Limpar: apaga as linhas do programa (pede confirmação)';}
   rotuloBotao($('pModo'),txt?'✔':'✎',txt?'Pronto':'Escrever');
   if(c.dicas){const n=G.dicas[c.id]||0;rotuloBotao($('pDica'),'💡','Dica '+(n>=3?'3/3':(n+1)+'/3'));}
   rotuloBotao($('pRun'),'▶',rodando&&PAINEL.run.modo==='passo'?'Continuar':'Executar');
@@ -189,6 +190,9 @@ function renderVars(){
   /* a variável do for aparece enquanto o for roda */
   if(env)for(const k in env)if(env[k].laco)lista.push({d:{nome:k,t:'int'},sensor:false,laco:true});
   V.hidden=!lista.length;
+  /* o cenário do desafio em casas legíveis (tabuleiro ou trilho), numa linha própria acima das variáveis */
+  const Cn=$('pCena'),trilho=c.mundo==='estufa'||c.mundo==='jardim';Cn.textContent='';Cn.hidden=c.mundo!=='grade'&&!trilho;
+  if(c.mundo==='grade')Cn.appendChild(tabuleiroDom());else if(trilho)Cn.appendChild(trilhoDom());
   for(const{d,sensor,laco}of lista){const e=ini[d.nome],v=e?e.val:null;const el=document.createElement('div');el.className='var'+(v===null?' vazio':'')+(sensor?' sensor':'')+(laco?' laco':'');
     const unid=d.unid&&v?' '+d.unid:'';
     el.innerHTML='<span class="tp"></span><span class="nm"></span><span class="vl"></span>';el.children[0].textContent=(sensor?'sensor · ':laco?'variável do for · ':'aceita ')+LANG.rotulo(d.t);el.title=sensor?'Sensor: o programa só lê o valor.':laco?'Muda sozinha a cada volta do for.':'Contêiner da máquina: aceita só '+LANG.rotulo(d.t)+'.';
@@ -196,6 +200,36 @@ function renderVars(){
     const mu=(PAINEL.run||PAINEL.parado)&&PAINEL.mudancas&&PAINEL.mudancas[d.nome];
     if(mu){el.classList.add('mudou');el.children[2].textContent=(mu.antes?LANG.fmt(mu.antes):'vazia')+' → '+LANG.fmt(mu.depois)+unid;el.title+=' Mudou neste passo.';}
     V.appendChild(el);}
+}
+/* Engrenagens: o tabuleiro também aparece no painel, em casas grandes e legíveis (no celular, a faixa da sala corta o
+   tabuleiro). Mostra o destino, as pedras, o rastro e o autômato com a seta para onde ele olha, e acompanha a execução. */
+function tabuleiroDom(){
+  const v=painelVis(),w=v&&v.ws;const box=document.createElement('div');box.className='tab';if(!w||!w.grid)return box;
+  const g=document.createElement('div');g.className='tabg';g.style.gridTemplateColumns='repeat('+w.grid[0].length+',24px)';
+  const SETA=['▲','▶','▼','◀'],rastro=new Set((w.rastro||[]).map(p=>p[0]+','+p[1]));
+  w.grid.forEach((lin,y)=>{for(let x=0;x<lin.length;x++){const k=lin[x],i=document.createElement('i');
+    if(x===w.x&&y===w.y){i.className='a';i.textContent=SETA[w.dir];}
+    else if(k==='#'){i.className='r';i.textContent='■';}
+    else if(k==='G'){i.className='g';i.textContent='◆';}
+    else if(rastro.has(x+','+y)){i.className='t';i.textContent='·';}
+    g.appendChild(i);}});
+  const leg=document.createElement('p');leg.className='tabl';
+  leg.textContent=(w.ativo?'✔ Mecanismo ativado. ':'')+'▲ autômato (a ponta mostra para onde ele olha) · ◆ destino · ■ pedra'+(w.rastro&&w.rastro.length>1?' · · caminho feito':'');
+  box.appendChild(g);box.appendChild(leg);box.setAttribute('aria-label','Tabuleiro: '+w.grid.join(' / '));return box;
+}
+/* Viva e Cidade-Jardim: o trilho em casas legíveis (umidade de cada organismo / solo de cada canteiro, onde o robô está
+   e o fim do caminho), que acompanha a execução — antes, só os números em pixels da sala mostravam isso */
+function trilhoDom(){
+  const v=painelVis(),w=v&&v.ws,box=document.createElement('div');box.className='tab trilho';if(!w)return box;
+  const g=document.createElement('div');g.className='tabg';const lista=w.pods||w.beds||[];
+  g.style.gridTemplateColumns='repeat('+(lista.length+1)+',auto)';
+  const alvo=w.alvo||3;
+  lista.forEach((p,i)=>{const d=document.createElement('i');d.className='c'+(i===w.x?' a':'')+(p&&(w.pods?p.um>=alvo:p.solo!=='seco')?' ok':'');
+    d.textContent=w.pods?(p?String(p.um):'—'):(p.solo==='seco'?'seco':'úmido');d.title=(i+1)+'º '+(w.pods?'organismo':'canteiro');g.appendChild(d);});
+  const f=document.createElement('i');f.className='c fim'+(w.x>=w.fimX?' a':'');f.textContent=w.pods?'base':'fonte';g.appendChild(f);
+  const leg=document.createElement('p');leg.className='tabl';
+  leg.textContent=w.pods?'Umidade de cada organismo (precisa chegar a '+alvo+'); a casa laranja é onde o polinizador está.':'Solo de cada canteiro; a casa laranja é onde o robô está'+(w.regas?' · regas: '+w.regas:'')+'.';
+  box.appendChild(g);box.appendChild(leg);box.setAttribute('aria-label',leg.textContent+' Casas: '+[...g.children].map(i=>i.textContent).join(', ')+'.');return box;
 }
 /* linhas do programa (como em Python) com o cursor de inserção */
 function renderPrograma(){

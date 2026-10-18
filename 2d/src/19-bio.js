@@ -83,9 +83,29 @@ CONSTRUIR.bio=function(){
   const tocarBulbo=i=>{
     if(canto.fila.length)return;canto.acesos[i]=0.4;SFX.node(i);
     if(canto.seq[canto.pos]===i){canto.pos++;if(canto.pos>=canto.seq.length){canto.pos=0;G.abertas.push('bio_canto');SFX.bioChime();SFX.membrane();toast('A canção está certa: a membrana se abriu.','good');salvar(false);}}
-    else{canto.pos=0;SFX.bioFail();toast('A canção errada ecoa pela sala.','warn');for(const e of A.guardas)if(e.estado==='dorme'){e.estado='acorda';e.t=0;}SFX.wake();addDiary('bio_clone',true);}
+    else{canto.pos=0;SFX.bioFail();
+      if(A.clonesCalmos){toast('A canção errada ecoa pela sala, mas os clones, calmos com a seiva, continuam dormindo. Ouça de novo e repita.','warn');return;}
+      toast('A canção errada ecoa pela sala.','warn');for(const e of A.guardas)if(e.estado==='dorme'){e.estado='acorda';e.t=0;}SFX.wake();addDiary('bio_clone',true);}
   };
   portao(A,14,23,2,'membrana',aberto);
+  /* bomba de seiva (repetição): no salão de entrada, a cápsula começa com 0, 1 ou 2 de seiva. Enquanto estiver abaixo
+     de 3, bombear; em 3, parar. Com 3 certinho, os clones da sala da canção ficam calmos nesta visita (errar a
+     canção não os acorda). Passar de 3 vaza e esvazia (sem dano). Opcional. */
+  A.seiva=Math.floor(Math.random()*3);A.seivaBombeadas=0;A.clonesCalmos=false;
+  const opcoesSeiva=()=>[{t:'Bombear uma vez',fn:bombear},{t:'Parar e conferir',fn:pararSeiva},{t:'Sair'}];
+  const mostrarSeiva=msg=>falar((msg?msg+' ':'')+'Nível da seiva: '+A.seiva+' de 3. Enquanto estiver abaixo de 3, bombeie; quando chegar a 3, pare.',opcoesSeiva(),'Bomba de seiva','placaPista');
+  const bombear=()=>{A.seivaBombeadas++;A.seiva++;SFX.agua();
+    if(A.seiva>3){A.seiva=0;A.seivaBombeadas=0;SFX.deny();mostrarSeiva('Vazou! Com 3, a pergunta "seiva < 3?" já dava False: era hora de parar. A cápsula esvaziou.');return;}
+    mostrarSeiva('Uma bombeada.');};
+  const pararSeiva=()=>{
+    if(A.seiva<3){mostrarSeiva('Ainda está em '+A.seiva+': "seiva < 3?" dá True, então a repetição continua.');return;}
+    A.clonesCalmos=true;SFX.bioChime();addDiary('bio_seiva');fecharFala();
+    toast('Seiva em 3 depois de '+A.seivaBombeadas+(A.seivaBombeadas===1?' bombeada':' bombeadas')+': o número de voltas dependeu do começo, como num while. Os clones da sala da canção ficam calmos nesta visita.','good');};
+  {const x=19*16+8,y=33*16+14;
+    const o=objeto(A,SPR.get('capsula',0),x,y,{col:[-9,-6,9,0]});
+    o.desenho=(g,ob)=>{blit(g,SPR.get('capsula',0),ob.x,ob.y,ob.ax,ob.ay);etiqueta(g,ob.x,ob.y-34,'seiva '+A.seiva+'/3',A.clonesCalmos?'#9aff9a':'#c9a6ff');};
+    interacao(A,{x,y:y+8,r:22,alto:30,nome:'Bomba de seiva',label:()=>A.clonesCalmos?null:'Usar a bomba de seiva ('+A.seiva+' de 3)',use:()=>mostrarSeiva('')});}
+  placaLeitura(A,21*16+8,33*16+14,'Bomba de seiva','Os clones da sala da canção dormem fundo quando a cápsula de seiva está em 3 — nem menos, nem mais: com 4, ela vaza e esvazia. Enquanto a seiva estiver abaixo de 3, bombeie; quando chegar a 3, pare e confira. (Opcional: protege você se errar a canção.)','#c9a6ff');
   for(const[x,y]of[[5,30],[24,30]]){objeto(A,SPR.get('capsula',0),x*16+8,y*16+14,{col:[-9,-6,9,0]});}
   guardiao(A,{tx:6,ty:28,sala:[3,24,27,31],spr:(ac,f)=>sprClone(ac,f),msg:TXT.hit.clone,diario:'bio_clone',vel:48});
   guardiao(A,{tx:23,ty:28,sala:[3,24,27,31],spr:(ac,f)=>sprClone(ac,f),msg:TXT.hit.clone,diario:'bio_clone',vel:48});
@@ -121,7 +141,7 @@ CONSTRUIR.bio=function(){
     const y0=16*16+R.oy,h=7*16;g.globalAlpha=0.22+Math.sin(t*0.7)*0.04;P.ponti(g,Math.max(0,4*16+R.ox),Math.max(0,y0),Math.min(R.W,22*16),Math.max(0,Math.min(R.H-y0,h)),'#b98cff',Math.floor(t*2)%2);g.globalAlpha=1;
     desenharEstufa(A,g,t);
   };
-  A.reiniciar=()=>{reiniciarGuardas(A);for(const pt of A.pontos)pt.aceso=false;canto.pos=0;canto.fila=[];addDiary('bio_enter',true);};
+  A.reiniciar=()=>{reiniciarGuardas(A);for(const pt of A.pontos)pt.aceso=false;canto.pos=0;canto.fila=[];A.seiva=Math.floor(Math.random()*3);A.seivaBombeadas=0;A.clonesCalmos=false;addDiary('bio_enter',true);};
   A.objetivo=()=>{if(!aberto())return{t:'Saber: Repetições e automação',s:'Toque no coração da sala para ouvir a canção e repita a ordem nos bulbos.',alvo:{x:14*16+8,y:29*16-12,txt:'Ouvir a canção'}};if(G.p.y>15*16&&G.p.y<23*16)addDiary('bio_spores',true);return objetivoTumba('bio','No console da estufa');};
   A.focoEvento=(ev,ws,cfg)=>{const a=ev.anim||{};if(a.tocha!==undefined){const p=TOCHAS_BIO[a.tocha];return p?{x:p[0]*16+8,y:p[1]*16-36}:null;}
     if(cfg.mundo==='estufa'&&ws&&(ev.cmd||ev.tipo==='enq'))return{x:TRILHO.x*16+Math.min(ws.x,ws.fimX)*TRILHO.passo+8,y:TRILHO.y*16-34};return null;};

@@ -17,6 +17,11 @@ Object.assign(OBJS,{
     const desenhos={steam_cartao:[[3,3],[6,3],[9,5],[3,7],[7,8],[10,8]],steam_ordem:[[3,4],[4,4],[5,5],[8,6],[9,7],[10,7]],diesel_etiqueta:[[4,3],[5,3],[6,3],[4,6],[5,6],[8,6],[9,6],[4,8],[5,8],[6,8],[7,8]],diesel_aspas:[[3,3],[3,4],[5,3],[5,4],[8,6],[9,7],[10,8],[10,6],[8,8]],
       atom_primeiro:[[6,2],[5,3],[7,3],[4,4],[8,4],[5,5],[7,5],[6,6],[3,8],[6,9],[9,8]],atom_resto:[[3,4],[4,4],[5,4],[3,6],[4,6],[3,8],[4,8],[5,8],[8,4],[8,6],[8,8]],bio_zero:[[3,4],[5,4],[7,4],[9,4],[3,6],[5,6],[7,6],[9,6]],bio_parar:[[3,3],[4,4],[5,5],[9,3],[9,5],[9,7],[9,9],[7,6],[8,6],[10,6],[11,6]]};
     for(const[x,y]of(desenhos[id]||[[5,5],[7,6],[9,5]])){P.r(g,x,y,2,1,C);}if(h<0)P.p(g,0,0,C);return c;},
+  /* alavanca simples (no estilo da alavanca do Computador Ancestral), em cima ou puxada para baixo */
+  alavanca(cor,baixa){const c=cnv(16,24),g=ctx2(c);P.r(g,2,14,12,9,'#6a5a48');P.r(g,2,14,12,2,'#8a7a62');P.r(g,4,17,8,3,'#2a2018');
+    if(baixa){P.linha(g,8,15,13,7,'#8a6a3a');P.linha(g,9,15,14,7,'#8a6a3a');P.circ(g,13,6,2.5,cor);P.p(g,6,18,'#5dff7a');}
+    else{P.linha(g,8,15,3,3,'#8a6a3a');P.linha(g,9,15,4,3,'#8a6a3a');P.circ(g,3,3,2.5,cor);P.p(g,6,18,'#ff6a4a');}
+    return contorno(c,'#0b0705');},
   /* balão em cima da placa: ! (pista ainda não lida) ou ✓ (já lida) */
   balaoPista(lida){const c=cnv(9,12),g=ctx2(c);P.r(g,0,0,9,9,'#0b0705');P.r(g,1,1,7,7,lida?'#3a4a5a':'#ffd24a');P.r(g,3,9,3,1,'#0b0705');P.r(g,4,10,1,2,'#0b0705');
     if(lida){P.p(g,2,4,'#bfe6ff');P.p(g,3,5,'#bfe6ff');P.p(g,4,4,'#bfe6ff');P.p(g,5,3,'#bfe6ff');P.p(g,6,2,'#bfe6ff');}else{P.r(g,4,2,1,4,'#24160d');P.p(g,4,7,'#24160d');}return c;}
@@ -28,6 +33,12 @@ function placaPista(A,id,x,y,op){
   const alto=op.alto||30;
   (A.pistas||(A.pistas=[])).push({id,x,y:y-alto});
   return interacao(A,{x,y:y+(op.dy===undefined?6:op.dy),r:op.r||20,alto,nome:P0.nome,label:()=>(G.pistas[id]?'Ler de novo: ':'Ler a pista: ')+P0.nome,use:()=>lerPista(id)});
+}
+/* placa de leitura: as instruções de um mecanismo da sala, lidas num painel grande e legível (não é pista de desafio) */
+function placaLeitura(A,x,y,titulo,texto,cor){
+  objeto(A,SPR.get('placaPista',cor),x,y,{col:[-3,-3,3,0]});
+  const ler=()=>{SFX.page();falar(typeof texto==='function'?texto():texto,[{t:'Entendi',main:true}],titulo,'placaPista');};
+  const it=interacao(A,{x,y:y+6,r:20,alto:30,nome:titulo,label:()=>'Ler: '+titulo,use:ler});it.ler=ler;return it;
 }
 function lerPista(id){
   const P0=PISTAS[id],primeira=!Object.keys(G.pistas).length,novo=!G.pistas[id];
