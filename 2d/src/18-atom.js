@@ -1,6 +1,6 @@
 /* ====================== Tumba do Reator (Atompunk) · saber: Decisões ======================
    Salão de controle com célula de energia → sala do canal (a válvula verde drena e a laranja enche; com a água baixa os
-   pontões assentam e viram passarela; zonas verdes de radiação ferem e gastam a lanterna; o Robô atômico acorda com
+   pontões assentam e viram passarela; zonas verdes de radiação ferem quem fica parado; o Robô atômico acorda com
    passos apressados, proximidade ou o barulho da bomba) → Sala do Reator (sensores de energia e de nível, comporta,
    carregador, portão de manutenção e dreno) → câmara do Núcleo atômico.
    Adaptação do 3D: a água subia e descia levando plataformas por cima de vãos; aqui o nível decide se os pontões formam
@@ -92,7 +92,8 @@ CONSTRUIR.atom=function(){
   terminal(A,14,13,'atom',foco,'painelAtom','Usar o painel do reator');
   criarLume(A,17.5,12.5,'atom');
   tochasProgresso(A,'atom',[[9,14],[10.5,14],[12,14],[17,14],[18.5,14]],'#9aff9a');
-  interacao(A,{x:14*16+8,y:10*16+8,r:30,alto:60,label:()=>'Ler a placa do reator',use:()=>{addDiary('oficina_atom');toast('Os sensores medem a energia, o nível da água e a temperatura. O painel compara cada medida e escolhe o caminho: if, elif ou else.');}});
+  placaPista(A,'atom',6*16+8,13*16+14,{cor:'#9aff9a'});
+  marcaLuz(A,'atom_primeiro',11,26);marcaLuz(A,'atom_resto',9,15);
   /* estado visível das máquinas (vem da execução ou da situação escolhida) */
   const est={comporta:0,carregador:false,portao:0,dreno:false,energia:7,nivel:2,temperatura:null,resfriar:false,ventilar:false,manter:false,cfg:null};
   objeto(A,SPR.get('bateria',7),7*16,10*16,{col:[-10,-6,10,0]}).desenho=(g,ob)=>{blit(g,SPR.get('bateria',est.energia),ob.x,ob.y,11,40);if(mostrar('energia'))etiqueta(g,ob.x,ob.y-44,'energia '+est.energia,'#5dff7a');};
@@ -107,7 +108,7 @@ CONSTRUIR.atom=function(){
   A.update=(dt,t)=>{
     if(canal.bomba>0)canal.bomba-=dt;
     canal.nivel+=Math.sign(canal.alvo-canal.nivel)*Math.min(Math.abs(canal.alvo-canal.nivel),dt*3);
-    /* radiação: gasta a lanterna e fere quem fica parado nela */
+    /* radiação: fere quem fica parado nela */
     const p=G.p;if(G.mode==='play'&&A.kind(Math.floor(p.x/16),Math.floor(p.y/16))==='rad'){A.radT=(A.radT||0)+dt;if(A.radT>1.8){A.radT=0;ferir(TXT.hit.rad);addDiary('atom_rad');}if(Math.random()<dt*12)AU.geiger=8;}else{A.radT=0;AU.geiger=1.2;}
     /* máquinas do painel */
     let vis=PAINEL.aberto&&PAINEL.area===A?painelVis():null;if(vis&&vis.cfg.mundo!=='reator')vis=null;
@@ -120,7 +121,6 @@ CONSTRUIR.atom=function(){
     if(ws.energia!==undefined)est.energia=ws.energia;
     const nAlvo=ws.nivel!==undefined?(ws.dreno?Math.max(1,ws.nivel-3):ws.nivel):2;est.nivel+=(nAlvo-est.nivel)*q;
   };
-  A.dreno=()=>A.kind(Math.floor(G.p.x/16),Math.floor(G.p.y/16))==='rad'?4:1;
   A.desenharChao=(g,t)=>{
     /* água do canal: clara e agitada quando alta; escura com o fundo à vista quando baixa */
     const baixa=1-clamp((canal.nivel-2)/6,0,1);

@@ -1,9 +1,75 @@
 # Validação — Vale das Tumbas 2D
 
-Este arquivo responde ao documento *"Análise crítica e plano de melhorias"* (17/10/2026), item por item. Ele separa três
-coisas: o que **já existia** quando a análise foi feita, o que **foi feito agora** e o que **só pode ser conferido fora
+Este arquivo responde ao documento *"Análise crítica e plano de melhorias"* (17/10/2026) e à sua atualização de 18/10/2026
+(críticas e áudios do desenvolvedor), item por item. A seção 0 trata da atualização; a seção 1, do documento original. Ele
+separa três coisas: o que **já existia** quando a análise foi feita, o que **foi feito agora** e o que **só pode ser conferido fora
 daqui** (num celular de verdade ou com estudantes). Os testes automáticos rodam num Chromium sem janela, com telas de
 celular, tablet e computador simuladas; eles não substituem um aparelho real nem pessoas jogando.
+
+## 0. Atualização de 18/10/2026 (críticas e áudios do desenvolvedor)
+Os áudios foram transcritos localmente (dez arquivos, WA0003 a WA0013, sem WA0005) e cada relato foi conferido no jogo antes
+de mudar o código. A transcrição está fora do repositório; aqui vai o que foi reproduzido e o que mudou.
+
+### P0 — coleta do item sem resolver o puzzle (WA0003)
+| Pergunta | Resultado |
+|---|---|
+| Reproduziu? | **Sim**, na versão anterior: encostado no portão fechado da câmara, o pedestal oferecia "Pegar a …" e entregava a relíquia nos **Motores, no Reator e na Viva** (o pedestal fica a 2 tiles do portão; o raio de 22 px passava pela grade). Nas **Engrenagens não** (o portão fica mais longe). O teste novo `b10-recompensa` falha 15 de 22 verificações na versão anterior e passa 22 de 22 na nova. |
+| O que a coleta alterava | A relíquia ia para o HUD (como "adormecida"), o diário ganhava a anotação da relíquia **e a do saber**, o aviso dizia "Você recuperou… o saber" e o save gravava tudo. Os saberes (a contagem e o portão da Cidade-Jardim) **não** mudavam: eles vêm das etapas concluídas. Ou seja: recompensa e diário sem o conhecimento, mas sem pular a progressão. |
+| Correção | Regra única `reliquiaLiberada(k)`: a relíquia só sai com **todas as etapas da tumba concluídas** (o que abre o portão) e só uma vez. Teclado, toque e controle passam pela mesma interação; `pegarReliquia` também confere (uma coleta automática futura passaria pelo mesmo lugar). Com o portão fechado, o pedestal não oferece nada, nem pela grade. O raio não foi só diminuído. |
+| Testado | As 4 tumbas; 27 posições encostadas no portão (meio, cantos, reto e na diagonal); tecla E, botão AÇÃO e a ação do controle; chamada direta da regra; coleta depois das etapas (uma vez, sem repetir o diário), entrar de novo na tumba e recarregar a página. |
+| Saves antigos | Uma relíquia pega pelo defeito continua no save como **adormecida** (o mesmo tratamento das relíquias trazidas do 3D): desperta quando o saber é recuperado. Nada se perde. |
+
+### A — Terminal e referências (9.1, 9.2)
+| Pedido | Situação |
+|---|---|
+| Prioridade de espaço ao editor, modo expandido | **Feito.** O painel abre como **editor amplo** (76% da altura em pé; até 74% da largura deitado/computador). **🔍 Ver a sala** inverte; a escolha fica guardada. |
+| Visualização compacta do mecanismo, em vez de área fixa para o personagem | **Feito.** Na faixa da sala, a câmera fica no mecanismo e de perto (detalhe); durante a execução, acompanha o que a instrução da vez mexe. Testado em 10 tamanhos de tela: o mecanismo fica dentro da faixa. |
+| Nomes de variáveis, funções e valores disponíveis ao alternar | **Feito.** **Comandos e variáveis** (recolhível, nos dois modos): funções com o que fazem, variáveis com o tipo aceito e o **valor atual**, sensores, valores da bancada, estruturas. No **modo Escrever a paleta não some** e tocar num item escreve no cursor, com recuo e o trecho a trocar selecionado (`valor`, `condição`). |
+| Pistas no terminal | **Feito.** As pistas lidas da sala aparecem em Comandos e variáveis; uma pista **fixada** fica no alto do painel, em qualquer terminal. Pista não lida: o terminal avisa que há uma placa com ! na sala. |
+| Preservar programa, cursor e rolagem ao consultar ajuda | **Feito e testado** (Guia aberto no meio da digitação volta com o texto, o cursor, a seleção e a rolagem). |
+| Teclado virtual | Continua tratado (b9). Precisa de aparelho real. |
+| Pausar riscos e custos durante leitura e programação | **Já era assim**; testado de novo com guardião acordado ao lado (b11). A lanterna deixou de ter custo. |
+
+### B — Câmera, pistas e conforto (9.3, 9.5, 9.8)
+| Pedido | Situação |
+|---|---|
+| Enquadramento inicial mais afastado, guardado, adequado à tela | **Feito.** A câmera começa **afastada** (um degrau a menos de ampliação) sempre que cada pixel do jogo ainda tem ≥ 1,1 pixel da tela; senão fica a normal e VER avisa que a tela já mostra o máximo legível. VER/C alterna e a escolha é guardada. Com o painel aberto, a sala aparece de perto. |
+| Ensinar a reconhecer uma inscrição útil; essencial × opcional | **Feito.** A primeira **placa com !** fica logo na entrada do pátio de treino e explica o que é uma pista. Pistas essenciais: balão **!** (depois ✓), nome ao alcance e "Ler a pista". Segredos do vale continuam discretos; marcas de luz são opcionais e marcadas como tal. |
+| Registrar no diário e fixar no terminal | **Feito.** Aba **Pistas** no diário (com botão para fixar) e Comandos e variáveis no terminal. |
+| Texto, contraste, transições de luz, sobreposição | As tumbas ficaram mais claras (escuridão 0,88 → 0,6), as bordas das luzes ganharam quatro degraus suaves e a sala clareia mais com o painel aberto. Textos da interface continuam ≥ 11 px (b4). **Cansaço visual não foi medido**: depende de teste com pessoas. |
+
+### C — Lanterna (9.4)
+| Pergunta | Resposta |
+|---|---|
+| O que mudava ao ligar, em cada sala | Antes: só o raio de luz em volta do explorador (84 × 28 px), com custo de energia e recarga nos pontos de energia; as salas tinham lâmpadas suficientes, então ela era redundante (confere com WA0006/WA0007). |
+| O que muda agora | **Sem custo** (sem barra, sem recarga). Acesa, além do raio, revela as **marcas de luz** (duas por tumba, opcionais): Engrenagens (salão de entrada e salão do Autômato), Motores (parede norte do pátio e garagem), Reator (entrada e salão do canal), Viva (entrada e sala da canção). A marca só aparece com a luz bem perto da parede; lida, fica no diário. Caminhos e textos não dependem dela. |
+| A bengala | Não foi tocada: a lanterna é um item à parte. |
+
+### D — Estrutura das tumbas (9.6)
+| Pedido | Situação |
+|---|---|
+| Uma tumba representativa primeiro, jogada do início ao fim | **Feito nos Motores.** O salão do holofote e do Robô-vigia (furtividade = barreira motora) deu lugar ao **pátio de abastecimento**: um canal corta o pátio; o disjuntor aceita bool, a bomba hidráulica aceita float e baixa a ponte, o painel da porta aceita str; cápsulas de valor ficam no chão, cada uma com uma "irmã" parecida (`True`/`"True"`, `2.5`/`"2.5"`, `"ABRIR"`/`"abrir"`). Recusas explicadas (tipo, maiúsculas, falta de energia), guarda-corpo (ninguém cai), sem inimigo. A aproximação já usa o conceito (reconhecer entradas, decidir a ordem: a cápsula "ABRIR" está do lado errado do canal). Comparação: `capturas/C-motores-antes-depois.png`. |
+| Repetir nas outras | **Não feito, de propósito**: o documento pede avaliar a primeira antes. Propostas para depois do teste: Engrenagens (trilhos cuja ordem de ativação muda a passagem), Reator (caminhos que respondem aos sensores), Viva (circuitos de irrigação que tornam a repetição visível). |
+
+### E — Exploração do vale (9.7)
+| Pedido | Situação |
+|---|---|
+| Rotas secundárias com função identificável | **Feito em parte.** O **quadro do acampamento** diz o que há fora da estrada e para que serve (fragmentos de mapa, baús, inscrições, estações, marcas de luz) e que nada disso é obrigatório. Desafios opcionais de prática no vale (transferência) **não** foram criados ainda. |
+| Conhecimento que altera o vale; volta simplificada | **Feito.** Cada tumba concluída acorda a **estação de atalho** ao lado da porta (leva ao acampamento e às outras acordadas; a do acampamento leva a elas). E o vale reage: chaminés do vapor voltam a fumegar, postes dos motores a acender, antenas atômicas a piscar, cogumelos vivos a brilhar. |
+
+### G — Áudio e ritmo (9.10, 9.11)
+| Pergunta | Resposta |
+|---|---|
+| A trilha existia? | **Não havia trilha**: nenhum arquivo de música (o jogo é um HTML só, com som sintetizado). Havia um acorde baixo e esparso no vale (a cada 9–14 s) e outro na Cidade-Jardim; nas tumbas e no treino, só efeitos e ambiente. O som começa no primeiro toque (Novo jogo/Continuar) e o botão Som da pausa liga e desliga tudo. O relato "ausente" confere. |
+| O que mudou | **Trilha sonora sintetizada por região** (vale de dia, vale à noite, treino, cada tumba, Cidade-Jardim — esta ganha densidade conforme renasce): acorde de fundo, baixo e uma melodia curta que volta com variações. Fica mais baixa com o painel ou o Guia abertos. Na pausa: Som (tudo), **Música** e **Efeitos** com volumes separados, guardados. Nenhuma informação de puzzle depende do som (a canção da Viva acende os bulbos). |
+| Tédio e duração | Tratados como questão própria (estrutura, atalhos, pátio dos Motores), não com música. Precisam de teste com o público. |
+| Ouvido? | **Não.** O navegador de teste não tem saída de som: os testes conferem que as notas são agendadas por região, o abafamento e os volumes; a qualidade musical precisa ser ouvida. |
+
+### Entrega (seção 7 do documento)
+- Resumo: esta seção 0 e o README. Testes: seção 4. Investigação da coleta antecipada e do áudio: tabelas P0 e G.
+- Tutorial, puzzles alterados e salvamento: `b1-percurso` (o jogo inteiro, com o pátio novo e recarga depois de cada tumba).
+- Comandos, variáveis e pistas durante a digitação: `b11-terminal`. Antes/depois de uma tumba: `capturas/C-motores-antes-depois.png`.
+- Celular real e iniciantes: **não realizados** (roteiros nas seções 2 e 3).
 
 ## 1. O documento, item por item
 
@@ -83,14 +149,15 @@ celular, tablet e computador simuladas; eles não substituem um aparelho real ne
 Faça num Android (Chrome) e num iPhone (Safari), em pé e deitado, com som ligado.
 1. Abrir https://vale-das-tumbas-2d.vercel.app, tocar em **Novo jogo**: o pátio aparece, o objetivo e o marcador "◆ Ande até aqui" estão legíveis.
 2. Arrastar o joystick e, ao mesmo tempo, tocar em **AÇÃO** perto do Lume: o explorador anda e a conversa abre (toque simultâneo).
-3. Tocar em **VER** e de novo: a câmera afasta e volta.
+3. Conferir se a câmera começa afastada e se o personagem e os textos continuam legíveis; tocar em **VER** e de novo: aproxima e afasta.
 4. Encaixar a manivela, abrir o **Guia**, abrir o editor: os botões têm pelo menos 40 px e nenhum fica cortado; não há rolagem para o lado.
 5. Tocar em **✎ Escrever**: o teclado abre; o campo de código, a área de erro e **▶ Executar** continuam visíveis acima dele.
 6. Escrever `acender_toxa()` e executar: o erro aparece com a linha e a origem ("Erro de Python"); "📖 Ver no Guia" abre e volta sem perder o texto.
 7. Na etapa 2 do treino, responder a previsão, executar, corrigir a ordem: o portão abre e o cadeado fica verde.
 8. Trocar para outro aplicativo por 10 s e voltar: o jogo está na pausa, o som volta ao continuar.
 9. Fechar a aba, abrir de novo e tocar em **Continuar**: o progresso volta.
-10. Ouvir: passos, pássaros de dia, grilos à noite, fogo e água perto dos braseiros e do poço, sons do painel.
+10. Ouvir: a trilha do vale (de dia e à noite), a de cada tumba, passos, pássaros, grilos, fogo e água, sons do painel; na pausa, mexer em Música e Efeitos.
+11. Nos Motores: ler a placa com !, levar uma cápsula errada e uma certa às máquinas, atravessar a ponte; no terminal, usar Comandos e variáveis e o modo Escrever com o teclado aberto; testar 🔍 Ver a sala.
 Anote o aparelho, o navegador e o que falhou (com captura de tela).
 
 ## 3. Roteiro de teste com iniciantes (3 a 5 pessoas)
@@ -100,10 +167,14 @@ Anote o aparelho, o navegador e o que falhou (com captura de tela).
 - **Ao fim de cada tumba**, peça que a pessoa explique em voz alta o programa que montou: o que cada linha faz e por que a
   ordem é aquela. Pergunte: *"Por que "5" com aspas não entrou no contêiner? Em Python isso daria erro?"*
 - **Aplicação independente**: veja se a pessoa resolve a bomba dos Motores e a rotina da Viva sem copiar uma dica.
+- **Pátio dos Motores** (protótipo da tumba nova): a pessoa percebe por que "2.5" foi recusado? Lê a placa com ! antes ou
+  depois de errar? Compare com quem jogou a versão anterior (holofote) se possível: tempo parado, pedidos de ajuda, explicação.
+- **Conforto**: pergunte, depois de 30 minutos, se algo cansou a vista e onde (painel, salas escuras, textos pequenos).
 - **Não use só o tempo** como medida. Prefira: explicações corretas, número de dicas pedidas por etapa, erros diferentes
   encontrados e corrigidos, e se a pessoa resolve uma variação nova sem ajuda.
 - Depois, compare as anotações e procure padrões (o mesmo objeto, a mesma mensagem ou a mesma etapa).
 
 ## 4. Testes automáticos executados
 `2d/test/rodar.sh` (Node + Chromium sem janela): l1-linguagem, l2-save, b1-percurso, b2-painel, b3-save, b4-telas,
-b5-perigos, b6-personagem, b7-ajuda, b8-leitura e b9-validacoes. O README lista o que cada um confere.
+b5-perigos, b6-personagem, b7-ajuda, b8-leitura, b9-validacoes e, nesta atualização, b10-recompensa, b11-terminal e
+b12-vale-som: **745 verificações, todas passando**. O README lista o que cada um confere.

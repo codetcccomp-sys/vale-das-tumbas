@@ -702,3 +702,31 @@ function rodarTodas(cfg,prog){
   for(const sit of cfg.situacoes){const r=LANG.executar(cfg,MUNDOS[cfg.mundo],sit,prog);res.push({sit:sit.id,ok:r.s.ok,s:r.s,eventos:r.eventos});}
   return res;
 }
+
+/* ---------- pistas: placas com ! que ajudam no desafio da sala ----------
+   Uma pista essencial é lida numa placa marcada com ! (símbolo, contorno e aviso, não só cor). Depois de lida, ela fica no
+   diário (aba Pistas) e no terminal (Comandos e variáveis › Pistas), onde dá para fixá-la no alto do painel. Os segredos
+   do vale continuam opcionais e discretos. */
+const PISTAS={
+  treino:{lugar:'treino',nome:'Placa do pátio',texto:'Placas com ! guardam pistas para os desafios. Esta diz: as máquinas fazem exatamente o que as linhas mandam, na ordem em que estão escritas, de cima para baixo. Depois de lida, a pista fica no diário e no terminal, onde dá para fixá-la no alto do painel.'},
+  steam:{lugar:'steam',nome:'Placa do Computador Ancestral',texto:'O código é lido de cima para baixo, uma linha de cada vez. O autômato cumpre exatamente o que as linhas mandam: nem mais, nem menos. Antes de programar, conte as casas e as curvas do caminho no tabuleiro.'},
+  diesel_patio:{lugar:'diesel',nome:'Placa do pátio de abastecimento',texto:'Cada máquina tem um contrato: aceita um tipo só. 5 é int (inteiro); "5", com aspas, é texto (str), mesmo parecendo número; 2.5 é float (decimal); True é bool. Leia a etiqueta da máquina antes de pôr a cápsula.'},
+  diesel:{lugar:'diesel',nome:'Placa dos contêineres',texto:'Cada contêiner é uma variável: tem um nome, aceita um tipo (int, float, str ou bool) e mostra o valor atual. As máquinas leem a variável na hora de trabalhar.'},
+  atom:{lugar:'atom',nome:'Placa do reator',texto:'Os sensores medem a energia, o nível da água e a temperatura. O painel compara cada medida e escolhe o caminho: if, elif ou else. Só o primeiro caminho com condição True é executado.'},
+  bio:{lugar:'bio',nome:'Placa da estufa',texto:'A estufa repete a rotina que receber. O for conta as voltas; o while testa uma condição antes de cada volta e para quando ela dá False.'}
+};
+const PISTA_IDS=Object.keys(PISTAS);
+
+/* ---------- marcas de luz: desenhos dos construtores que só aparecem com a lanterna acesa, perto da parede ----------
+   Opcionais (não bloqueiam nada): contam como os construtores pensavam o saber de cada tumba. Ficam no diário. */
+const MARCAS={
+  steam_cartao:{tumba:'steam',t:'Cartões perfurados',s:'Um cartão com fileiras de furos. Os teares de Jacquard (1804) liam cartões assim, um depois do outro: a sequência dos furos decidia o desenho do tecido. Foi uma das primeiras formas de programar uma máquina.'},
+  steam_ordem:{tumba:'steam',t:'Antes de ligar',s:'Duas engrenagens e uma seta, com uma frase embaixo: "trocar a ordem de duas linhas pode mudar tudo". Os construtores conferiam a sequência inteira antes de ligar a máquina.'},
+  diesel_etiqueta:{tumba:'diesel',t:'Etiquetas',s:'Um barril desenhado com uma etiqueta: nome, tipo e valor. Os mecânicos nunca guardavam óleo no barril das peças: cada recipiente tinha o seu contrato.'},
+  diesel_aspas:{tumba:'diesel',t:'As aspas',s:'Dois números iguais, um deles entre aspas, e um X entre eles. Lembrete dos mecânicos: "5" com aspas é texto; não dá para somar com 5.'},
+  atom_primeiro:{tumba:'atom',t:'O primeiro caminho',s:'Três setas saindo de um losango, só a primeira acesa. O painel do reator segue o primeiro caminho com condição verdadeira e ignora os outros.'},
+  atom_resto:{tumba:'atom',t:'O caso que sobra',s:'O reator desenhado em calma, com a palavra else. Os engenheiros sempre deixavam um caminho para "nenhuma das anteriores".'},
+  bio_zero:{tumba:'bio',t:'Contar do zero',s:'Quatro folhas em fila, numeradas 0, 1, 2 e 3. Quem cuidava da estufa contava a partir do zero, como o range(4).'},
+  bio_parar:{tumba:'bio',t:'Saber parar',s:'Um regador e um medidor de umidade com uma linha marcada: "regue enquanto estiver abaixo da linha". Sem a linha, a rega nunca terminaria.'}
+};
+const MARCA_IDS=Object.keys(MARCAS);

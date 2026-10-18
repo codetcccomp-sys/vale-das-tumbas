@@ -8,15 +8,23 @@
      Pronto), o texto é lido; se houver erro, a área de erro diz a linha e o que fazer.
    - Executar e Passo a passo chamam o mesmo LANG.passo(); só existe uma execução por vez (PAINEL.run).
    - Enquanto o painel está aberto, a exploração fica pausada e a câmera mostra o mecanismo da sala, que reage ao
-     código. Ao fechar, a execução para, o programa fica guardado e os controles voltam ao normal. */
+     código. Ao fechar, a execução para, o programa fica guardado e os controles voltam ao normal.
+   - Editor amplo (padrão): o painel ocupa a maior parte da tela e a sala vira uma faixa compacta, centrada no mecanismo
+     (durante a execução, no que a instrução da vez mexe). "Ver a sala" faz o contrário. A escolha fica guardada.
+   - Comandos e variáveis: referência recolhível nos dois modos (funções, variáveis com tipo e valor, sensores, valores,
+     estruturas e as pistas lidas na sala). No modo Escrever, tocar num item escreve no cursor; a paleta também continua. */
 const PAINEL={aberto:false,tumba:null,cfg:null,prog:[],cur:{pai:null,ramo:null,i:0},sel:null,sit:0,run:null,vel:1,passou:{},falhou:{},
-  demoVisto:{},foco:null,area:null,msg:'',msgTipo:'',ultimoEv:null,parado:null,texto:false,erroTexto:null,previsao:{}};
+  demoVisto:{},foco:null,area:null,msg:'',msgTipo:'',ultimoEv:null,parado:null,texto:false,erroTexto:null,previsao:{},amplo:true,guiaSalvo:null};
 const VEL=[1,2,0.5];
 function painelInit(){
   $('pFechar').onclick=()=>fecharPainel();
   $('pRun').onclick=()=>painelExecutar();$('pStep').onclick=()=>painelPassoBtn();$('pStop').onclick=()=>painelParar(true);
   $('pReset').onclick=()=>painelReiniciar();$('pClear').onclick=()=>painelLimpar();$('pDica').onclick=()=>painelDica();
   $('pGuia').onclick=()=>abrirGuia(topicoGuia(PAINEL.cfg));$('pModo').onclick=()=>painelModoTexto(!PAINEL.texto);
+  $('pLayout').onclick=()=>alternarLayoutPainel();
+  /* aberta ou fechada, a referência lembra a escolha (uma para cada modo) */
+  $('pRefBox').addEventListener('toggle',()=>{if(PAINEL.refAuto)return;cfgGravar(PAINEL.texto?{refTexto:$('pRefBox').open}:{refBlocos:$('pRefBox').open});});
+  {const c=cfgLer();PAINEL.amplo=c.painelAmplo!==false;}
   $('pVel').onclick=()=>{const i=(VEL.indexOf(PAINEL.vel)+1)%VEL.length;PAINEL.vel=VEL[i];$('pVel').textContent=(PAINEL.vel===0.5?'½':PAINEL.vel)+'×';};
   $('pProg').addEventListener('click',e=>{const li=e.target.closest('.ln');if(!li){if(!PAINEL.run)painelCursor({pai:null,ramo:null,i:PAINEL.prog.length});return;}painelTocarLinha(li);});
   /* no campo de texto, Tab escreve 4 espaços (o recuo do Python) */
@@ -34,21 +42,36 @@ function abrirPainel(tumba,area,foco){
   if(G.mode!=='play')return;
   PAINEL.aberto=true;PAINEL.tumba=tumba;PAINEL.area=area;PAINEL.foco=foco;
   G.mode='painel';limparEntrada();document.body.classList.add('painel');$('painel').hidden=false;$('prompt').hidden=true;
+  aplicarLayoutPainel();
   const l=desafiosDa(tumba);const cfg=l.find(d=>!G.learn[d.id])||l[l.length-1];
-  escolherDesafio(cfg,true);atualizarVista();SFX.lever();
+  escolherDesafio(cfg,true);redimensionar();atualizarVista();if(foco&&area)camSeguir(foco.x,foco.y,0,area,true);SFX.lever();
   if(area&&area.aoAbrirPainel)area.aoAbrirPainel();
 }
 function fecharPainel(silencio){
   if(!PAINEL.aberto)return;
   if(PAINEL.texto)lerTexto(true);
   painelParar(false);guardarPrograma();
-  PAINEL.aberto=false;PAINEL.texto=false;$('painel').hidden=true;document.body.classList.remove('painel');R.vista=null;PAINEL.foco=null;
+  PAINEL.aberto=false;PAINEL.texto=false;$('painel').hidden=true;document.body.classList.remove('painel','pAmplo');R.vista=null;PAINEL.foco=null;
+  redimensionar();if(G.area)camSeguir(G.p.x,G.p.y-12,0,G.area,true);
   if(G.mode==='painel')G.mode='play';limparEntrada();
   if(!silencio)salvar(false);
 }
 function atualizarVista(){
   const r=$('painel').getBoundingClientRect();
   if(r.top>40)R.vista={x:0,y:0,w:innerWidth*R.dpr,h:r.top*R.dpr};else R.vista={x:0,y:0,w:r.left*R.dpr,h:innerHeight*R.dpr};
+}
+/* editor amplo × ver a sala */
+function aplicarLayoutPainel(){
+  document.body.classList.toggle('pAmplo',PAINEL.amplo);const b=$('pLayout');
+  b.textContent=PAINEL.amplo?'🔍 Ver a sala':'⤢ Editor amplo';
+  b.title=PAINEL.amplo?'Diminui o painel e mostra mais da sala':'O editor ocupa a maior parte da tela; a sala fica numa faixa compacta, no mecanismo';
+}
+function alternarLayoutPainel(){PAINEL.amplo=!PAINEL.amplo;cfgGravar({painelAmplo:PAINEL.amplo});aplicarLayoutPainel();atualizarVista();if(PAINEL.area)camSeguir(PAINEL.foco.x,PAINEL.foco.y,0,PAINEL.area,true);SFX.click();}
+/* para onde a câmera olha com o painel aberto: o mecanismo da sala; na faixa compacta, acompanha o que a instrução mexe */
+function focoCamPainel(A){
+  const f=PAINEL.foco;if(!PAINEL.amplo||!A.focoEvento)return f;
+  const r=PAINEL.run,ev=r?r.ev:PAINEL.parado?PAINEL.parado.ev:null;if(!ev)return f;
+  const v=painelVis(),p=v&&A.focoEvento(ev,v.ws,v.cfg);return p?{x:(p.x+f.x)/2,y:(p.y+f.y)/2}:f;
 }
 function guardarPrograma(){const c=PAINEL.cfg;if(c&&c.etapa!=='demo')G.progs[c.id]=LANG.clonar(PAINEL.prog);}
 function escolherDesafio(cfg,primeiro){
@@ -60,7 +83,7 @@ function escolherDesafio(cfg,primeiro){
   PAINEL.cur={pai:null,ramo:null,i:PAINEL.prog.length};
   if(!PAINEL.passou[cfg.id])PAINEL.passou[cfg.id]={};if(!PAINEL.falhou[cfg.id])PAINEL.falhou[cfg.id]={};
   if(PAINEL.area&&PAINEL.area.aoEscolher)PAINEL.area.aoEscolher(cfg);
-  mostrarErro(null);mensagemInicial();renderPainel();
+  abrirRef(false);mostrarErro(null);mensagemInicial();renderPainel();
 }
 function mensagemInicial(){
   const c=PAINEL.cfg;let t=c.intro.join(' ');
@@ -110,7 +133,7 @@ function renderPainel(){
   const txt=PAINEL.texto;
   $('pProg').hidden=txt;$('pTexto').hidden=!txt;
   if(txt){$('pEdit').hidden=true;$('pRef').textContent=referenciaTexto(c);}else{renderPrograma();renderEditor();}
-  renderPaleta();
+  renderPaleta();renderRef();renderFixas();
   /* controles */
   const demo=c.etapa==='demo';
   $('pClear').hidden=demo;$('pDica').hidden=demo||!c.dicas;$('pModo').hidden=demo;
@@ -273,12 +296,12 @@ function renderPaleta(){
     if(G.learn[c.id]){const prox=desafiosDa(c.tumba)[desafiosDa(c.tumba).indexOf(c)+1];if(prox){const b=document.createElement('button');b.className='pb estr';b.innerHTML='<span class="sim">➜</span>Continuar';b.onclick=()=>escolherDesafio(prox);P0.appendChild(b);}}
     return;
   }
-  if(PAINEL.texto)return;
-  const g=c.etapa==='guiada'&&!G.learn[c.id]?guiaDe(c,PAINEL.prog):null;
+  /* no modo Escrever a paleta continua: cada linha é escrita no cursor do texto */
+  const g=!PAINEL.texto&&c.etapa==='guiada'&&!G.learn[c.id]?guiaDe(c,PAINEL.prog):null;
   for(const bl of c.blocos){
     const info=blocoInfo(bl),b=document.createElement('button');b.className='pb'+(LANG.CMD[bl]?'':' estr')+(g&&g.bloco===bl?' sug':'');b.title=info.ajuda;
     const s=document.createElement('span');s.className='sim';s.textContent=info.sim;b.appendChild(s);const t=document.createElement('span');t.className='cod';t.textContent=info.nome;b.appendChild(t);b.disabled=rodando;
-    b.onclick=()=>painelInserir(bl);P0.appendChild(b);
+    b.onclick=()=>PAINEL.texto?inserirBlocoTexto(bl):painelInserir(bl);P0.appendChild(b);
   }
 }
 function painelInserir(bl){
@@ -310,16 +333,100 @@ function painelInserir(bl){
 
 /* ---------- modo Escrever: o programa como texto ---------- */
 function referenciaTexto(c){
-  const f=c.blocos.filter(b=>LANG.CMD[b]).map(b=>LANG.CMD[b].py+'()');
-  const v=(c.vars||[]).map(d=>d.nome+' ('+LANG.TIPOS[d.t].rot+')').concat((c.sensores||[]).map(d=>d.nome+' (sensor, '+LANG.TIPOS[d.t].rot+')'));
-  const e=['set','se','sese','elif','rep','enq'].filter(b=>LANG.permite(c,b==='sese'?'senao':b)).map(b=>({set:'x = valor',se:'if',sese:'else',elif:'elif',rep:'for',enq:'while'})[b]);
-  return'Funções: '+(f.join(', ')||'nenhuma')+(v.length?' · Variáveis: '+v.join(', '):'')+(e.length?' · Também: '+e.join(', '):'')+' · Recuo: 4 espaços (Tab). · Um pedaço do Python: sem print, listas, def nem and/or (📖 Guia › O que o editor aceita).';
+  return'Recuo: 4 espaços (Tab). O editor aceita um pedaço do Python: sem print, listas, def nem and/or (📖 Guia › O que o editor aceita).';
+}
+/* ---------- Comandos e variáveis: referência nos dois modos ---------- */
+function valoresAtuais(c){const env=PAINEL.run?PAINEL.run.s.env:PAINEL.parado?PAINEL.parado.env:null;return env||LANG.iniciar(c,mundoAtual(),sitAtual(),[]).env;}
+function renderRef(){
+  const c=PAINEL.cfg,box=$('pRefBox'),B=$('pRefC');B.textContent='';
+  if(c.etapa==='demo'){box.hidden=true;return;}box.hidden=false;
+  const txt=PAINEL.texto,rodando=rodandoAgora(),ini=valoresAtuais(c);
+  const sec=t=>{const d=document.createElement('div');d.className='rsec';const h=document.createElement('b');h.textContent=t;d.appendChild(h);B.appendChild(d);return d;};
+  const item=(d,rot,sub,fn,cls)=>{const b=document.createElement('button');b.type='button';b.className='rch'+(cls?' '+cls:'');const k=document.createElement('code');k.textContent=rot;b.appendChild(k);
+    if(sub){const s=document.createElement('span');s.textContent=sub;b.appendChild(s);}b.disabled=rodando;b.onclick=fn;d.appendChild(b);return b;};
+  const valDe=v=>{const e=ini[v.nome],x=e?e.val:null;return x===null?'vazia':LANG.fmt(x)+(v.unid?' '+v.unid:'');};
+  const fs=c.blocos.filter(b=>LANG.CMD[b]);
+  if(fs.length){const d=sec('Funções (escreva com os parênteses)');for(const b of fs){const C=LANG.CMD[b];item(d,C.py+'()',C.ajuda,()=>txt?inserirNoTexto(C.py+'()',true):painelInserir(b));}}
+  if(c.vars&&c.vars.length){const d=sec('Variáveis: cada contêiner aceita um tipo');
+    for(const v of c.vars)item(d,v.nome,'aceita '+LANG.rotulo(v.t)+' · agora: '+valDe(v),()=>txt?inserirNoTexto(v.nome,false):inserirAtribuicao(v.nome));}
+  if(c.sensores&&c.sensores.length){const d=sec('Sensores (o programa só lê)');
+    for(const v of c.sensores)item(d,v.nome,LANG.rotulo(v.t)+' · agora: '+valDe(v),()=>txt?inserirNoTexto(v.nome,false):painelMsg(v.nome+' é um sensor: use o nome dele numa condição (if, elif, while).',''));}
+  const objs=opcoesValor(c);
+  if(objs.length){const d=sec('Valores da bancada');for(const o of objs)item(d,LANG.fmt(o.val),LANG.rotulo(o.val.t),()=>txt?inserirNoTexto(LANG.fmt(o.val),false):usarValorBloco(o),'val');}
+  const es=['set','se','sese','elif','rep','enq'].filter(b=>c.blocos.indexOf(b)>=0);
+  if(es.length){const d=sec('Estruturas');for(const b of es){const I=BLOCO_INFO[b];item(d,I.nome,I.ajuda,()=>txt?inserirBlocoTexto(b):painelInserir(b));}}
+  /* pistas desta sala: o texto das lidas (com 📌 para fixar) e um aviso das que faltam ler */
+  const ps=PISTA_IDS.filter(id=>PISTAS[id].lugar===c.tumba);
+  if(ps.length){const d=sec('Pistas desta sala');
+    for(const id of ps){const P0=PISTAS[id],p=document.createElement('div');p.className='rpista'+(G.pistas[id]?'':' falta');
+      if(G.pistas[id]){const t=document.createElement('p');t.textContent=P0.nome+': '+P0.texto;p.appendChild(t);
+        const fx=G.fixadas.indexOf(id)>=0,bt=document.createElement('button');bt.type='button';bt.className='btn fixar';bt.textContent=fx?'📌 Fixada (tirar)':'📌 Fixar no alto';bt.onclick=()=>fixarPista(id);p.appendChild(bt);}
+      else p.textContent='Há uma placa com ! nesta sala que você ainda não leu: '+P0.nome+'.';
+      d.appendChild(p);}}
+}
+/* pistas fixadas: ficam no alto do painel, em qualquer terminal, até serem tiradas */
+function renderFixas(){
+  const F=$('pFixas');F.textContent='';F.hidden=!G.fixadas.length;
+  for(const id of G.fixadas){const P0=PISTAS[id],d=document.createElement('div');d.className='fx';const t=document.createElement('span');t.textContent='📌 '+P0.nome+': '+P0.texto;d.appendChild(t);
+    const b=document.createElement('button');b.type='button';b.className='btn';b.textContent='✕';b.title='Tirar a pista do alto do painel';b.onclick=()=>fixarPista(id);d.appendChild(b);F.appendChild(d);}
+}
+/* modo de blocos: o nome da variável vira uma linha "variável = valor" com ela; um valor vai para a linha selecionada */
+function inserirAtribuicao(nome){
+  if(rodandoAgora())return;const c=PAINEL.cfg;if(c.blocos.indexOf('set')<0){painelMsg(nome+' é uma variável desta etapa; aqui o programa só a lê.','');return;}
+  painelInserir('set');const a=PAINEL.sel&&LANG.achar(PAINEL.prog,PAINEL.sel);if(a&&a.no.k==='set'){a.no.nome=nome;programaMudou();renderPainel();painelMsg('Escolha o valor que vai para a variável '+nome+' (veja as opções abaixo da linha).','');}
+}
+function usarValorBloco(o){
+  const a=PAINEL.sel&&LANG.achar(PAINEL.prog,PAINEL.sel);
+  if(!a||a.no.k!=='set'){painelMsg(LANG.fmt(o.val)+' é '+LANG.rotulo(o.val.t)+'. Para guardá-lo, toque numa linha "variável = valor" e escolha o valor no editor dela.','');return;}
+  const n=a.no,tipo=((PAINEL.cfg.vars||[]).find(v=>v.nome===n.nome)||{}).t,msg=LANG.compativel(tipo,o.val);
+  if(msg){SFX.deny();painelMsg(o.nome+': '+msg,'erro');return;}
+  n.expr={k:'lit',val:o.val};n.obj=o.id;SFX.atribui();programaMudou();renderPainel();painelMsg(n.nome+' = '+LANG.fmt(o.val)+' ('+LANG.rotulo(o.val.t)+').','');
+}
+/* ---------- modo Escrever: escrever no cursor ----------
+   Linha nova (função, estrutura): entra numa linha própria, com o recuo da linha do cursor (mais 4 espaços depois de uma
+   linha que termina em ":"). Nome ou valor: entra no cursor. marcar: trecho que fica selecionado para ser trocado. */
+function inserirNoTexto(txt,novaLinha,marcar){
+  const a=$('pTxt'),v=a.value;let i=a.selectionStart,j=a.selectionEnd,ins=txt,pos=i;
+  if(novaLinha){
+    const ini=v.lastIndexOf('\n',i-1)+1,fl=v.indexOf('\n',i),fim=fl<0?v.length:fl,linha=v.slice(ini,fim);
+    let rec=(linha.match(/^ */)||[''])[0];const vazia=linha.trim()==='';
+    if(txt.alinhar){rec=txt.alinhar(v,vazia?ini:fim+1,rec);txt=txt.t;}
+    else if(!vazia&&/:\s*$/.test(linha))rec+='    ';
+    const corpo=String(txt).split('\n').map((l,k)=>rec+l).join('\n');
+    /* linha do cursor vazia: escreve nela; senão, usa a linha vazia logo abaixo (a que um bloco deixou pronta) ou abre uma */
+    const pf=fim<v.length?v.indexOf('\n',fim+1):-1,prox=fim<v.length?v.slice(fim+1,pf<0?v.length:pf):null;
+    if(vazia){i=ini;j=fim;ins=corpo;pos=ini;}else if(prox!==null&&prox.trim()===''){i=fim+1;j=pf<0?v.length:pf;ins=corpo;pos=i;}else{i=j=fim;ins='\n'+corpo;pos=fim;}
+  }
+  a.value=v.slice(0,i)+ins+v.slice(j);
+  let s0=pos+ins.length,s1=s0;if(marcar){const k=ins.indexOf(marcar);if(k>=0){s0=pos+k;s1=s0+marcar.length;}}
+  try{a.focus({preventScroll:true});a.setSelectionRange(s0,s1);}catch(e){}
+  PAINEL.erroTexto=null;mostrarErro(null);SFX.placa();
+}
+/* elif e else ficam no recuo do if a que pertencem: o if/elif mais próximo acima com recuo menor que o das linhas de dentro */
+function recuoDoIf(v,ate,rec){
+  const L=v.slice(0,ate).split('\n');let dentro=null;
+  for(let k=L.length-1;k>=0;k--){const l=L[k];if(!l.trim())continue;const m=l.match(/^( *)(if|elif)\b/);
+    if(dentro===null){dentro=l.match(/^ */)[0].length;if(m)return m[1];continue;}
+    if(m&&m[1].length<dentro)return m[1];}
+  return rec.length>=4?rec.slice(4):rec;
+}
+function inserirBlocoTexto(bl){
+  const c=PAINEL.cfg;if(rodandoAgora())return;
+  if(LANG.CMD[bl])return inserirNoTexto(LANG.CMD[bl].py+'()',true);
+  if(bl==='set'){const v=$('pTxt').value,vs=c.vars||[],d=vs.find(x=>!new RegExp('^\\s*'+x.nome+'\\s*=','m').test(v))||vs[0];return inserirNoTexto((d?d.nome:'nome')+' = valor',true,'valor');}
+  if(bl==='se')return inserirNoTexto('if condição:\n    ',true,'condição');
+  if(bl==='sese')return inserirNoTexto('if condição:\n    \nelse:\n    ',true,'condição');
+  if(bl==='elif')return inserirNoTexto({t:'elif condição:\n    ',alinhar:recuoDoIf},true,'condição');
+  if(bl==='rep')return inserirNoTexto('for i in range(3):\n    ',true,'3');
+  if(bl==='enq')return inserirNoTexto('while condição:\n    ',true,'condição');
 }
 function painelModoTexto(on){
   if(rodandoAgora())return;
-  if(on){painelParar(false);PAINEL.texto=true;PAINEL.sel=null;$('pTxt').value=LANG.codigo(PAINEL.prog);mostrarErro(null);renderPainel();painelMsg('Escreva o código como em Python. Toque em ✔ Pronto (ou ▶ Executar) para o jogo ler o texto.','');try{$('pTxt').focus({preventScroll:true});}catch(e){}aVista($('pTxt'));SFX.click();return;}
-  if(lerTexto(false)){PAINEL.texto=false;renderPainel();SFX.placa();}
+  if(on){painelParar(false);PAINEL.texto=true;PAINEL.sel=null;$('pTxt').value=LANG.codigo(PAINEL.prog);mostrarErro(null);abrirRef(true);renderPainel();painelMsg('Escreva o código como em Python. A paleta e Comandos e variáveis escrevem no cursor. Toque em ✔ Pronto (ou ▶ Executar) para o jogo ler o texto.','');try{$('pTxt').focus({preventScroll:true});}catch(e){}aVista($('pTxt'));SFX.click();return;}
+  if(lerTexto(false)){PAINEL.texto=false;abrirRef(false);renderPainel();SFX.placa();}
 }
+/* a referência abre como o jogador deixou em cada modo (no Escrever, aberta por padrão) */
+function abrirRef(texto){const c=cfgLer(),ab=texto?c.refTexto!==false:c.refBlocos===true;PAINEL.refAuto=true;$('pRefBox').open=ab;setTimeout(()=>{PAINEL.refAuto=false;},0);}
 /* lê o texto do campo. Com erro, mostra a área de erro e continua no modo Escrever (silencioso: só ao fechar) */
 function lerTexto(silencioso){
   const c=PAINEL.cfg,r=LANG.ler($('pTxt').value,c);

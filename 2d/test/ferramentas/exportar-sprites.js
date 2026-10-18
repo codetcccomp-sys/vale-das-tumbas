@@ -16,7 +16,7 @@ const path=require('path'),fs=require('fs');const {chromium}=require('playwright
        uma cópia ampliada 4× para ver os detalhes e a configuração das animações em JSON */
     const H=folhaHeroi();out.heroi=H.canvas.toDataURL('image/png');out.heroi_4x=escalar(H.canvas,4).toDataURL('image/png');
     out['heroi.json']=JSON.stringify(H.config,null,2);
-    folha('guardioes',[sprAutomato(false,0),sprAutomato(true,1),sprVigia(0),sprVigia(1),sprRoboAtom(false,0),sprRoboAtom(true,1),sprClone(false,0),sprClone(true,1),sprMiniAutomato(0),sprMiniAutomato(1),sprMiniAutomato(2),sprMiniAutomato(3),sprPolinizador(0),sprPolinizador(1),sprJardineiro(0),sprJardineiro(1)],8,{w:20,h:26},4);
+    folha('guardioes',[sprAutomato(false,0),sprAutomato(true,1),sprRoboAtom(false,0),sprRoboAtom(true,1),sprClone(false,0),sprClone(true,1),sprMiniAutomato(0),sprMiniAutomato(1),sprMiniAutomato(2),sprMiniAutomato(3),sprPolinizador(0),sprPolinizador(1),sprJardineiro(0),sprJardineiro(1)],8,{w:20,h:26},4);
     const S=(n,...a)=>SPR.get(n,...a);
     folha('vale',[S('tenda','#d7c39a'),S('tenda','#b9533a'),S('fogueira',0),S('mesa'),S('bandeira'),S('palmeira',1),S('arbusto',0),S('arbusto',3),S('capim',1),S('cacto',1),S('pedra',0,0),S('pedra',1,1),S('pedra',2,2),
       S('coluna','steam'),S('coluna','diesel'),S('coluna','atom'),S('coluna','bio'),S('engrenagemGrande'),S('dirigivel'),S('antena',50),S('estufa'),S('caldeiraRuina'),S('torreDiesel'),S('estatuaAutomato'),S('estela',3,false),S('estela',4,true),
@@ -24,7 +24,7 @@ const path=require('path'),fs=require('fs');const {chromium}=require('playwright
     folha('entradas',[S('torre','steam'),S('torre','diesel'),S('torre','atom'),S('torre','bio'),S('entrada','steam'),S('entrada','diesel'),S('entrada','atom'),S('entrada','bio')],4,{w:100,h:108},2);
     folha('piramide',[S('piramide')],1,{w:364,h:236},2);
     folha('tumbas',[S('caldeira',false,0),S('caldeira',true,0),S('pistao',0),S('pistao',1),S('pistao',2),S('placa','olho',0),S('placa','simples',1),S('computador',0),S('alavancaSteam',0),S('portaoBronze',2,0),S('engrParede',0),S('canos'),S('tabPedra'),
-      S('gerador',true,0),S('holofote',1),S('sensor',true),S('pilarAco'),S('console',0),S('conteiner',1),S('separadora',0),S('caixaLote'),S('montaCargas',0.5),S('bancada'),S('portaoAco',2,0),S('barril'),S('motor',0),
+      S('gerador',true,0),S('capsulaValor','str'),S('disjuntor',true),S('bombaHidro',true,1),S('ponteDiesel',1),S('console',0),S('conteiner',1),S('separadora',0),S('caixaLote'),S('montaCargas',0.5),S('bancada'),S('portaoAco',2,0),S('barril'),S('motor',0),
       S('celula',true,0),S('valvula','#5dff7a',0),S('pontao'),S('reator',0),S('bateria',7),S('comporta',0.5),S('carregador',true,2),S('tanque',4),S('portaoManut',0),S('dreno',true,0),S('painelAtom',0),
       S('flor',true,0),S('bulbo',0,true),S('bulbo',1,false),S('coracao2',0),S('capsula',0),S('membrana',2,0),S('organismo',1,3,0),S('organismo',3,3,0),S('consoleBio',0),
       S('arvore',true,0),S('canteiro2',true),S('canteiro2',false),S('fonte',true,0),S('placaDistrito','#c8743a'),S('consoleCity',0),S('portaoVinha',2,0),S('vaso',0),S('pedestal','#c8743a'),S('escada','#8a5432'),S('lampada','#ffb455',0)],8,{w:124,h:96},2);

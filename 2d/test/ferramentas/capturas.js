@@ -68,6 +68,29 @@ const limpo=()=>{toastClear();document.getElementById('zoneHint').hidden=true;};
     await ev(()=>{__vt.ir(14*16,5*16+4,'cima');cenaFinal();});await foto('18-final');
     await ev(()=>{document.getElementById('fimOk').click();for(const k of['steam','diesel','atom','bio'])__vt.G.relics[k]=true;addDiary('saber_seq',true);abrirDiario('saberes');});await foto('19-diario-saberes');
   });
+  /* ---------- melhorias desta versão: terminal, pistas, pátio dos Motores, lanterna, atalhos (celular em pé) ---------- */
+  await sessao(412,860,2,true,'B-',async(U,foto,page)=>{const ev=U.ev;
+    /* pista: placa com ! lida e fixada */
+    await ev(()=>{__vt.G.learn={t1:1,t2:1,s0:1,s1:1,s3:1,s2:1};__vt.entrar('diesel');toastClear();const p=__vt.G.area.pistas.find(p=>p.id==='diesel_patio');__vt.ir(p.x,p.y+60,'cima');__vt.quadros(30);});await foto('25-patio-motores-placa-com-pista');
+    await ev(()=>{const p=__vt.G.area.pistas.find(p=>p.id==='diesel_patio');__vt.usarEm(p.x,p.y+60,'cima');});await foto('26-pista-lida');
+    await ev(()=>{fixarPista('diesel_patio');fecharFala();toastClear();});
+    /* pátio: a cápsula "2.5" (texto) é recusada pela bomba; 2.5 (float) baixa a ponte */
+    const cap=id=>ev(id=>{const c=__vt.G.area.patio.caps[id];__vt.usarEm(c.x,c.y+12,'cima');},id);
+    await cap('c_true');await ev(()=>{const m=PATIO_DIESEL.maquinas.disjuntor;__vt.usarEm(m.tx*16+8,m.ty*16+30,'cima');toastClear();});
+    await cap('c_s25');await ev(()=>{const m=PATIO_DIESEL.maquinas.bomba;__vt.usarEm(m.tx*16+8,m.ty*16+30,'cima');__vt.quadros(20);});await foto('27-patio-recusa-tipo');
+    await ev(()=>{toastClear();const c=__vt.G.area.patio.caps.c_f25;__vt.usarEm(c.x,c.y+12,'cima');const m=PATIO_DIESEL.maquinas.bomba;__vt.usarEm(m.tx*16+8,m.ty*16+30,'cima');for(let i=0;i<60;i++)__vt.quadros(1);__vt.ir(15*16,23*16,'cima');__vt.quadros(20);});await foto('28-patio-ponte-baixada');
+    /* terminal: editor amplo, pista fixada e Comandos e variáveis no modo Escrever */
+    await ev(()=>{toastClear();__vt.G.abertas.push('diesel_porta');__vt.G.learn.d0=1;__vt.G.learn.d1=1;__vt.usarEm(14*16+8,13*16+6,'cima');escolherDesafio(__vt.DESAFIO.d2);});await foto('29-terminal-editor-amplo');
+    await ev(()=>{document.getElementById('pModo').click();const a=document.getElementById('pTxt');a.value='quantidade = ';a.setSelectionRange(13,13);const P=document.getElementById('painel');P.scrollTop=document.getElementById('pRefBox').offsetTop-8;});await foto('30-terminal-escrever-referencia');
+    await ev(()=>{document.getElementById('pModo').click();fecharPainel();});
+    /* lanterna: marca de luz na Tumba das Engrenagens */
+    await ev(()=>{__vt.entrar('steam');__vt.G.lanternOn=true;const m=__vt.G.area.marcas.find(m=>m.id==='steam_ordem');__vt.ir(m.x+20,m.y+34,'cima');__vt.quadros(20);toastClear();});await foto('31-lanterna-marca-de-luz');
+    /* vale: estação de atalho e quadro do acampamento */
+    await ev(()=>{for(const d of desafiosDa('steam'))__vt.G.learn[d.id]=true;sairTumba(false);});await page.waitForTimeout(800);
+    await ev(()=>{toastClear();__vt.G.time=0.3;const E=VALE.estacoes.steam;__vt.usarEm(E.x,E.y+22,'cima');});await foto('32-vale-estacao-de-atalho');
+    await ev(()=>{fecharFala();lerQuadroAcampamento();});await foto('33-vale-quadro-do-acampamento');
+    await ev(()=>{fecharFala();abrirDiario('pistas');});await foto('34-diario-pistas');
+  });
   /* ---------- celular deitado ---------- */
   await sessao(844,390,3,true,'L-',async(U,foto,page)=>{const ev=U.ev;
     await ev(()=>{__vt.G.learn={t1:true,t2:true,s0:true,s1:true,s3:true,d0:1,d1:1,d2:1,d3:1,d4:1,d5:1,d6:1,a0:1,a1:1,a2:1};__vt.entrar('atom');__vt.usarEm(14*16+8,14*16+6,'cima');escolherDesafio(__vt.DESAFIO.a4);toastClear();});

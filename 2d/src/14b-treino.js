@@ -1,6 +1,6 @@
 /* ====================== Pátio de Treino ======================
    Antes da primeira tumba: um pátio de ruínas fechado por um portão de madeira. Cada passo se aprende fazendo, com uma
-   frase curta no objetivo: andar até a marca → conversar com o Lume → afastar a câmera → pegar a manivela → encaixá-la
+   frase curta no objetivo: andar até a marca → conversar com o Lume → experimentar a câmera → pegar a manivela → encaixá-la
    no terminal → abrir o Guia → abrir o editor → executar acender_tocha() → prever, executar e corrigir a ordem de
    duas instruções (destravar e erguer o portão). A tocha acende, o portão abre e o caminho leva ao acampamento do vale.
    Quem já sabe jogar pode pular o treino conversando com o Lume. */
@@ -51,7 +51,7 @@ const TREINO={marca:{x:12.5*16+8,y:12*16+8},term:{tx:8,ty:4},tocha:{tx:10,ty:2},
 const PASSOS_TREINO=[
   {id:'mover',nome:'Movimentação',txt:()=>IN.mode==='touch'?'Arraste no lado esquerdo da tela e ande até a marca brilhante.':'Ande até a marca brilhante (WASD ou setas).'},
   {id:'falar',nome:'Conversa',txt:()=>'Converse com o Lume: chegue perto e aperte '+(IN.mode==='touch'?'AÇÃO':IN.mode==='pad'?'A':'E')+'.'},
-  {id:'camera',nome:'Câmera',txt:()=>'Afaste a câmera para ver o pátio inteiro: '+(IN.mode==='touch'?'toque em VER.':'aperte C.')},
+  {id:'camera',nome:'Câmera',txt:()=>'Experimente a câmera: '+(IN.mode==='touch'?'VER':'C')+' aproxima e afasta. Escolha a que preferir; o jogo lembra.'},
   {id:'coletar',nome:'Coleta',txt:()=>'Pegue a manivela de latão perto da barraca.'},
   {id:'interagir',nome:'Interação',txt:()=>'Encaixe a manivela no terminal de pedra.'},
   {id:'guia',nome:'Guia',txt:()=>'Abra o Guia de Programação: '+(IN.mode==='touch'?'botão Guia, no alto.':'aperte G (ou o botão Guia).')+' Depois feche.'},
@@ -74,8 +74,7 @@ CONSTRUIR.treino=function(){
   for(const[x,y]of[[22,17],[3,5.5]])por(x,y,SPR.get('cacto',1),{col:[-4,-3,4,0]});
   for(let i=0;i<26;i++){const x=2+((i*7.31)%22),y=2+((i*5.17)%15);if(A.kind(Math.floor(x),Math.floor(y))==='areia')A.decalques.push({img:SPR.get('capim',i%3),x:x*16,y:y*16});}
   /* placa de boas-vindas */
-  por(10.5,15.5,SPR.get('placaTreino'),{col:[-3,-3,3,0]});
-  interacao(A,{x:10.5*16,y:15.5*16+6,r:18,nome:'Placa do pátio',label:()=>'Ler a placa',use:()=>{SFX.page();toast('Pátio de Treino: aprenda fazendo. O objetivo, no alto da tela, mostra o próximo passo.');}});
+  placaPista(A,'treino',10.5*16,15.5*16,{cor:'#c89a62',r:18});
   /* Lume */
   criarLume(A,TREINO.lume.tx,TREINO.lume.ty,'treino',()=>G.treino.feito?null:[{t:'Já sei jogar: pular o treino',fn:()=>confirmar('Pular o treino?','Você vai direto para o vale. Dá para voltar ao pátio pela placa do acampamento.','Pular',()=>{concluirTreino(true);})}]);
   /* manivela (coleta) */
@@ -115,7 +114,7 @@ CONSTRUIR.treino=function(){
   A.desenharChao=(g,t)=>{if(G.treino.passo>0)return;const x=Math.round(TREINO.marca.x+R.ox),y=Math.round(TREINO.marca.y+R.oy),k=Math.floor(t*4)%2;
     g.globalAlpha=0.55+0.25*Math.sin(t*4);P.anel(g,x,y,8+k,2,'#ffd24a');P.anel(g,x,y,4,1,'#fff6c0');g.globalAlpha=1;};
   A.focoEvento=ev=>ev.cmd==='tocha'?{x:tc.tx*16+8,y:tc.ty*16-18}:ev.cmd==='destravar'||ev.cmd==='erguer'?{x:13*16,y:1*16-6}:null;
-  A.aoVista=longe=>{if(longe&&!T.viu){T.viu=true;avancarTreino();}};
+  A.aoVista=()=>{if(!T.viu){T.viu=true;avancarTreino();}};
   A.aoGuia=()=>avancarTreino();
   A.aoAbrirPainel=()=>{T.editor=true;avancarTreino();};
   A.aoConcluir=cfg=>{avancarTreino();R.treme=0.4;setTimeout(()=>toast(cfg.id==='t1'?'A tocha acendeu! Agora o portão: no painel, toque na etapa 2.':'O portão do pátio se abriu! Atravesse-o para chegar ao vale.','good'),600);};

@@ -120,7 +120,8 @@ CONSTRUIR.steam=function(){
   terminal(A,17,12,'steam',foco,'alavancaSteam','Usar o Computador Ancestral');
   criarLume(A,19,12,'steam');
   tochasProgresso(A,'steam',[[16,14],[17,14],[18,14],[19,14]],'#ffb455');
-  interacao(A,{x:14*16,y:10*16+6,r:30,alto:44,label:()=>'Ler a placa do Computador Ancestral',use:()=>{addDiary('oficina_steam');toast('O código é lido de cima para baixo, uma linha de cada vez. O autômato cumpre exatamente o que as linhas mandam: nem mais, nem menos. Use a alavanca ao lado.');}});
+  placaPista(A,'steam',8*16+8,13*16+14,{cor:'#c8743a'});
+  marcaLuz(A,'steam_cartao',16,42);marcaLuz(A,'steam_ordem',8,26);
   /* portão de bronze da câmara: abre com o saber da Sequência */
   portao(A,13,6,2,'portaoBronze',()=>saberOk('steam'));
   pedestal(A,13,3,'steam');

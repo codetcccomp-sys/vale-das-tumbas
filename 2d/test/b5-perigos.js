@@ -1,4 +1,4 @@
-// Perigos e guardiões adaptados para 2D: pistões, placas que cedem, Autômato, Robô-vigia e pilares, canal e pontões,
+// Perigos e guardiões adaptados para 2D: pistões, placas que cedem, Autômato, pátio de abastecimento dos Motores, canal e pontões,
 // radiação, canção errada que acorda os Clones, queda e volta ao ponto de energia, derrota na tumba.
 const {open}=require('./lib');const {suite}=require('./assert');
 const t=suite('b5-perigos');
@@ -26,12 +26,19 @@ const t=suite('b5-perigos');
   t.ok(r==='acorda'||r==='caca','correndo por perto, o Autômato acorda',r);
   r=await ev(()=>{const e=__vt.G.area.guardas[0];__vt.ir(14*16+8,40*16,'baixo');for(let i=0;i<600;i++)passoJogo(1/60,performance.now());return e.estado;});
   t.ok(r==='dorme','fora da sala, o Autômato volta para o canto e dorme',r);
-  /* ---------- Motores: o vigia vê no facho, os pilares escondem ---------- */
-  await ev(()=>{__vt.entrar('diesel');});
-  r=await ev(()=>{const A=__vt.G.area,v=A.guardas[0];v.reiniciar();v.x=8*16;v.y=20*16;v.dir=1;__vt.ir(12*16,20*16,'esquerda');passoJogo(1/60,performance.now());return v.estado;});
-  t.ok(r==='caca','parado na frente do facho do vigia: é visto',r);
-  r=await ev(()=>{const A=__vt.G.area,v=A.guardas[0];v.reiniciar();v.x=8*16;v.y=18*16+4;v.dir=1;__vt.ir(13*16+4,18*16+4,'esquerda');passoJogo(1/60,performance.now());return v.estado;});
-  t.ok(r==='patrulha','atrás de um pilar o vigia não vê',r);
+  /* ---------- Motores: pátio de abastecimento (reconhecer tipos; sem guarda e sem queda) ---------- */
+  await ev(()=>{__vt.G.abertas=[];__vt.G.hearts=3;__vt.G.invuln=0;__vt.entrar('diesel');toastClear();});
+  const cap=id=>ev(id=>{const c=__vt.G.area.patio.caps[id];return __vt.usarEm(c.x,c.y+12,'cima');},id);
+  const maq=k=>ev(k=>{const m=PATIO_DIESEL.maquinas[k];toastClear();__vt.usarEm(m.tx*16+8,m.ty*16+30,'cima');return{ab:__vt.G.abertas.slice(),t:[...document.querySelectorAll('#msgs .toast span')].map(x=>x.textContent).join(' ')};},k);
+  await cap('c_f25');r=await maq('bomba');t.ok(!r.ab.length&&/sem energia/.test(r.t),'a bomba sem energia explica que falta ligar o disjuntor',r);
+  r=await ev(()=>{__vt.ir(8*16,23*16,'cima');__vt.andar(0,-1,1.5);__vt.ir(15*16,23*16,'cima');__vt.andar(0,-1,1.5);return{y:__vt.G.p.y/16,h:__vt.G.hearts,cai:__vt.G.p.caindo};});
+  t.ok(r.y>=22&&r.h===3&&!(r.cai>0),'o canal tem guarda-corpo e a ponte erguida trava a passagem: ninguém cai',r);
+  await cap('c_true');r=await maq('disjuntor');t.ok(r.ab.indexOf('diesel_disjuntor')>=0,'True (bool) liga o disjuntor',r.ab);
+  await cap('c_s25');r=await maq('bomba');t.ok(r.ab.indexOf('diesel_ponte')<0&&/texto/.test(r.t)&&/float/.test(r.t),'"2.5" (texto) é recusado pela bomba, com o tipo aceito e o recebido',r.t);
+  await cap('c_f25');r=await maq('bomba');t.ok(r.ab.indexOf('diesel_ponte')>=0,'2.5 (float) liga a bomba',r.ab);
+  r=await ev(()=>{for(let i=0;i<90;i++)passoJogo(1/60,performance.now());__vt.ir(15*16,23*16,'cima');__vt.andar(0,-1,1.6);return{y:__vt.G.p.y/16,h:__vt.G.hearts};});
+  t.ok(r.y<20&&r.h===3,'com a ponte baixada, dá para atravessar o canal a pé',r);
+  await cap('c_abrirm');r=await maq('porta');t.ok(r.ab.indexOf('diesel_porta')<0&&/maiúsculas/.test(r.t),'"abrir" é texto, mas não é a senha: o painel explica que maiúsculas contam',r.t);
   /* ---------- Reator: canal, radiação, bomba acorda o robô ---------- */
   await ev(()=>{__vt.entrar('atom');});
   r=await ev(()=>{__vt.G.hearts=3;__vt.G.invuln=0;__vt.ir(7*16,22*16+8,'cima');for(let i=0;i<150;i++)passoJogo(1/60,performance.now());return __vt.G.hearts;});

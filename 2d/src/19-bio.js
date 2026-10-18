@@ -93,7 +93,8 @@ CONSTRUIR.bio=function(){
   for(let i=0;i<8;i++)A.decalques.push({img:SPR.get('trilho'),x:TRILHO.x*16+i*40,y:TRILHO.y*16+9},{img:SPR.get('trilho'),x:TRILHO.x*16+i*40+16,y:TRILHO.y*16+9},{img:SPR.get('trilho'),x:TRILHO.x*16+i*40+24,y:TRILHO.y*16+9});
   const foco={x:14*16,y:10*16};A.focoPainel=foco;
   terminal(A,14,13,'bio',foco,'consoleBio','Usar o console da estufa');
-  interacao(A,{x:14*16,y:7*16,r:30,label:()=>'Ler a placa da estufa',use:()=>{addDiary('oficina_bio');toast('A estufa repete a rotina que receber. O for conta as voltas; o while testa uma condição antes de cada volta e para quando ela dá False.');}});
+  placaPista(A,'bio',6*16+8,13*16+14,{cor:'#c9a6ff'});
+  marcaLuz(A,'bio_zero',11,31);marcaLuz(A,'bio_parar',18,23);
   criarLume(A,17.5,13,'bio');
   tochasProgresso(A,'bio',[[9,14],[10.5,14],[12,14],[17,14],[18.5,14],[20,14]],'#c9a6ff');
   /* as quatro tochas de seiva da estufa: acendem uma depois da outra com o for (etapa b0) */
@@ -110,7 +111,6 @@ CONSTRUIR.bio=function(){
     /* esporos no jardim */
     if(G.mode!=='painel'&&Math.random()<dt*20){const x=(4+Math.random()*22)*16,y=(16+Math.random()*7)*16;if(naTela(x,y))particula({x,y,z:4+Math.random()*10,vx:(Math.random()-0.5)*6,vz:2,vida:2.5,cor:Math.random()<0.5?'#c9a6ff':'#e8d0ff',fade:true});}
   };
-  A.dreno=()=>{const y=G.p.y/16;return y>15&&y<23?1.6:1;};
   A.luzesExtra=t=>{
     const p=G.p,y=p.y/16;if(y>15.5&&y<23)LUZES.forEach(L=>{if(Math.abs(L.x-p.x)<1&&Math.abs(L.y-(p.y-14))<1)L.r*=0.6;});
     for(let ty=16;ty<=22;ty++){const x=14+Math.round(Math.sin(ty*0.9)*3);luz(x*16+16,ty*16+8,12,0.8,'#5dff7a');}

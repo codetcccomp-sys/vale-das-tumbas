@@ -13,16 +13,6 @@ function sprAutomato(acordado,f){
   if(acordado){P.p(g,9,1+bob,'#ff9a3a');P.p(g,9,0+bob,'#ffe080');}
   return contorno(c,'#24160d');
 }
-/* Robô-vigia a diesel (Motores): caixa de aço com holofote no peito e esteiras. 18×22 */
-function sprVigia(f){
-  const c=cnv(18,22),g=ctx2(c),bob=f%2;
-  P.r(g,3,4+bob,12,11,'#5a606c');P.r(g,4,5+bob,10,3,'#7a828e');P.r(g,3,14+bob,12,1,'#3a3f48');
-  P.r(g,6,1+bob,6,4,'#4a505c');P.r(g,7,2+bob,4,1,'#cfe8ff');
-  P.circ(g,9,10+bob,2.5,'#fff2b0');P.circ(g,9,10+bob,1.2,'#ffffff');
-  P.r(g,2,16,6,5,'#2a2d33');P.r(g,10,16,6,5,'#2a2d33');for(let i=0;i<3;i++){P.r(g,3,17+i*2-(f%2),4,1,'#4a4f58');P.r(g,11,17+i*2-(f%2),4,1,'#4a4f58');}
-  P.r(g,0,7+bob,3,5,'#4a505c');P.r(g,15,7+bob,3,5,'#4a505c');
-  return contorno(c,'#141418');
-}
 /* Robô atômico de manutenção (Reator): cúpula branca, faixa laranja, antena com luz. 16×20 */
 function sprRoboAtom(acordado,f){
   const c=cnv(18,22),g=ctx2(c),bob=f%2;

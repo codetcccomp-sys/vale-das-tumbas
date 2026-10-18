@@ -1,10 +1,10 @@
-/* ====================== Guia de Programação, Lume e vista ampla ======================
+/* ====================== Guia de Programação, Lume e câmera ======================
    - Guia de Programação: abre a qualquer momento (botão Guia, tecla G, menu de pausa, tela inicial e o painel).
      Cada tópico é curto e visual: um ícone, uma ou duas frases, um exemplo de código colorido, um "passo a passo"
      do que acontece e onde aquilo aparece no jogo. "Seus exemplos" junta o código das etapas já concluídas.
    - Lume: um pequeno autômato-guia de latão. Conversar com ele explica controles, interação, o editor de programação e
      como ler um desafio. As dicas vêm aos poucos (conceito → caminho → quase a solução); dá para voltar e pedir de novo.
-   - Vista ampla: C (ou o botão VER) afasta a câmera um degrau para ver mais longe. */
+   - Câmera: C (ou o botão VER) aproxima ou afasta a câmera um degrau; começa afastada e a escolha fica guardada. */
 Object.assign(OBJS,{
   lume(f){const c=cnv(16,22),g=ctx2(c);
     P.linha(g,8,1,8,4,'#8a6a3a');P.circ(g,8,1,1.5,f%2?'#fff2a0':'#ffd24a');
@@ -96,6 +96,8 @@ let guiaAtual='comandos',guiaVolta=null;
 function abrirGuia(topico){
   if(G.mode==='guia')return;
   G.modoAntesGuia=G.mode;guiaVolta=[...document.querySelectorAll('.tela')].find(s=>!s.hidden&&s.id!=='guia');
+  /* vindo do painel: guarda o cursor, a seleção e a rolagem do código para devolver ao fechar */
+  if(G.mode==='painel'){const a=$('pTxt');PAINEL.guiaSalvo={texto:PAINEL.texto,s:a.selectionStart,e:a.selectionEnd,st:a.scrollTop,ps:$('painel').scrollTop,pl:$('pProg').scrollTop,foco:document.activeElement===a};}
   if(guiaVolta)guiaVolta.hidden=true;
   G.mode='guia';$('guia').hidden=false;document.body.classList.add('modal');limparEntrada();
   if(!G.guia){G.guia=true;if(G.area&&G.modoAntesGuia!=='menu')salvar(false);}
@@ -110,7 +112,8 @@ function fecharGuia(){
   $('guia').hidden=true;G.mode=G.modoAntesGuia||'play';limparEntrada();
   if(guiaVolta){guiaVolta.hidden=false;guiaVolta=null;}
   else if(G.mode!=='painel')document.body.classList.remove('modal');
-  if(G.mode==='painel')document.body.classList.remove('modal');
+  if(G.mode==='painel'){document.body.classList.remove('modal');const g=PAINEL.guiaSalvo;PAINEL.guiaSalvo=null;
+    if(g){const a=$('pTxt');$('painel').scrollTop=g.ps;$('pProg').scrollTop=g.pl;if(g.texto&&PAINEL.texto){a.scrollTop=g.st;try{if(g.foco)a.focus({preventScroll:true});a.setSelectionRange(g.s,g.e);}catch(e){}a.scrollTop=g.st;}}}
 }
 /* o grupo da tumba onde o jogador está (ou do desafio aberto) */
 function grupoAtual(){const k=PAINEL.aberto&&PAINEL.cfg?PAINEL.cfg.tumba:G.area&&G.area.id;return GRUPO_LUGAR[k]||null;}
@@ -151,27 +154,28 @@ function mostrarTopico(id){
 
 /* ---------- conversas (Lume e placas com opções) ---------- */
 const DLG={opcoes:[],volta:null};
-function falar(texto,opcoes,nome){
+function falar(texto,opcoes,nome,retrato){
   if(G.mode!=='dialogo'){DLG.volta=G.mode;}
   G.mode='dialogo';$('dialogo').hidden=false;document.body.classList.add('modal');limparEntrada();
   $('dNome').textContent=nome||'Lume';$('dTexto').textContent=texto;
   const O=$('dOpcoes');O.textContent='';
   for(const op of opcoes||[{t:'Até logo'}]){const b=document.createElement('button');b.className='btn'+(op.main?' main':'');b.textContent=op.t;b.onclick=()=>{SFX.click();if(op.fn)op.fn();else fecharFala();};O.appendChild(b);}
-  const c=$('dRetrato'),g=ctx2(c);g.clearRect(0,0,c.width,c.height);g.drawImage(SPR.get('lume',Math.floor(G.t*4)%2),4,1);
+  const c=$('dRetrato'),g=ctx2(c);g.clearRect(0,0,c.width,c.height);
+  if(retrato){const im=Array.isArray(retrato)?SPR.get(...retrato):SPR.get(retrato);g.drawImage(im,Math.round((c.width-im.width)/2),Math.max(0,c.height-im.height-1));}else g.drawImage(SPR.get('lume',Math.floor(G.t*4)%2),4,1);
   try{O.firstChild.focus({preventScroll:true});}catch(e){}
 }
 function fecharFala(){$('dialogo').hidden=true;G.mode=DLG.volta&&DLG.volta!=='dialogo'?DLG.volta:'play';if(G.mode==='play'||G.mode==='painel')document.body.classList.remove('modal');limparEntrada();}
 /* textos do Lume (curtos; os controles seguem o aparelho que está sendo usado) */
 function textoControles(){
-  if(IN.mode==='touch')return'Toque e arraste no lado esquerdo da tela para andar; arrastando até o fim, você corre. O botão AÇÃO, à direita, interage. VER afasta a câmera, Guia abre o Guia de Programação.';
+  if(IN.mode==='touch')return'Toque e arraste no lado esquerdo da tela para andar; arrastando até o fim, você corre. O botão AÇÃO, à direita, interage. VER aproxima ou afasta a câmera, Guia abre o Guia de Programação.';
   if(IN.mode==='pad')return'O analógico anda (até o fim corre). A interage, X abre o diário, Select abre o Guia e Start pausa.';
-  return'Ande com WASD ou as setas; segure Shift para correr. E (ou Espaço) interage, C afasta a câmera, G abre o Guia de Programação, J o diário e Esc pausa.';
+  return'Ande com WASD ou as setas; segure Shift para correr. E (ou Espaço) interage, C aproxima ou afasta a câmera, G abre o Guia de Programação, J o diário e Esc pausa.';
 }
 const LUME_TXT={
   interagir:()=>'Quando você chega perto de algo útil, aparece um aviso embaixo da tela e uma seta amarela em cima do objeto. Aí é só apertar '+(IN.mode==='touch'?'AÇÃO':IN.mode==='pad'?'A':'E')+' para usar: ler, pegar, abrir, ligar.',
   programar:()=>'Nos terminais fica o editor. Toque nas linhas da paleta para escrever o programa, ou em ✎ Escrever para digitar código Python. ▶ Executar roda tudo; ⏭ Passo roda uma instrução por vez. Se algo der errado, a área de erro mostra a linha, diz se o problema é do Python ou de uma regra da máquina, e o que fazer. O editor aceita um pedaço do Python: o Guia mostra qual.',
-  desafio:()=>'Leia a mensagem do painel e olhe o mecanismo da sala: ele mostra o que o código faz. As caixas mostram as variáveis. As situações (A, B…) são testes: o mesmo programa precisa funcionar em todas. Programe, execute, observe e corrija.',
-  camera:()=>'Aperte '+(IN.mode==='touch'?'VER':'C')+' para afastar a câmera e enxergar mais longe. Aperte de novo para voltar ao normal.'
+  desafio:()=>'Leia a mensagem do painel e olhe o mecanismo da sala: ele mostra o que o código faz. As caixas mostram as variáveis. As situações (A, B…) são testes: o mesmo programa precisa funcionar em todas. Programe, execute, observe e corrija. Placas com ! guardam pistas: depois de lidas, elas ficam no diário e no terminal, em Comandos e variáveis.',
+  camera:()=>'Aperte '+(IN.mode==='touch'?'VER':'C')+' para aproximar ou afastar a câmera. O jogo começa com a câmera afastada (quando a tela comporta) e lembra a sua escolha.'
 };
 /* a etapa sobre a qual o Lume dá dicas: a do painel aberto, ou a próxima por fazer no lugar onde ele está */
 function etapaDoLume(lugar){
@@ -212,11 +216,12 @@ function criarLume(A,tx,ty,lugar,extra){
   L.o=o;return L;
 }
 
-/* ---------- vista ampla (câmera) ---------- */
+/* ---------- câmera: afastada ou aproximada ---------- */
 function alternarVista(){
-  R.longe=!R.longe;const k0=R.k;redimensionar();
-  if(R.longe&&R.k===k0){R.longe=false;toast('Esta tela já mostra o máximo que dá com pixels nítidos.');return;}
+  const dpr=R.dpr,dw=R.cv.width,dh=R.cv.height;
+  if(!R.longeAtivo&&!longePossivel(dw,dh,dpr)){R.longe=false;toast('Esta tela já mostra o máximo que dá com pixels nítidos e legíveis.');if(G.area&&G.area.aoVista)G.area.aoVista(false);return;}
+  R.longe=!R.longeAtivo;redimensionar();cfgGravar({longe:R.longe});
   if(G.area)camSeguir(G.p.x,G.p.y-12,0,G.area,true);
-  toast(R.longe?'Vista ampla: a câmera se afastou. Aperte de novo para voltar.':'Vista normal.');SFX.click();
+  toast(R.longe?'Câmera afastada: mostra mais do lugar. A escolha fica guardada.':'Câmera aproximada: mostra os detalhes de perto. A escolha fica guardada.');SFX.click();
   if(G.area&&G.area.aoVista)G.area.aoVista(R.longe);
 }

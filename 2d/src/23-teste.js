@@ -17,6 +17,6 @@ function ganchoTeste(){
     painelEstado(){const r=PAINEL.run;return{aberto:PAINEL.aberto,cfg:PAINEL.cfg&&PAINEL.cfg.id,sit:PAINEL.sit,rodando:!!r&&!r.s.fim,fim:!!r&&r.s.fim,ok:!!r&&r.s.ok,erro:r&&r.s.erro?r.s.erro.tipo:null,msg:$('pMsg').textContent,prog:LANG.codigo(PAINEL.prog),eventos:r?r.eventos.length:0};},
     velocidade(v){PAINEL.vel=v;},
     lerSave(){return lerJson(SAVE2D_KEY);},
-    escala(){return{W:R.W,H:R.H,k:R.k,dpr:R.dpr,cw:R.cv.width,ch:R.cv.height};}
+    escala(){return{W:R.W,H:R.H,k:R.k,dpr:R.dpr,cw:R.cv.width,ch:R.cv.height,longe:!!R.longeAtivo};}
   };
 }

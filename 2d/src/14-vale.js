@@ -12,7 +12,17 @@ const TRILHAS={
 const COR_TRILHA={steam:'#c8743a',diesel:'#6fd3ff',atom:'#5dff7a',bio:'#b98cff'};
 const NOME_TRILHA={steam:'cobre',diesel:'azul-gelo',atom:'verde',bio:'lilás'};
 function distSeg(px,py,P){let b=1e9;for(let i=0;i<P.length-1;i++){const ax=P[i][0],ay=P[i][1],dx=P[i+1][0]-ax,dy=P[i+1][1]-ay,L=dx*dx+dy*dy,u=clamp(((px-ax)*dx+(py-ay)*dy)/L,0,1),ex=ax+dx*u-px,ey=ay+dy*u-py;b=Math.min(b,ex*ex+ey*ey);}return Math.sqrt(b);}
-const VALE={A:null,feixes:[],fogo:[],fumaca:[],cata:[],insc:[],segredos:{frags:[],baus:[],dia:[]}};
+const VALE={A:null,feixes:[],fogo:[],fumaca:[],cata:[],insc:[],segredos:{frags:[],baus:[],dia:[]},estacoes:{}};
+Object.assign(OBJS,{
+  /* estação de atalho: poste com placa e lâmpada da cor da era; acorda com o saber da tumba */
+  estacaoAtalho(cor,ativa){const c=cnv(18,36),g=ctx2(c);P.r(g,8,8,3,27,'#5a4a3a');P.r(g,8,8,1,27,'#7a6a52');P.r(g,2,12,15,9,'#e9dcbc');P.r(g,2,12,15,2,cor);
+    P.r(g,5,16,9,1,'#6a5a48');P.r(g,5,18,6,1,'#6a5a48');P.r(g,14,16,2,3,'#6a5a48');P.r(g,6,1,7,7,'#2a2018');P.r(g,7,2,5,5,ativa?tom(cor,0.35):'#4a4038');if(ativa)P.p(g,8,3,'#ffffff');
+    P.r(g,4,33,11,3,'#5a4a3a');return contorno(c,'#24160d');},
+  /* quadro do acampamento: tábua com papéis presos */
+  quadroExplorar(){const c=cnv(30,30),g=ctx2(c);P.r(g,3,14,2,15,'#5a3a20');P.r(g,25,14,2,15,'#5a3a20');P.r(g,1,2,28,16,'#8a5a32');P.r(g,1,2,28,2,'#b07a3a');
+    for(const[x,y,w,h,cr]of[[4,6,7,8,'#e9dcbc'],[13,5,6,9,'#f0e6cc'],[21,7,6,7,'#e9dcbc']]){P.r(g,x,y,w,h,cr);P.p(g,x+w/2|0,y,'#b9533a');P.r(g,x+1,y+3,w-2,1,'#8a7a62');P.r(g,x+1,y+5,w-3,1,'#8a7a62');}
+    return contorno(c,'#24160d');}
+});
 const PIR={x:90*16+8,y:41*16};
 
 function construirVale(){
@@ -71,6 +81,20 @@ function construirVale(){
     VALE.feixes.push({k,x:bx,y:by-150});reserva(T.door.x,T.door.y-2,6);reserva(T.out.x,T.out.y,2.5);
     interacao(A,{x:bx,y:by+10,r:22,label:()=>tumbaRotulo(k),use:()=>usarPortaTumba(k)});
   }
+  /* ---------- estações de atalho: uma ao lado de cada tumba e uma no acampamento ----------
+     O saber de uma tumba acorda a estação dela: dela se vai ao acampamento e às outras estações acordadas (a volta
+     fica curta). A do acampamento leva às estações acordadas. */
+  const lugarFixo=(x,y,r)=>{for(const[dx,dy]of[[0,0],[1,0],[-1,0],[0,1],[1,1],[-1,1],[2,0],[-2,0],[0,-1]]){const k=A.kind(Math.floor(x+dx),Math.floor(y+dy));
+    if((k==='areia'||k==='duna'||k==='grama')&&livre(x+dx,y+dy,r))return[x+dx,y+dy];}return[x,y];};
+  const estacao=(id,x0,y0,cor,ativa,nome)=>{const[x,y]=lugarFixo(x0,y0,1.2);const o=por(x,y,SPR.get('estacaoAtalho',cor,false),{col:[-4,-3,4,0]});reserva(x,y,1.5);
+    o.desenho=(g,ob)=>blit(g,SPR.get('estacaoAtalho',cor,ativa()),ob.x,ob.y,9,36);o.luz={r:22,cor,dy:-30};o.luzSe=ativa;
+    const E={id,x:x*16,y:y*16,ativa,nome};VALE.estacoes[id]=E;
+    interacao(A,{x:x*16,y:y*16+6,r:20,alto:40,nome:'Estação de atalho',label:()=>ativa()?'Estação de atalho: viajar':'Estação de atalho (adormecida)',use:()=>usarEstacao(id)});};
+  for(const k of RELIC_KEYS){const T=TOMBS[k],dx=T.out.x<90?4.5:-4.5;estacao(k,T.out.x+0.5+dx,T.out.y+1,T.col,()=>saberOk(k),'Estação da '+T.name);}
+  estacao('camp',97.5,149,'#ffd24a',()=>true,'Estação do acampamento');
+  /* quadro do acampamento: o que há fora da estrada e para que serve */
+  {const[x,y]=lugarFixo(81.5,151,1.6);por(x,y,SPR.get('quadroExplorar'),{col:[-12,-4,12,0]});reserva(x,y,2);
+    interacao(A,{x:x*16,y:y*16+8,r:20,alto:34,nome:'Quadro do acampamento',label:()=>'Ler o quadro do acampamento',use:()=>lerQuadroAcampamento()});}
   /* ---------- pirâmide da Cidade-Jardim ---------- */
   objeto(A,SPR.get('piramide'),PIR.x,PIR.y,{col:[-176,-130,176,-2]});
   VALE.feixes.push({k:'final',x:PIR.x,y:PIR.y-226});
@@ -107,12 +131,12 @@ function construirVale(){
   for(const[x,y]of[[39,94],[29,98],[41,77]])lugar(x,y,2.6,(x2,y2)=>por(x2,y2,SPR.get('torreDiesel'),{col:[-18,-14,18,0]}));
   lugar(35,105,5,(x,y)=>por(x,y,SPR.get('dirigivel'),{col:[-46,-14,46,0]}));
   for(const[x,y]of[[29,72],[47,66]])lugar(x,y,2.6,(x2,y2)=>por(x2,y2,SPR.get('caminhao'),{col:[-22,-8,22,0]}));
-  for(const[x,y]of[[43,81],[40,92],[23,93],[26,79]])lugar(x,y,0.8,(x2,y2)=>{const o=por(x2,y2,SPR.get('poste'),{col:[-3,-3,3,0]});o.luz={r:28,cor:'#ffe9a0',dy:-30};});
-  for(const[x,y,h]of[[56,124,50],[45,123,62],[52,139,42],[62,130,56]])lugar(x,y,0.8,(x2,y2)=>{const o=por(x2,y2,SPR.get('antena',h),{col:[-4,-3,4,0]});o.luz={r:14,cor:'#ff4a3a',dy:-h};});
+  for(const[x,y]of[[43,81],[40,92],[23,93],[26,79]])lugar(x,y,0.8,(x2,y2)=>{const o=por(x2,y2,SPR.get('poste'),{col:[-3,-3,3,0]});o.luz={r:28,cor:'#ffe9a0',dy:-30};o.luzSe=()=>saberOk('diesel');});
+  for(const[x,y,h]of[[56,124,50],[45,123,62],[52,139,42],[62,130,56]])lugar(x,y,0.8,(x2,y2)=>{const o=por(x2,y2,SPR.get('antena',h),{col:[-4,-3,4,0]});o.luz={r:14,cor:'#ff4a3a',dy:-h};o.luzSe=()=>saberOk('atom');});
   for(const[x,y]of[[34,119],[66,117]])lugar(x,y,1.6,(x2,y2)=>por(x2,y2,SPR.get('disco'),{col:[-8,-5,8,0]}));
   lugar(36,146,3,(x,y)=>por(x,y,SPR.get('bunker'),{col:[-24,-10,24,0]}));
   for(const[x,y,v]of[[128,118,0],[142,134,1],[137,114,2]])lugar(x,y,2.8,(x2,y2)=>por(x2,y2,SPR.get('estufa','#b9a6ff'),{col:[-22,-14,22,0]}));
-  for(const[x,y,v]of[[146,115,0],[148,118,1],[144,120,0],[125,140,1],[128,142,0],[151,130,1],[118,130,0]])lugar(x,y,1,(x2,y2)=>{const o=por(x2,y2,SPR.get('cogumelo',v),{col:[-4,-3,4,0]});o.luz={r:12,cor:'#c9a6ff',dy:-10};});
+  for(const[x,y,v]of[[146,115,0],[148,118,1],[144,120,0],[125,140,1],[128,142,0],[151,130,1],[118,130,0]])lugar(x,y,1,(x2,y2)=>{const o=por(x2,y2,SPR.get('cogumelo',v),{col:[-4,-3,4,0]});o.luz={r:12,cor:'#c9a6ff',dy:-10};o.luzSe=()=>saberOk('bio');});
   for(const[x,y]of[[141,141],[120,113]])lugar(x,y,2.5,(x2,y2)=>por(x2,y2,SPR.get('arcoRaiz'),{col:[-20,-6,-14,0]}));
   /* Solarpunk perto da porta final: painéis, cata-ventos e canteiros */
   for(const[x,y]of[[73,43],[107,43],[78,50]])lugar(x,y,2.4,(x2,y2)=>por(x2,y2,SPR.get('painelSolar'),{col:[-18,-6,18,0]}));
@@ -148,7 +172,8 @@ function construirVale(){
 
 /* ---------- vale: animação, noite, feixes ---------- */
 function atualizarVale(dt,t){
-  if(Math.random()<dt*2.5)for(const o of VALE.fumaca)if(naTela(o.x,o.y,80)&&Math.random()<0.5)vapor(o.x,o.y-38,1,['#e8dccb','#cfc4b4','#a8a094']);
+  /* o vale reage aos saberes: as chaminés do vapor só voltam a fumegar depois das Engrenagens */
+  if(saberOk('steam')&&Math.random()<dt*2.5)for(const o of VALE.fumaca)if(naTela(o.x,o.y,80)&&Math.random()<0.5)vapor(o.x,o.y-38,1,['#e8dccb','#cfc4b4','#a8a094']);
   const st=TOMBS.steam;if(Math.random()<dt*2&&naTela(st.door.x*16,st.door.y*16-100,120))vapor(st.door.x*16+8,st.door.y*16-118,1);
   for(const v of VALE.insc)v.o.img=noiteAgora()>0.5?v.o.noite:SPR.get('estela',40+INSC.indexOf(v.d),false);
   ambienteVale(dt,t);
@@ -167,6 +192,22 @@ function desenharTopoVale(g,t){
 function noiteAgora(){const e=Math.sin(G.time*TAU);return smooth(0.05,-0.25,e);}
 function tardeAgora(){const e=Math.sin(G.time*TAU),day=smooth(0,0.4,e),night=smooth(0.05,-0.25,e);return(1-day)*(1-night);}
 
+/* ---------- estações de atalho e quadro do acampamento ---------- */
+function usarEstacao(id){
+  const E=VALE.estacoes[id];
+  if(!E.ativa()){const T=TOMBS[id];SFX.deny();toast('Esta estação acorda com o saber '+SABERES[T.saber].nome+'. Conclua as etapas da '+T.name+'.','warn');return;}
+  const ops=[];
+  for(const k in VALE.estacoes){if(k===id)continue;const D=VALE.estacoes[k];if(!D.ativa())continue;ops.push({t:'➜ '+D.nome,fn:()=>{fecharFala();viajarAtalho(D);}});}
+  ops.push({t:'Ficar aqui'});
+  const ativas=RELIC_KEYS.filter(k=>VALE.estacoes[k].ativa()).length;
+  falar(ops.length>1?'Estações acordadas: '+ativas+' de 4. Para onde ir?':'Nenhuma outra estação está acordada ainda. Cada tumba concluída acorda a estação ao lado da porta.',ops,E.nome,['estacaoAtalho',id==='camp'?'#ffd24a':TOMBS[id].col,true]);
+}
+function viajarAtalho(D){SFX.lever();transicao(()=>{posicionar(D.x,D.y+22,'baixo');camSeguir(G.p.x,G.p.y,0,G.area,true);salvar(false);},'Seguindo pelo atalho…');}
+function lerQuadroAcampamento(){
+  const n=a=>a.filter(x=>G.sec[x.id]).length,est=RELIC_KEYS.filter(k=>saberOk(k)).length;
+  const t='Fora da estrada: fragmentos de mapa '+n(SEC_FRAGS)+'/4 (cada um revela um quarto do mapa do diário) · baús '+n(SEC_CHESTS)+'/5 (notas dos construtores) · inscrições do dia '+n(SEC_INSC)+'/3 e da noite '+Object.keys(G.insc).length+'/'+INSC.length+' (estas só se leem à noite) · estações de atalho acordadas '+est+'/4 (cada tumba concluída acorda uma e encurta a volta) · marcas de luz '+Object.keys(G.marcas).length+'/'+MARCA_IDS.length+' (dentro das tumbas, com a lanterna). Nada disso é obrigatório para aprender: é para quem quiser explorar.';
+  SFX.page();falar(t,[{t:'🗺 Abrir o mapa do diário',fn:()=>{fecharFala();abrirDiario('mapa');}},{t:'Entendi',main:true}],'Quadro do acampamento','quadroExplorar');
+}
 /* ---------- portas ---------- */
 function tumbaAnterior(k){const i=ORDEM_TUMBAS.indexOf(k);return i>0?ORDEM_TUMBAS[i-1]:null;}
 function tumbaAberta(k){const a=tumbaAnterior(k);return!a||saberOk(a);}

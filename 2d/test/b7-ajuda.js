@@ -33,8 +33,8 @@ const t=suite('b7-ajuda');
   /* ---------- Guia pela tecla G e vista ampla pela tecla C ---------- */
   await tecla('KeyG');e=await U.estado();let gv=await vis('guia');t.ok(e.mode==='guia'&&gv,'tecla G abre o Guia durante o jogo',e.mode);
   await tecla('KeyG');e=await U.estado();t.ok(e.mode==='play'&&!(await vis('guia')),'G de novo fecha o Guia e volta ao jogo',e.mode);
-  const k0=await ev(()=>__vt.R.k);await tecla('KeyC');let k1=await ev(()=>({k:__vt.R.k,l:__vt.R.longe}));t.ok(k1.l&&k1.k<k0,'tecla C afasta a câmera (vista ampla)',[k0,k1]);
-  await tecla('KeyC');k1=await ev(()=>({k:__vt.R.k,l:__vt.R.longe}));t.ok(!k1.l&&k1.k===k0,'C de novo volta à vista normal',k1);
+  const k0=await ev(()=>({k:__vt.R.k,l:__vt.R.longeAtivo}));await tecla('KeyC');let k1=await ev(()=>({k:__vt.R.k,l:__vt.R.longeAtivo}));t.ok(k0.l&&!k1.l&&k1.k>k0.k,'a câmera começa afastada; a tecla C aproxima',[k0,k1]);
+  await tecla('KeyC');k1=await ev(()=>({k:__vt.R.k,l:__vt.R.longeAtivo}));t.ok(k1.l&&k1.k===k0.k,'C de novo volta a afastar',k1);
   /* ---------- Guia pela pausa ---------- */
   await tecla('Escape');t.ok(await vis('scPause'),'Esc abre a pausa');
   await ev(()=>document.getElementById('pGuiaPausa').click());s=await ev(()=>({guia:!document.getElementById('guia').hidden,pausa:!document.getElementById('scPause').hidden,modo:__vt.G.mode}));

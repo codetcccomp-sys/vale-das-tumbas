@@ -1,16 +1,26 @@
 /* ====================== Tumba dos Motores (Dieselpunk) · saber: Dados e variáveis ======================
-   Garagem com gerador → sala dos holofotes (cada toque gira o facho 1/8 de volta; quando a luz alcança o sensor da parede,
-   a porta da oficina abre; o Robô-vigia patrulha varrendo o facho dele, e os pilares escondem) → Oficina dos contêineres
+   Garagem com gerador → pátio de abastecimento (um canal corta o pátio; três máquinas com etiqueta de tipo — disjuntor
+   aceita bool, bomba hidráulica aceita float, painel da porta aceita str — recebem cápsulas de valor carregadas pelo chão:
+   reconhecer o tipo e o valor certos liga a bomba, baixa a ponte e abre a porta) → Oficina dos contêineres
    (variáveis com nome, tipo e valor, ligadas à separadora de peças e ao monta-cargas) → câmara da Vela de ignição.
    Adaptação do 3D: o elevador de carga virou o monta-cargas da oficina, controlado pelos contêineres. */
 Object.assign(OBJS,{
   gerador(aceso,f){const c=cnv(28,28),g=ctx2(c);P.r(g,2,8,24,18,'#4a505c');P.r(g,2,8,24,3,'#6a707c');for(let x=5;x<24;x+=4)P.r(g,x,12,2,10,'#33373f');
     P.r(g,18,2,6,8,'#3a3f48');P.circ(g,9,17,3.5,aceso?(f?'#ffd24a':'#ffe9a0'):'#2a2d33');P.r(g,20,14,4,3,aceso?'#5dff7a':'#5a2a1a');return contorno(c,'#0b0705');},
-  holofote(d){const c=cnv(20,22),g=ctx2(c);P.r(g,6,14,8,7,'#3a3f48');P.r(g,8,10,4,5,'#4a505c');
-    const a=d*TAU/8-Math.PI/2,cx=10,cy=9;P.circ(g,cx,cy,5,'#5a606c');P.r(g,Math.round(cx+Math.cos(a)*4)-2,Math.round(cy+Math.sin(a)*4)-2,4,4,'#fff6c0');P.p(g,Math.round(cx+Math.cos(a)*5),Math.round(cy+Math.sin(a)*5),'#ffffff');
+  /* cápsula de valor: a faixa colorida mostra o tipo (int azul, float verde, str papel, bool âmbar) */
+  capsulaValor(t){const c=cnv(10,14),g=ctx2(c),C={int:'#6fd3ff',float:'#5dff7a',str:'#e9dcbc',bool:'#ffb43a'}[t]||'#ffffff';
+    P.r(g,1,2,8,11,'#5a606c');P.r(g,1,2,2,11,'#7a828e');P.r(g,1,6,8,3,C);P.r(g,2,0,6,2,'#3a3f48');P.r(g,1,12,8,1,'#33373f');return contorno(c,'#0b0705');},
+  disjuntor(on){const c=cnv(20,28),g=ctx2(c);P.r(g,2,4,16,22,'#4a505c');P.r(g,2,4,16,3,'#6a707c');P.r(g,5,9,10,8,'#22262c');
+    P.r(g,8,on?9:12,4,5,on?'#5dff7a':'#ff5a3a');P.r(g,6,19,8,4,'#2a2d33');P.r(g,7,20,6,2,'#ffb43a');return contorno(c,'#0b0705');},
+  bombaHidro(on,f){const c=cnv(26,30),g=ctx2(c);P.r(g,3,8,20,20,'#4a505c');P.r(g,3,8,20,3,'#6a707c');P.circ(g,9,18,5,'#22262c');P.circ(g,9,18,4,'#cfd8e0');
+    const a=on?(f%4)*0.6-0.9:-2.2;P.linha(g,9,18,Math.round(9+Math.cos(a)*3),Math.round(18+Math.sin(a)*3),'#ff5a3a');P.r(g,16,12,5,12,'#22262c');P.r(g,17,13,3,10,on?'#5dff7a':'#33373f');
+    P.r(g,10,1,6,8,'#3a3f48');P.r(g,11,2,4,2,'#5dff7a');return contorno(c,'#0b0705');},
+  /* ponte do canal: erguida (só a beirada aparece) ou baixada (chapa listrada sobre o vão) */
+  ponteDiesel(b){const c=cnv(32,36),g=ctx2(c);
+    if(b){P.r(g,0,4,32,32,'#5a606c');for(let y=6;y<36;y+=5)P.r(g,0,y,32,1,'#3a3f48');P.r(g,0,4,2,32,'#c8a030');P.r(g,30,4,2,32,'#c8a030');}
+    else{P.r(g,0,0,32,8,'#5a606c');P.r(g,0,0,32,2,'#7a828e');for(let x=2;x<32;x+=5)P.r(g,x,2,1,6,'#3a3f48');P.r(g,0,6,32,2,'#c8a030');}
     return contorno(c,'#0b0705');},
-  sensor(on){const c=cnv(14,14),g=ctx2(c);P.r(g,1,1,12,12,'#33373f');P.circ(g,7,7,4,on?'#6fd3ff':'#1a2a3a');P.circ(g,7,7,2,on?'#ffffff':'#2a3a4a');return contorno(c,'#0b0705');},
-  pilarAco(){const c=cnv(16,34),g=ctx2(c);P.r(g,2,4,12,28,'#4a505c');P.r(g,2,4,4,28,'#5a606c');P.r(g,1,1,14,4,'#3a3f48');P.r(g,1,30,14,3,'#3a3f48');for(let y=8;y<30;y+=6)P.r(g,6,y,6,1,'#33373f');return contorno(c,'#0b0705');},
+  guarda(){const c=cnv(16,8),g=ctx2(c);P.r(g,0,1,16,2,'#c8a030');P.r(g,0,3,16,1,'#8a6a20');for(const x of[1,8])P.r(g,x,1,2,7,'#5a606c');return c;},
   console(f){const c=cnv(22,24),g=ctx2(c);P.r(g,2,8,18,14,'#3a3f48');P.r(g,2,8,18,2,'#5a606c');P.r(g,4,2,14,8,'#22262c');P.r(g,5,3,12,6,f?'#1a3a4a':'#14303a');P.r(g,6,4,6,1,'#6fd3ff');P.r(g,6,6,9,1,'#6fd3ff');
     for(let i=0;i<4;i++)P.r(g,5+i*4,13,2,2,['#ff5a3a','#ffd24a','#5dff7a','#6fd3ff'][i]);return contorno(c,'#0b0705');},
   conteiner(larg){const c=cnv(30,40),g=ctx2(c);P.r(g,3,6,24,30,'#5a606c');P.r(g,3,6,24,3,'#7a828e');P.r(g,6,11,18,20,'#14202a');P.r(g,6,11,18,1,'#2a3a4a');
@@ -55,12 +65,13 @@ const MAPA_DIESEL=[
   '###........................###',
   '###........................###',
   '###........................###',
+  '###vvvvvvvvvvvvvvvvvvvvvvvv###',
+  '###vvvvvvvvvvvvvvvvvvvvvvvv###',
   '###........................###',
-  '###........................###',
-  '###........................###',
-  '###........................###',
-  '###........................###',
-  '###........................###',
+  '#............................#',
+  '#............................#',
+  '#............................#',
+  '#............................#',
   '###........................###',
   '##############..##############',
   '#######................#######',
@@ -71,46 +82,85 @@ const MAPA_DIESEL=[
   '##############################',
   '##############################'
 ];
-const HOLO={tx:8,ty:24,sensor:{tx:16,ty:15}};
+/* pátio de abastecimento: três máquinas com contrato de tipo (a etiqueta diz o tipo aceito e o valor pedido) e cápsulas
+   de valor no chão, cada uma com uma "irmã" parecida de outro tipo (True e "True", 2.5 e "2.5") ou de outro valor
+   ("ABRIR" e "abrir"). Disjuntor (bool) dá energia à bomba; a bomba (float) baixa a ponte do canal; o painel (str) abre
+   a oficina. Quem tinha aberto a oficina pelo jogo antigo (holofote, diesel_luz) encontra as três máquinas prontas. */
+const PATIO_DIESEL={
+  maquinas:{
+    disjuntor:{tx:27,ty:24,tipo:'bool',val:true,nome:'Disjuntor do pátio',em:'no disjuntor',ele:'ele',faz:'liga a energia da bomba hidráulica',ok:'O disjuntor aceitou True: a energia chegou à bomba hidráulica.',flag:'diesel_disjuntor'},
+    bomba:{tx:2,ty:24,tipo:'float',val:2.5,unid:' L',nome:'Bomba hidráulica',em:'na bomba hidráulica',ele:'ela',faz:'baixa a ponte do canal',ok:'A bomba aceitou 2.5 L de óleo: a ponte do canal desceu.',flag:'diesel_ponte',precisa:'disjuntor'},
+    porta:{tx:12,ty:16,tipo:'str',val:'ABRIR',nome:'Painel da porta',em:'no painel da porta',ele:'ele',faz:'abre a porta da oficina',ok:'O painel leu "ABRIR": a porta da oficina se abriu.',flag:'diesel_porta'}
+  },
+  capsulas:[['c_true','bool',true,6,26],['c_strue','str','True',9,23],['c_f25','float',2.5,22,26],['c_s25','str','2.5',19,23],['c_abrir','str','ABRIR',5,22],['c_abrirm','str','abrir',24,22],['c_5','int',5,12,25]]
+};
 CONSTRUIR.diesel=function(){
-  const A=tumbaArea('diesel','diesel',MAPA_DIESEL,{'#':'parede','.':'chao'});
-  A.metal=true;A.som='diesel';A.spawn={x:15*16,y:31*16+8,dir:'cima'};
-  for(let x=5;x<25;x++)A.set(x,10,'chao2');for(let y=17;y<26;y+=4)for(let x=4;x<26;x+=7)A.set(x,y,'grade');
-  saidaVale(A,14,32);
-  pontoEnergia(A,9,29,'gerador','o gerador','diesel_enter');
-  for(const[x,y]of[[8,27],[21,27],[6,15],[23,15],[6,5],[23,5],[12,1],[17,1]])lampada(A,x,y,'#cfe8ff',40);
-  for(const[x,y]of[[19,30],[20,31]])objeto(A,SPR.get('barril'),x*16+8,y*16+14,{col:[-6,-4,6,0]});
-  const mot=objeto(A,SPR.get('motor',0),11*16,32*16+4,{col:[-16,-8,16,0]});mot.frames=[0,1].map(f=>SPR.get('motor',f));mot.fps=8;
-  /* holofote, sensor e pilares que fazem sombra */
-  const holo={d:2};
-  const sensorLigado=()=>G.abertas.indexOf('diesel_luz')>=0;
-  const ho=objeto(A,SPR.get('holofote',2),HOLO.tx*16+8,HOLO.ty*16+14,{col:[-6,-4,6,0]});ho.desenho=(g,ob)=>blit(g,SPR.get('holofote',holo.d),ob.x,ob.y,ob.ax,ob.ay);
-  const se=objeto(A,SPR.get('sensor',false),HOLO.sensor.tx*16+8,HOLO.sensor.ty*16+14,{});se.desenho=(g,ob)=>blit(g,SPR.get('sensor',sensorLigado()),ob.x,ob.y,ob.ax,ob.ay);
-  /* o pilar ocupa pouco chão (colisão nos pés), mas tapa a visão e a luz em toda a altura do desenho */
-  A.opacos=[];for(const[x,y]of[[11,18],[19,21],[16,24],[22,18],[6,20]]){const bx=x*16+8,by=y*16+15;objeto(A,SPR.get('pilarAco'),bx,by,{col:[-7,-6,7,0]});A.opacos.push({x0:bx-7,y0:by-30,x1:bx+7,y1:by});}
-  interacao(A,{x:HOLO.tx*16+8,y:HOLO.ty*16+20,r:22,label:()=>'Girar o holofote (1/8 de volta)',use:()=>{holo.d=(holo.d+1)%8;SFX.rotate();addDiary('diesel_beams',true);}});
-  /* facho: anda em passos de 2 px até bater numa parede ou num pilar */
-  const facho=()=>{const a=holo.d*TAU/8-Math.PI/2,x0=HOLO.tx*16+8,y0=HOLO.ty*16+5;let x=x0,y=y0;
-    for(let i=0;i<300;i++){x+=Math.cos(a)*2;y+=Math.sin(a)*2;const tx=Math.floor(x/16),ty=Math.floor(y/16);if(TK[A.kind(tx,ty)].solido)return{x0,y0,x,y,tx,ty};
-      for(const b of A.opacos)if(x>b.x0&&x<b.x1&&y>b.y0&&y<b.y1)return{x0,y0,x,y,tx:-1,ty:-1};}
-    return{x0,y0,x,y,tx:-1,ty:-1};};
-  A.facho=facho;
-  portao(A,14,15,2,'portaoAco',sensorLigado);
-  /* Robô-vigia: patrulha de um lado ao outro; o facho dele é um cone; quem fica nele é visto */
-  const vg={x:6*16,y:20*16,dir:1,estado:'patrulha',t:0,f:0,perdeu:0,cd:0};
-  vg.update=(dt,ativo)=>{vg.f+=dt*6;if(!ativo)return;const p=G.p;if(vg.cd>0)vg.cd-=dt;
-    const dentro=p.y>16*16&&p.y<27*16&&p.x>3*16&&p.x<27*16;
-    if(vg.estado==='patrulha'){vg.x+=vg.dir*34*dt;if(vg.x>24*16){vg.dir=-1;}if(vg.x<5*16){vg.dir=1;}
-      if(dentro&&vePlayer(vg)){vg.estado='caca';SFX.alert();addDiary('diesel_guard');}}
-    else{const dx=p.x-vg.x,dy=p.y-vg.y,d=Math.hypot(dx,dy);
-      if(!dentro||vg.perdeu>3){vg.estado='patrulha';vg.perdeu=0;return;}
-      vg.perdeu=vePlayer(vg)?0:vg.perdeu+dt;moverCorpo(A,vg,dx/(d||1)*60*dt,dy/(d||1)*60*dt);vg.dir=dx<0?-1:1;
-      if(d<12&&vg.cd<=0){vg.cd=1.2;ferir(TXT.hit.sentinel);moverCorpo(A,p,dx/(d||1)*22,dy/(d||1)*22);}}
+  const A=tumbaArea('diesel','diesel',MAPA_DIESEL,{'#':'parede','.':'chao',v:'vao'});
+  A.metal=true;A.som='diesel';A.spawn={x:15*16,y:32*16+8,dir:'cima'};
+  for(let x=5;x<25;x++)A.set(x,10,'chao2');for(const y of[17,25])for(let x=4;x<26;x+=7)A.set(x,y,'grade');
+  saidaVale(A,14,33);
+  pontoEnergia(A,9,30,'gerador','o gerador','diesel_enter');
+  for(const[x,y]of[[8,28],[21,28],[6,15],[23,15],[6,5],[23,5],[12,1],[17,1]])lampada(A,x,y,'#cfe8ff',40);
+  for(const[x,y]of[[19,31],[20,32]])objeto(A,SPR.get('barril'),x*16+8,y*16+14,{col:[-6,-4,6,0]});
+  const mot=objeto(A,SPR.get('motor',0),11*16,33*16+4,{col:[-16,-8,16,0]});mot.frames=[0,1].map(f=>SPR.get('motor',f));mot.fps=8;
+  placaPista(A,'diesel_patio',17*16+8,27*16+14,{cor:'#6fd3ff'});
+  marcaLuz(A,'diesel_etiqueta',10,15);marcaLuz(A,'diesel_aspas',11,28);
+  /* ---------- pátio: máquinas, cápsulas, canal e ponte ---------- */
+  const PD=PATIO_DIESEL,MQ=PD.maquinas;
+  const feita=k=>G.abertas.indexOf(MQ[k].flag)>=0||G.abertas.indexOf('diesel_luz')>=0;
+  const pat={carrega:null,caps:{}};A.patio=pat;
+  const capInicial=()=>{pat.caps={};for(const[id,t,v,tx,ty]of PD.capsulas)pat.caps[id]={id,val:LV(t,v),x:tx*16+8,y:ty*16+12,em:null};
+    for(const k in MQ)if(feita(k)){const c=Object.values(pat.caps).find(c=>c.val.t===MQ[k].tipo&&c.val.v===MQ[k].val);if(c)c.em=k;}pat.carrega=null;};
+  capInicial();
+  const rot=v=>LANG.fmt(v)+' ('+LANG.TIPOS[v.t].py+')';
+  /* uma cápsula no chão: pegar (ou trocar pela que está na mão: a da mão fica no lugar dela) */
+  for(const[id]of PD.capsulas){
+    const it=interacao(A,{x:0,y:0,r:16,alto:22,nome:()=>{const c=pat.caps[id];return'Cápsula '+LANG.fmt(c.val);},label:()=>{const c=pat.caps[id];if(c.em||pat.carrega===id)return null;return(pat.carrega?'Trocar pela cápsula ':'Pegar a cápsula ')+rot(c.val);},
+      use:()=>{const c=pat.caps[id];if(pat.carrega){const m=pat.caps[pat.carrega];m.x=c.x;m.y=c.y;}pat.carrega=id;SFX.frag();toast('Na mão: cápsula '+rot(c.val)+'. Leve até a máquina que aceita esse tipo.');}});
+    Object.defineProperty(it,'x',{get:()=>pat.caps[id].x});Object.defineProperty(it,'y',{get:()=>pat.caps[id].y+4});
+  }
+  /* as máquinas: ler a etiqueta, ou pôr a cápsula da mão (recusa com explicação quando o tipo ou o valor não servem) */
+  for(const k in MQ){const m=MQ[k],x=m.tx*16+8,y=m.ty*16+14;
+    const spr=k==='disjuntor'?'disjuntor':k==='bomba'?'bombaHidro':'painelSenha';
+    const o=objeto(A,SPR.get(spr,false,0),x,y,{col:k==='porta'?[-10,-6,10,0]:[-10,-8,10,0]});
+    o.desenho=(g,ob,t)=>{const on=feita(k);blit(g,SPR.get(spr,on,Math.floor(t*4)%4),ob.x,ob.y,ob.ax,ob.ay);
+      etiqueta(g,ob.x,ob.y-ob.ay-16,'aceita '+LANG.TIPOS[m.tipo].py,{int:'#6fd3ff',float:'#5dff7a',str:'#e9dcbc',bool:'#ffb43a'}[m.tipo]);
+      etiqueta(g,ob.x,ob.y-ob.ay-8,on?'ok':'pede '+LANG.fmt(LV(m.tipo,m.val)).replace(/^"|"$/g,'"')+(m.unid||''),on?'#5dff7a':'#ffffff');};
+    A.lampadas.push({x,y:y-20,get r(){return feita(k)?40:18;},get cor(){return feita(k)?'#5dff7a':'#ffb43a';}});
+    interacao(A,{x,y:y+8,r:24,alto:52,nome:m.nome,label:()=>feita(k)?m.nome+' (funcionando)':pat.carrega?'Pôr '+rot(pat.caps[pat.carrega].val)+' '+m.em:'Ler a etiqueta: '+m.nome,
+      use:()=>usarMaquina(k)});
+  }
+  const usarMaquina=k=>{const m=MQ[k],ped=LANG.fmt(LV(m.tipo,m.val))+(m.unid||'');
+    if(feita(k)){toast(m.nome+' já está funcionando: '+m.faz+'.');return;}
+    if(!pat.carrega){SFX.page();toast(m.nome+': aceita '+LANG.rotulo(m.tipo)+' e pede '+ped+'. '+mai1(m.ele)+' '+m.faz+'.');return;}
+    const c=pat.caps[pat.carrega],v=c.val;
+    if(m.precisa&&!feita(m.precisa)){SFX.deny();toast(m.nome+' está sem energia. Primeiro ligue o '+MQ[m.precisa].nome.toLowerCase()+'.','warn');return;}
+    if(v.t!==m.tipo){SFX.deny();R.treme=0.15;addDiary('diesel_tipos',true);
+      const aspas=v.t==='str'&&/^(True|False|-?\d+(\.\d+)?)$/.test(v.v)?' Com aspas, '+LANG.fmt(v)+' é texto, mesmo parecendo '+(/^(True|False)$/.test(v.v)?'um booleano':'um número')+'.':'';
+      toast(m.nome+' recusou '+LANG.fmt(v)+': é '+LANG.tipoDe(v)+', e '+m.ele+' só aceita '+LANG.rotulo(m.tipo)+'.'+aspas+' (Regra desta máquina: em Python, uma variável pode guardar qualquer tipo.)','warn');return;}
+    if(v.v!==m.val){SFX.deny();
+      toast(m.tipo==='str'?m.nome+' leu '+LANG.fmt(v)+' e não abriu: a senha é '+ped+'. Em texto, maiúsculas e minúsculas contam: '+LANG.fmt(v)+' == '+ped+' é False.':m.nome+' aceitou o tipo, mas pede '+ped+'.','warn');return;}
+    c.em=k;pat.carrega=null;G.abertas.push(m.flag);SFX.sensor();SFX.maquina();faiscas(m.tx*16+8,m.ty*16-6,12,['#fff6c0','#5dff7a']);
+    if(k==='bomba'){SFX.elev();R.treme=0.35;}if(k==='porta')SFX.gate();
+    toast(m.ok,'good');salvar(false);};
+  A.usarMaquina=usarMaquina;
+  /* canal com guarda-corpo: não dá para cair; a ponte (colunas 14 e 15) desce com a bomba */
+  solido(A,3*16,20*16,14*16,22*16);solido(A,16*16,20*16,27*16,22*16);
+  const trava=solido(A,14*16,20*16,16*16,22*16);
+  const ponte={b:feita('bomba')?1:0};
+  /* porta da oficina: abre com a senha no painel */
+  portao(A,14,15,2,'portaoAco',()=>feita('porta'));
+  A.cobre=(x,y)=>{const tx=Math.floor(x/16),ty=Math.floor(y/16);return ponte.b>0.6&&(tx===14||tx===15)&&(ty===20||ty===21);};
+  for(let x=3;x<27;x++){if(x===14||x===15)continue;objeto(A,SPR.get('guarda'),x*16+8,20*16+2,{});objeto(A,SPR.get('guarda'),x*16+8,22*16+2,{});}
+  objeto(A,SPR.get('ponteDiesel',0),15*16,20*16+2,{camada:-30}).desenho=(g,ob)=>{const b=ponte.b>0.6;blit(g,SPR.get('ponteDiesel',b?1:0),ob.x,b?22*16:20*16+2,16,b?36:8);};
+  A.ponte=ponte;
+  /* cápsulas: no chão (com o valor escrito), na mão do explorador e dentro das máquinas */
+  const desenharCapsulas=()=>{
+    for(const id in pat.caps){const c=pat.caps[id];if(id===pat.carrega)continue;
+      const mq=c.em?MQ[c.em]:null,x=mq?mq.tx*16+8:c.x,y=mq?mq.ty*16+(c.em==='porta'?6:2):c.y;if(!naTela(x,y,30))continue;
+      enfileirar(y+(mq?1:0),g=>{if(!mq)sombra(g,x,y+1,4,1.5);blit(g,SPR.get('capsulaValor',c.val.t),x,y,5,13);if(!mq)etiqueta(g,x,y-22,LANG.fmt(c.val),{int:'#6fd3ff',float:'#5dff7a',str:'#e9dcbc',bool:'#ffb43a'}[c.val.t]);});}
+    if(pat.carrega){const c=pat.caps[pat.carrega],p=G.p;enfileirar(p.y+1,g=>{blit(g,SPR.get('capsulaValor',c.val.t),p.x+7,p.y-30,5,13);etiqueta(g,p.x+7,p.y-52,LANG.fmt(c.val),'#ffe9a0');});}
   };
-  const vePlayer=v=>{const p=G.p,dx=p.x-v.x,dy=p.y-v.y,d=Math.hypot(dx,dy);if(d>96)return false;const a=Math.atan2(dy,dx),f=v.dir>0?0:Math.PI;let da=Math.abs(((a-f+Math.PI*3)%TAU)-Math.PI);return da<0.55&&visao(A,v.x,v.y-6,p.x,p.y-6);};
-  vg.desenhar=()=>{if(!naTela(vg.x,vg.y,120))return;enfileirar(vg.y,g=>{sombra(g,vg.x,vg.y,8,3);blit(g,sprVigia(Math.floor(vg.f)),vg.x,vg.y+2,9,22);});};
-  vg.reiniciar=()=>{vg.x=6*16;vg.y=20*16;vg.estado='patrulha';};
-  A.ents.push(vg);A.guardas.push(vg);
   /* Oficina: contêineres, separadora, monta-cargas, bancada e o console */
   objeto(A,SPR.get('separadora',0),8*16,12*16+8,{col:[-24,-14,24,0]}).desenho=(g,ob,t)=>blit(g,SPR.get('separadora',PAINEL.run&&PAINEL.area===A?Math.floor(t*6)%2:0),ob.x,ob.y,26,40);
   objeto(A,SPR.get('bancada'),5*16+8,14*16+12,{col:[-18,-8,18,0]});
@@ -140,30 +190,29 @@ CONSTRUIR.diesel=function(){
   const pt=objeto(A,SPR.get('portinhola',0),22*16+8,7*16+14,{});const pst={a:0};
   pt.desenho=(g,ob)=>{const e=maqEstado(),ok=e.m.senha&&e.m.senha.v==='ABRIR';pst.a+=((ok?1:0)-pst.a)*0.08;blit(g,SPR.get('portinhola',Math.round(pst.a*6)/6),ob.x,ob.y,13,30);};
   A.luzGerador=()=>{const e=maqEstado();return e.m.energia&&e.m.energia.v===true;};
-  interacao(A,{x:14*16,y:7*16,r:30,label:()=>'Ler a placa dos contêineres',use:()=>{addDiary('oficina_diesel');toast('Cada contêiner é uma variável: tem um nome, aceita um tipo (int, float, str ou bool) e mostra o valor atual. As máquinas leem a variável na hora de trabalhar.');}});
+  placaPista(A,'diesel',24*16+8,13*16+14,{cor:'#6fd3ff'});
   A.luzesExtra=t=>{
-    const f=A.facho();luz(f.x,f.y,10,1,'#fff6c0');
     if(A.luzGerador()){luz(5*16+8,8*16,46+Math.sin(t*12)*2,1,'#ffe9a0');for(const x of[8,20])luz(x*16,7*16,30,0.8,'#ffe9a0');}
     if(PAINEL.aberto&&PAINEL.area===A){luz(14*16,9*16,96,1,'#cfe8ff');}else luz(14*16,9*16,40,0.6,'#cfe8ff');
-    if(naTela(vg.x,vg.y,100))luz(vg.x+vg.dir*30,vg.y-4,26,0.9,'#fff2b0');
   };
   portao(A,14,5,2,'portaoAco',()=>saberOk('diesel'));
   pedestal(A,14,3,'diesel');
   A.update=(dt,t)=>{
-    const f=A.facho();
-    if(f.tx===HOLO.sensor.tx&&f.ty===HOLO.sensor.ty&&!sensorLigado()){G.abertas.push('diesel_luz');SFX.sensor();toast('A luz alcançou o sensor: a porta da oficina se abriu.','good');salvar(false);}
+    /* a ponte desce aos poucos depois que a bomba recebe o óleo; a trava só sai quando ela está embaixo */
+    ponte.b+=((feita('bomba')?1:0)-ponte.b)*Math.min(1,dt*2.5);trava.on=ponte.b<0.6;
     /* monta-cargas sobe quando a última execução da etapa 5 deu certo */
     const vis=PAINEL.aberto&&PAINEL.area===A?painelVis():null;const alvo=vis&&vis.cfg.id==='d5'&&vis.s&&vis.s.ok?1:(G.learn.d5&&!(vis&&vis.cfg.id==='d5'&&vis.rodando)?1:0);mc.nivel+=(alvo-mc.nivel)*Math.min(1,dt*1.5);
   };
   A.desenharChao=(g,t)=>{
-    /* o facho no chão (linha clara) */
-    const f=A.facho(),ox=R.ox,oy=R.oy;g.globalAlpha=0.55;P.linha(g,f.x0+ox,f.y0+oy,f.x+ox,f.y+oy,'#fff6c0');g.globalAlpha=0.25;P.linha(g,f.x0+ox+1,f.y0+oy,f.x+ox+1,f.y+oy,'#fff6c0');g.globalAlpha=1;
-    /* cone do vigia */
-    if(naTela(vg.x,vg.y,120)){g.globalAlpha=vg.estado==='caca'?0.3:0.16;g.fillStyle='#fff2b0';const a0=vg.dir>0?0:Math.PI;for(let r=10;r<96;r+=3){const w=Math.tan(0.55)*r;for(let s=-w;s<=w;s+=3)g.fillRect(Math.round(vg.x+Math.cos(a0)*r-Math.sin(a0)*s+ox),Math.round(vg.y-4+Math.sin(a0)*r+Math.cos(a0)*s+oy),2,2);}g.globalAlpha=1;}
+    desenharCapsulas();
     desenharOficina(A,g,t);
   };
-  A.reiniciar=()=>{reiniciarGuardas(A);for(const pt of A.pontos)pt.aceso=false;holo.d=sensorLigado()?1:2;mc.nivel=G.learn.d5?1:0;addDiary('diesel_enter',true);};
-  A.objetivo=()=>{if(!sensorLigado())return{t:'Saber: Dados e variáveis',s:'A porta da oficina está fechada. Gire o holofote até a luz alcançar o sensor da parede.',alvo:{x:8*16+8,y:24*16-14,txt:'Girar o holofote'}};return objetivoTumba('diesel','No console da oficina');};
+  A.reiniciar=()=>{for(const p0 of A.pontos)p0.aceso=false;capInicial();ponte.b=feita('bomba')?1:0;mc.nivel=G.learn.d5?1:0;addDiary('diesel_enter',true);};
+  A.objetivo=()=>{const alvoM=k=>({x:MQ[k].tx*16+8,y:MQ[k].ty*16-34,txt:MQ[k].nome});
+    if(!feita('disjuntor'))return{t:'Saber: Dados e variáveis',s:'O pátio está sem energia. Leia a etiqueta do disjuntor (leste): ele aceita um tipo só. Leve a cápsula certa até ele.',alvo:alvoM('disjuntor')};
+    if(!feita('bomba'))return{t:'Saber: Dados e variáveis',s:'Com energia, a bomba hidráulica (oeste) baixa a ponte do canal. Leia a etiqueta e escolha a cápsula do tipo certo.',alvo:alvoM('bomba')};
+    if(!feita('porta'))return{t:'Saber: Dados e variáveis',s:'A ponte desceu. O painel da porta (norte) pede uma senha: leve a cápsula com o texto certo.',alvo:alvoM('porta')};
+    return objetivoTumba('diesel','No console da oficina');};
   /* o que cada instrução mexe: a máquina da variável (etapas 2 e 7), o contêiner, a separadora, o monta-cargas ou a bomba */
   A.focoEvento=(ev,ws,cfg)=>{const M={energia:[5*16+8,9*16-28],combustivel:[24*16,9*16-38],senha:[19*16+8,7*16-18],pecas:[8*16,12*16-14]};
     if(ev.tipo==='set'){if((cfg.id==='d1'||cfg.id==='d6')&&M[ev.nome])return{x:M[ev.nome][0],y:M[ev.nome][1]};const p=contPos(A,ev.nome);return{x:p.x,y:p.y-52};}

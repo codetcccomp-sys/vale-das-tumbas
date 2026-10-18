@@ -20,7 +20,7 @@ const inter=(a,b)=>a&&b&&a.w>0&&b.w>0&&a.x<b.x+b.w-1&&b.x<a.x+a.w-1&&a.y<b.y+b.h
     });
     const k=m.es.k;
     t.ok(Number.isInteger(k)&&k>=1&&m.es.cw===Math.round(w*dpr)&&m.es.W*k>=m.es.cw&&(m.es.W-1)*k<m.es.cw,nome+': escala inteira '+k+'× e canvas no tamanho real da tela',m.es);
-    const curto=Math.min(m.es.W,m.es.H);t.ok(curto>=180&&curto<=340,nome+': lado menor com '+curto+' pixels de jogo',curto);
+    const curto=Math.min(m.es.W,m.es.H);t.ok(curto>=180&&curto<=(m.es.longe?400:340),nome+': lado menor com '+curto+' pixels de jogo'+(m.es.longe?' (câmera afastada)':''),curto);
     t.ok(!inter(m.hl,m.hr),nome+': vida/objetivo não encostam nos botões do alto',[m.hl,m.hr]);
     if(toque){t.ok(m.use&&m.use.w>=60&&m.use.h>=60,nome+': botão de ação grande',m.use);
       t.ok(!m.prompt||!inter(m.prompt,m.use),nome+': aviso de interação não cobre o botão',[m.prompt,m.use]);
@@ -47,8 +47,11 @@ const inter=(a,b)=>a&&b&&a.w>0&&b.w>0&&a.x<b.x+b.w-1&&b.x<a.x+a.w-1&&a.y<b.y+b.h
       const p0=document.getElementById('painel');
       return{pn:{x:pn.x,y:pn.y,w:pn.width,h:pn.height},fora,ctl,pal,prog:{h:prog.height,w:prog.width},fmin:Math.min(...fontes),rola:p0.scrollHeight>p0.clientHeight+2,ultimo:(()=>{p0.scrollTop=1e6;const b=document.getElementById('pCtl').getBoundingClientRect();return b.bottom<=innerHeight+1;})()};
     });
+    /* editor amplo (padrão): a sala vira uma faixa compacta, mas o mecanismo continua dentro dela */
     const mundo=p.pn.y>40?p.pn.y/h:p.pn.x/w;
-    t.ok(mundo>=0.3,nome+': o mecanismo da sala fica à vista ('+Math.round(mundo*100)+'% da tela)',p.pn);
+    const fv=await ev(()=>{__vt.quadros(2);const R0=__vt.R,v=R0.vista,k=R0.k/R0.dpr,f=PAINEL.foco;return{x:(f.x+R0.ox)*k,y:(f.y+R0.oy)*k,v:{x:v.x/R0.dpr,y:v.y/R0.dpr,w:v.w/R0.dpr,h:v.h/R0.dpr}};});
+    const dentro=fv.x>=fv.v.x&&fv.x<=fv.v.x+fv.v.w&&fv.y>=fv.v.y-8&&fv.y<=fv.v.y+fv.v.h;
+    t.ok(mundo>=0.2&&dentro,nome+': editor amplo: o mecanismo fica à vista na faixa da sala ('+Math.round(mundo*100)+'% da tela)',{pn:p.pn,fv});
     t.ok(!p.fora.length,nome+': nenhum botão do painel sai da tela',p.fora);
     t.ok(p.ctl.every(b=>b.h>=40),nome+': controles do painel com pelo menos 40 px de altura',p.ctl.map(b=>Math.round(b.h)));
     t.ok(p.pal.every(x=>x>=46),nome+': placas da paleta com pelo menos 46 px',p.pal.map(Math.round));
@@ -58,6 +61,9 @@ const inter=(a,b)=>a&&b&&a.w>0&&b.w>0&&a.x<b.x+b.w-1&&b.x<a.x+a.w-1&&a.y<b.y+b.h
     const ve=await ev(()=>{document.getElementById('painel').scrollTop=0;mostrarErro({linha:3,titulo:'Erro de teste (TypeError): era esperado um número inteiro (int).',texto:'Explicação do erro de teste, com duas ou três linhas de texto para ocupar o espaço que uma explicação de verdade ocupa.'});
       const b=document.getElementById('pErro').getBoundingClientRect(),f=document.getElementById('pRodape').getBoundingClientRect();return{topo:b.top,fim:b.bottom,rodape:f.top};});
     t.ok(ve.topo>=0&&ve.fim<=ve.rodape+1,nome+': a área de erro aparece inteira, acima dos botões fixos do painel',ve);
+    /* "Ver a sala": a sala ganha espaço; depois volta ao editor amplo */
+    const sala=await ev(()=>{document.getElementById('pLayout').click();const r=document.getElementById('painel').getBoundingClientRect();const m=r.y>40?r.y/innerHeight:r.x/innerWidth;document.getElementById('pLayout').click();return m;});
+    t.ok(sala>=0.3,nome+': "Ver a sala" deixa a sala com '+Math.round(sala*100)+'% da tela',sala);
     await page.screenshot({path:path.join(__dirname,'shots','painel-'+w+'x'+h+'.png')});
     t.ok(!logs.length,nome+': sem erros',logs.slice(0,2));
     await browser.close();

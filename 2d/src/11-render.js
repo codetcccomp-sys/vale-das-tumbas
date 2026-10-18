@@ -11,11 +11,16 @@ function renderInit(){
   if(window.visualViewport)visualViewport.addEventListener('resize',redimensionar);
   redimensionar();
 }
+/* câmera afastada (padrão, guardada nas preferências; VER / C alterna): um degrau a menos de ampliação mostra mais do
+   lugar, ainda com pixels inteiros. Só vale quando cada pixel do jogo continua com pelo menos 1,1 pixel da tela (texto e
+   personagem legíveis). Com o painel aberto volta ao normal: a faixa da sala mostra o mecanismo com detalhe. */
+function kDe(dw,dh,longe){return Math.max(1,Math.round(Math.min(dw,dh)/250)-(longe?1:0));}
+function longePossivel(dw,dh,dpr){const k1=kDe(dw,dh,true);return k1<kDe(dw,dh,false)&&k1/dpr>=1.1;}
 function redimensionar(){
   const dpr=Math.min(window.devicePixelRatio||1,4),w=Math.max(1,innerWidth),h=Math.max(1,innerHeight);
   const dw=Math.round(w*dpr),dh=Math.round(h*dpr);
-  /* vista ampla (C / VER): um degrau a menos de ampliação mostra mais do mundo, ainda com pixels inteiros */
-  R.dpr=dpr;R.k=Math.max(1,Math.round(Math.min(dw,dh)/250)-(R.longe?1:0));
+  const longe=R.longe&&!(typeof PAINEL!=='undefined'&&PAINEL.aberto)&&longePossivel(dw,dh,dpr);
+  R.dpr=dpr;R.k=kDe(dw,dh,longe);R.longeAtivo=longe;
   R.W=Math.ceil(dw/R.k);R.H=Math.ceil(dh/R.k);
   R.cv.width=dw;R.cv.height=dh;R.cv.style.width=w+'px';R.cv.style.height=h+'px';
   R.lo.width=R.W;R.lo.height=R.H;R.luz.width=R.W;R.luz.height=R.H;
@@ -111,8 +116,8 @@ function desenharLuz(escuro,tinta){
   g.globalCompositeOperation='destination-out';
   for(const L of LUZES){
     const x=Math.round(L.x+R.ox),y=Math.round(L.y+R.oy);if(x<-L.r-4||y<-L.r-4||x>R.W+L.r+4||y>R.H+L.r+4)continue;
-    /* três degraus: borda fraca, meio e centro claro */
-    const deg=[[1,0.35],[0.78,0.65],[0.55,1]];
+    /* quatro degraus suaves: a borda some aos poucos (sem um círculo marcado que esconda o resto) */
+    const deg=[[1,0.22],[0.84,0.45],[0.68,0.72],[0.52,1]];
     for(const[rr,a]of deg){g.globalAlpha=a*L.f;P.circ(g,x,y,L.r*rr,'#000');}
   }
   g.globalAlpha=1;g.globalCompositeOperation='source-over';

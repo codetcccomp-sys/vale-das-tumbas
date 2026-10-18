@@ -1,5 +1,5 @@
 /* ====================== entrada: teclado, toque e controle ======================
-   Teclado: WASD ou setas andam, Shift corre, E / Espaço / Enter interagem, G Guia de Programação, C vista ampla,
+   Teclado: WASD ou setas andam, Shift corre, E / Espaço / Enter interagem, G Guia de Programação, C aproxima ou afasta a câmera,
    J diário, T lanterna, Esc pausa.
    Toque: joystick que aparece onde o dedo encosta na metade esquerda (empurrado até o fim, corre) e botões grandes
    à direita (ação, lanterna). Andar e apertar botões funcionam ao mesmo tempo (vários dedos).

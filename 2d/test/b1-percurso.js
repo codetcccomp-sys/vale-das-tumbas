@@ -24,8 +24,11 @@ const t=suite('b1-percurso');
   await U.opcao('Como');d=await ev(()=>document.getElementById('dTexto').textContent);t.ok(d.length>20,'o Lume explica os controles',d.slice(0,90));
   await U.opcao('Até logo');e=await U.estado();t.ok(e.mode==='play','fechar a conversa volta ao jogo');
   const k0=await ev(()=>__vt.R.k);await ev(()=>document.getElementById('bVer').click());await ev(()=>__vt.quadros(2));
-  let k1=await ev(()=>__vt.R.k);t.ok(k1<k0,'botão VER afasta a câmera (vista ampla)',[k0,k1]);
+  /* nesta tela (412 px, densidade 2) a câmera afastada deixaria o pixel do jogo com 1 pixel da tela: o jogo mantém a normal e avisa */
+  let k1=await ev(()=>({k:__vt.R.k,pode:longePossivel(__vt.R.cv.width,__vt.R.cv.height,__vt.R.dpr),av:[...document.querySelectorAll('#msgs .toast span')].map(x=>x.textContent).join(' ')}));
+  t.ok(k1.pode?k1.k!==k0:(k1.k===k0&&/máximo/.test(k1.av)),'botão VER aproxima ou afasta a câmera (ou avisa que a tela já mostra o máximo legível)',[k0,k1]);
   await ev(()=>document.getElementById('bVer').click());await ev(()=>__vt.quadros(2));
+  k1=await ev(()=>({k:__vt.R.k}));t.ok(k1.k===k0,'VER de novo volta ao enquadramento de antes',k1);
   lb=await ev(()=>__vt.usarEm(TREINO.manivela.x,TREINO.manivela.y+10,'cima'));tr=await ev(()=>__vt.G.treino);t.ok(tr.manivela,'recolhe a manivela (coleta de objeto)',lb);
   lb=await ev(()=>__vt.usarEm(TREINO.term.tx*16+8,TREINO.term.ty*16+30,'cima'));await page.waitForTimeout(100);
   e=await U.painel();t.ok(!e.aberto,'o terminal pede o Guia antes de abrir o editor',lb);
@@ -76,8 +79,13 @@ const t=suite('b1-percurso');
   await recarregar('Tumba das Engrenagens');
   /* ---------- Motores: variáveis e tipos ---------- */
   p=await ev(()=>__vt.porta('diesel'));await U.usarEm(p.x,p.y);await U.transicao();e=await U.estado();t.ok(e.area==='diesel','Tumba dos Motores aberta depois da Sequência');
-  for(let i=0;i<7;i++)await U.usarEm(8*16+8,24*16+20,'cima');
-  await ev(()=>__vt.quadros(3));let ab=await ev(()=>__vt.G.abertas.indexOf('diesel_luz')>=0);t.ok(ab,'holofote girado até a luz alcançar o sensor: porta aberta');
+  /* pátio de abastecimento: cada máquina aceita um tipo; as cápsulas parecidas de outro tipo são recusadas */
+  const capP=id=>ev(id=>{const c=__vt.G.area.patio.caps[id];return __vt.usarEm(c.x,c.y+12,'cima');},id);
+  const maqP=k=>ev(k=>{const m=PATIO_DIESEL.maquinas[k];return __vt.usarEm(m.tx*16+8,m.ty*16+30,'cima');},k);
+  await capP('c_strue');await maqP('disjuntor');let ab=await ev(()=>__vt.G.abertas.slice());t.ok(ab.indexOf('diesel_disjuntor')<0,'pátio: o disjuntor (aceita bool) recusa a cápsula "True", que é texto',ab);
+  await capP('c_true');await maqP('disjuntor');await capP('c_f25');await maqP('bomba');await ev(()=>{for(let i=0;i<60;i++)__vt.quadros(1);});
+  await capP('c_abrir');await maqP('porta');await ev(()=>{for(let i=0;i<60;i++)__vt.quadros(1);});
+  ab=await ev(()=>__vt.G.abertas.slice());t.ok(['diesel_disjuntor','diesel_ponte','diesel_porta'].every(f=>ab.indexOf(f)>=0),'pátio: True no disjuntor, 2.5 na bomba (a ponte desce) e "ABRIR" no painel abrem a oficina',ab);
   lb=await U.usarEm(14*16+8,13*16+6,'cima');await ev(()=>__vt.velocidade(8));e=await U.painel();t.ok(e.aberto&&e.cfg==='d0','computador dos Motores',[lb,e.cfg]);
   await U.pb('Guardar e ler');await U.esperarFim();await page.waitForTimeout(80);e=await U.estado();t.ok(e.learn.d0,'demonstração da variável e da máquina');
   await U.pb('Continuar');

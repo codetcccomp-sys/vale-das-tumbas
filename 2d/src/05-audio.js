@@ -1,8 +1,10 @@
 /* ====================== áudio (tudo sintetizado, sem arquivos) ======================
    Os mesmos sons do jogo 3D (vento, zumbido das tumbas, motor, reator, tumba viva, cidade e os efeitos), mais os sons do
    painel de programação: encaixar linha, cada passo do programa, erro e sucesso. Sons naturais do vale: pássaros de dia,
-   grilos à noite, rajadas de vento, o fogo estalando e a água do oásis quando se está perto; gotas e rangidos nas tumbas. */
-const AU={ctx:null,master:null,sfx:null,amb:null,mus:null,on:true,vol:0.8,noise:null,wind:null,hum:null,nextTick:0,flip:false,nextChord:2,last:{}};
+   grilos à noite, rajadas de vento, o fogo estalando e a água do oásis quando se está perto; gotas e rangidos nas tumbas.
+   Trilha sonora: um tema por região (tocarMusica), no barramento mus, com volume próprio (Música) separado de sons e
+   efeitos (Efeitos); Som desligado silencia tudo. Até a versão anterior só havia um acorde esparso no vale. */
+const AU={ctx:null,master:null,sfx:null,amb:null,mus:null,on:true,vol:0.8,volMus:0.7,volEfx:1,noise:null,wind:null,hum:null,nextTick:0,flip:false,last:{},mNotas:0};
 function auInit(){
   if(AU.ctx){if(AU.ctx.state==='suspended'){try{AU.ctx.resume();}catch(e){}}return;}
   try{
@@ -10,7 +12,7 @@ function auInit(){
     const c=AU.ctx=new C();
     AU.master=c.createGain();AU.master.gain.value=AU.on?AU.vol:0;AU.master.connect(c.destination);
     for(const k of ['sfx','amb','mus']){AU[k]=c.createGain();AU[k].connect(AU.master);}
-    AU.sfx.gain.value=0.9;AU.amb.gain.value=0.55;AU.mus.gain.value=0.4;
+    AU.sfx.gain.value=0.9*AU.volEfx;AU.amb.gain.value=0.55*AU.volEfx;AU.mus.gain.value=0.5*AU.volMus;
     const len=c.sampleRate*2,buf=c.createBuffer(1,len,c.sampleRate),d=buf.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;AU.noise=buf;
     // vento
     const ws=c.createBufferSource();ws.buffer=buf;ws.loop=true;const bp=c.createBiquadFilter();bp.type='bandpass';bp.frequency.value=520;bp.Q.value=0.6;
@@ -38,6 +40,9 @@ function auInit(){
   }catch(e){AU.ctx=null;}
 }
 function auSetOn(on){AU.on=on;if(AU.master)AU.master.gain.setTargetAtTime(on?AU.vol:0,AU.ctx.currentTime,0.05);}
+/* volumes (0 a 1): música e efeitos (sons do jogo e ambiente) separados */
+function auVolumes(mus,efx){if(typeof mus==='number')AU.volMus=clamp(mus,0,1);if(typeof efx==='number')AU.volEfx=clamp(efx,0,1);
+  if(!AU.ctx)return;const t=AU.ctx.currentTime;AU.sfx.gain.setTargetAtTime(0.9*AU.volEfx,t,0.05);AU.amb.gain.setTargetAtTime(0.55*AU.volEfx,t,0.05);AU.mus.gain.setTargetAtTime(0.5*AU.volMus*(AU.abafa||1),t,0.08);}
 function auArea(inTomb,night,kind){AU.kind=kind||'steam';if(!AU.ctx)return;const t=AU.ctx.currentTime;AU.wind.gain.setTargetAtTime(inTomb?(AU.kind==='city'?0.14:0):(night?0.16:0.3),t,0.6);
   AU.hum.gain.setTargetAtTime(inTomb&&AU.kind==='steam'?0.16:0,t,0.6);AU.engine.gain.setTargetAtTime(inTomb&&AU.kind==='diesel'?0.3:0,t,0.6);AU.reactor.gain.setTargetAtTime(inTomb&&AU.kind==='atom'?0.2:0,t,0.6);AU.bio.gain.setTargetAtTime(inTomb&&AU.kind==='bio'?0.2:0,t,0.6);}
 function tone(f,d,type,v,slide,delay,bus){if(!AU.ctx)return;const c=AU.ctx,t=c.currentTime+(delay||0),o=c.createOscillator(),g=c.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(20,f*slide),t+d);
@@ -106,10 +111,6 @@ function auUpdate(dt,inTomb,night,mode){
     }
     else if(AU.kind==='city'){
       const lv=AU.cityLvl||0;
-      if(now>(AU.nextCityChord||0)){AU.nextCityChord=now+(8-4.5*lv)+Math.random()*3;const n=2+Math.round(lv*2.4),base=lv>0.45?1:0.5,i=Math.floor(Math.random()*3);
-        for(let j=0;j<n;j++){const k=i+j*2,f=SCALE[k%SCALE.length]*base*(k>=SCALE.length?2:1)*0.5;
-          const o=AU.ctx.createOscillator(),g=AU.ctx.createGain();o.type=lv>0.6?'sine':'triangle';o.frequency.value=f;
-          g.gain.setValueAtTime(0.0001,now+j*0.35);g.gain.linearRampToValueAtTime(0.04+0.03*lv,now+j*0.35+2);g.gain.linearRampToValueAtTime(0.0001,now+j*0.35+6.5);o.connect(g);g.connect(AU.mus);o.start(now+j*0.35);o.stop(now+j*0.35+6.7);}}
       if(lv>0.25&&now>(AU.nextBird||0)){AU.nextBird=now+2+Math.random()*(6-4*lv);const f=2200+Math.random()*1600;tone(f,0.07,'sine',0.03,1.25,0,'amb');tone(f*1.2,0.08,'sine',0.025,0.9,0.11,'amb');}
       if(Math.random()<dt*0.5)burst(0.5,'highpass',3500,0.025,0,0.5);
     }
@@ -126,6 +127,51 @@ function auUpdate(dt,inTomb,night,mode){
     if(now>(AU.nextRajada||0)){AU.nextRajada=now+9+Math.random()*10;burst(2.4,'bandpass',380+Math.random()*200,0.05,0,0.5);}
     if((AU.fogo||0)>0.05&&now>(AU.nextEstalo||0)){AU.nextEstalo=now+0.12+Math.random()*0.45;burst(0.035,'highpass',2400,0.07*AU.fogo,0,1.5);}
     if((AU.agua||0)>0.05&&now>(AU.nextAgua||0)){AU.nextAgua=now+0.45+Math.random()*0.7;burst(0.5,'lowpass',850,0.05*AU.agua,0,0.7);tone(900+Math.random()*500,0.05,'sine',0.012*AU.agua,0.7,0.1,'amb');}
-    if(now>AU.nextChord){AU.nextChord=now+9+Math.random()*5;const base=night?0.5:1,i=Math.floor(Math.random()*4);[i,i+2,i+3].forEach((k,j)=>{const f=SCALE[k%SCALE.length]*base*(k>=SCALE.length?2:1)*0.5;
-      const o=AU.ctx.createOscillator(),g=AU.ctx.createGain();o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(0.0001,now+j*0.4);g.gain.linearRampToValueAtTime(0.045,now+j*0.4+2.2);g.gain.linearRampToValueAtTime(0.0001,now+j*0.4+7);o.connect(g);g.connect(AU.mus);o.start(now+j*0.4);o.stop(now+j*0.4+7.2);});} }
+  }
+  tocarMusica(inTomb,night,mode);
+}
+
+/* ---------- trilha sonora ----------
+   Cada região tem escala, andamento, progressão de acordes e timbres próprios. Por compasso: um acorde longo (fundo), o
+   baixo nos tempos fortes e uma melodia curta, escolhida em passeio pela escala (com semente por compasso, para soar
+   como um tema que volta com variações). Discreta: volume baixo, notas suaves; com o painel aberto fica mais baixa. */
+const TEMAS={
+  vale:{raiz:146.83,esc:[0,2,4,7,9],bpm:76,prog:[0,3,4,2],pad:'triangle',lead:'sine',dens:0.45},
+  noite:{raiz:130.81,esc:[0,3,5,7,10],bpm:60,prog:[0,4,3,1],pad:'sine',lead:'sine',dens:0.3},
+  treino:{raiz:164.81,esc:[0,2,4,7,9],bpm:84,prog:[0,4,3,4],pad:'triangle',lead:'triangle',dens:0.5},
+  steam:{raiz:146.83,esc:[0,2,3,5,7,9,10],bpm:92,prog:[0,3,4,0],pad:'triangle',lead:'square',dens:0.55,tique:true},
+  diesel:{raiz:110,esc:[0,3,5,6,7,10],bpm:84,prog:[0,0,3,4],pad:'sawtooth',lead:'triangle',dens:0.4,pulso:true},
+  atom:{raiz:174.61,esc:[0,2,4,6,7,9,11],bpm:100,prog:[0,1,4,3],pad:'sine',lead:'sine',dens:0.6,arpejo:true},
+  bio:{raiz:123.47,esc:[0,2,3,5,7,8,10],bpm:58,prog:[0,5,3,4],pad:'sine',lead:'triangle',dens:0.35},
+  city:{raiz:196,esc:[0,2,4,5,7,9,11],bpm:80,prog:[0,4,5,3],pad:'triangle',lead:'sine',dens:0.5}
+};
+function temaAtual(inTomb,night){const k=AU.kind;if(k==='treino')return'treino';if(inTomb)return TEMAS[k]?k:'steam';return night?'noite':'vale';}
+function nota(f,t,d,tipo,v,bus){const c=AU.ctx,o=c.createOscillator(),g=c.createGain(),lp=c.createBiquadFilter();o.type=tipo;o.frequency.setValueAtTime(f,t);
+  lp.type='lowpass';lp.frequency.value=tipo==='sawtooth'||tipo==='square'?900:2400;
+  const at=Math.min(0.06,d*0.3);g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(v,t+at);g.gain.setTargetAtTime(0.0001,t+d*0.55,d*0.25);
+  o.connect(lp);lp.connect(g);g.connect(AU[bus||'mus']);o.start(t);o.stop(t+d+0.4);AU.mNotas++;}
+function grau(T,g,oit){const e=T.esc,n=e.length,i=((g%n)+n)%n,o=Math.floor(g/n)+(oit||0);return T.raiz*Math.pow(2,(e[i]+12*o)/12);}
+function tocarMusica(inTomb,night,mode){
+  if(!AU.ctx||!AU.on||AU.volMus<=0.001||mode==='menu')return;
+  const now=AU.ctx.currentTime,k=temaAtual(inTomb,night),T=TEMAS[k];
+  /* troca de região: recomeça no próximo tempo, sem amontoar notas */
+  if(AU.mTema!==k){AU.mTema=k;AU.mPasso=0;AU.mProx=Math.max(now+0.1,AU.mProx||0);AU.mGrau=0;}
+  /* painel aberto: música mais baixa para a concentração */
+  const abafa=mode==='painel'||mode==='guia'?0.45:1;if(abafa!==AU.abafa){AU.abafa=abafa;AU.mus.gain.setTargetAtTime(0.5*AU.volMus*abafa,now,0.4);}
+  const colc=60/T.bpm/2;let guarda=0;
+  while(AU.mProx<now+0.3&&guarda++<16){
+    const t=AU.mProx,p=AU.mPasso,comp=Math.floor(p/8),pos=p%8,acorde=T.prog[comp%T.prog.length];
+    const lv=k==='city'?(AU.cityLvl||0):1;
+    if(pos===0){for(const[j,g]of[[0,acorde],[1,acorde+2],[2,acorde+4]].slice(0,k==='city'&&lv<0.3?2:3))nota(grau(T,g,0),t+j*0.02,colc*8.2,T.pad,0.035,'mus');
+      nota(grau(T,acorde,-1),t,colc*3,'triangle',0.06,'mus');AU.mSemente=(comp*7919+k.length*131)%997;}
+    if(pos===4)nota(grau(T,acorde,-1),t,colc*2.5,'triangle',0.045,'mus');
+    if(T.pulso&&pos%2===0)nota(grau(T,acorde,-2),t,colc*0.6,'square',0.018,'mus');
+    if(T.tique&&pos%2===1)nota(grau(T,acorde+4,2),t,0.04,'square',0.012,'mus');
+    if(T.arpejo&&pos%2===1)nota(grau(T,acorde+(pos>>1)%3*2,1),t,colc*0.9,'sine',0.022,'mus');
+    /* melodia: passeio pela escala, mais densa onde o tema pede (e na cidade conforme ela renasce) */
+    AU.mSemente=(AU.mSemente*9301+49297)%233280;const r=AU.mSemente/233280;
+    if(pos%2===0&&r<T.dens*(k==='city'?0.4+0.6*lv:1)){const passo=r<T.dens*0.3?-1:r<T.dens*0.6?1:r<T.dens*0.8?2:-2;AU.mGrau=clamp(AU.mGrau+passo,-2,7);
+      nota(grau(T,acorde+AU.mGrau,1),t,colc*(pos===6?2.6:1.6),T.lead,T.lead==='square'?0.016:0.04,'mus');}
+    AU.mPasso++;AU.mProx+=colc;
+  }
 }

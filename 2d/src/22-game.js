@@ -4,7 +4,7 @@ const G={
   mode:'menu',   // menu | play | paused | painel | diario | guia | dialogo | trans | fim
   area:null,curTomb:null,hearts:3,invuln:0,danoT:0,lantern:100,lanternOn:false,
   relics:{steam:false,diesel:false,atom:false,bio:false},learn:{},progs:{},diary:[],diaryNew:0,insc:{},sec:{},abertas:[],done:false,time:0.12,migr:null,
-  treino:{feito:true,passo:0,manivela:false},dicas:{},poi:{},guia:false,lumeFalou:false,
+  treino:{feito:true,passo:0,manivela:false},dicas:{},poi:{},guia:false,lumeFalou:false,pistas:{},fixadas:[],marcas:{},
   p:{x:0,y:0,vx:0,vy:0,dir:'baixo',anim:0,parado:0,usar:0,run:false,caindo:0,vel:0,passoAcc:0},
   checkpoint:null,valePos:null,t:0,nightSeen:false,salvoEm:0
 };
@@ -67,8 +67,7 @@ function atualizarHud(){
     [...$('relics').children].forEach(im=>{const e=relicEstado(im.dataset.k);im.src=HUDI.rel[im.dataset.k][e];im.title=RELIC_INFO[im.dataset.k].name+(e===2?' (desperta)':e===1?' (adormecida)':'');});
     $('relicTxt').textContent=saberesCount()+'/4 saberes';
   }
-  if(G.area&&G.area.id!=='vale'){const lo=G.lantern<25;$('lantern').classList.toggle('low',lo);$('lantern').classList.toggle('off',!G.lanternOn);
-    $('lantern').querySelector('i').style.width=Math.round(G.lantern)+'%';$('ltxt').textContent=G.lanternOn?Math.ceil(G.lantern)+'%':'apagada';}
+  if(G.area&&G.area.id!=='vale'){$('lantern').classList.toggle('off',!G.lanternOn);$('ltxt').textContent=G.lanternOn?'acesa':'apagada';}
   const go=objetivo();if(go!==atualizarHud.go){atualizarHud.go=go;const el=$('goal');el.innerHTML='';if(go){const b=document.createElement('b');b.textContent=go.t;el.appendChild(b);el.appendChild(document.createTextNode(go.s));el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');}}
 }
 /* objetivo: sempre a próxima etapa de aprendizagem */
@@ -105,7 +104,7 @@ function mostrarAba(a){
   const card=(t,s,cod,cls,novo)=>{const d=document.createElement('div');d.className='entry'+(cls?' '+cls:'');const h=document.createElement('h3');h.textContent=t;if(novo){const tg=document.createElement('span');tg.className='tag';tg.textContent='novo';h.appendChild(tg);}
     const p=document.createElement('p');p.textContent=s;d.appendChild(h);d.appendChild(p);if(cod){const pr=document.createElement('pre');pr.textContent=cod;d.appendChild(pr);}L.appendChild(d);};
   if(a==='notas'){
-    $('dInfo').textContent='Anotações: '+G.diary.length+' · segredos: '+secCount()+'/12';
+    $('dInfo').textContent='Anotações: '+G.diary.length+' · segredos: '+secCount()+'/12 · marcas de luz: '+Object.keys(G.marcas).length+'/'+MARCA_IDS.length;
     const lst=G.diary.slice().reverse();if(!lst.length)card('Ainda não há anotações','Explore o vale.');
     lst.forEach((id,i)=>{const e=ENTRIES[id];if(e)card(e.t,e.s,e.cod,e.cod?'saber':'',i<G.diaryNew);});
   }else if(a==='saberes'){
@@ -114,6 +113,13 @@ function mostrarAba(a){
       if(ok){card(S.nome+' · '+RELIC_INFO[k].name,S.resumo,S.exemplo,'saber');const m=meuPrograma(k);if(m)card('Seu programa · '+m.cfg.titulo,'O programa que você escreveu e que resolveu esta etapa'+(m.cfg.etapa==='aplicacao'?', sem guia, numa situação nova.':'.'),m.cod,'saber');}
       else card(S.nome+' · '+TOMBS[k].name,(G.relics[k]?'Relíquia adormecida. ':'')+'Etapas concluídas: '+plural(feitos,'etapa','etapas')+' de '+tot+'.',null,'bloq');}
     if(G.done)card(ENTRIES.saber_tudo.t,ENTRIES.saber_tudo.s,ENTRIES.saber_tudo.cod,'saber');
+  }else if(a==='pistas'){
+    /* pistas lidas (placas com !) e marcas de luz: o que foi encontrado, onde, e o botão para fixar a pista no terminal */
+    $('dInfo').textContent='Pistas lidas: '+Object.keys(G.pistas).length+' de '+PISTA_IDS.length+' · marcas de luz: '+Object.keys(G.marcas).length+' de '+MARCA_IDS.length+'. Uma pista fixada aparece no alto do painel de programação.';
+    const lidas=PISTA_IDS.filter(id=>G.pistas[id]);if(!lidas.length)card('Nenhuma pista lida ainda','As placas com ! guardam pistas para os desafios. A primeira fica no pátio de treino.');
+    for(const id of lidas){const P0=PISTAS[id];card(P0.nome+' · '+nomeLugar(P0.lugar),P0.texto,null,'saber');
+      const b=document.createElement('button');b.className='btn';b.textContent=G.fixadas.indexOf(id)>=0?'📌 Fixada no terminal (tirar)':'📌 Fixar no terminal';b.onclick=()=>{fixarPista(id);mostrarAba('pistas');};L.lastChild.appendChild(b);}
+    for(const id of MARCA_IDS.filter(id=>G.marcas[id]))card('Marca de luz · '+MARCAS[id].t+' · '+TOMBS[MARCAS[id].tumba].name,MARCAS[id].s,null,'');
   }else if(a==='exemplos'){
     $('dInfo').textContent='Os exemplos das etapas que você já concluiu. Eles também ficam no Guia, em Ajuda › Seus exemplos.';
     const ex=exemplosVistos();if(!ex.length)card('Nenhum exemplo ainda','Os exemplos aparecem depois das demonstrações e de cada etapa concluída.');
@@ -214,12 +220,18 @@ function transicao(fn,msg){
 }
 function entrarTumba(k){
   G.valePos={x:G.p.x,y:G.p.y};
-  transicao(()=>{const A=areaTumba(k);G.curTomb=k;A.reiniciar&&A.reiniciar();trocarArea(A,A.spawn.x,A.spawn.y,A.spawn.dir);G.lantern=100;G.lanternOn=k!=='final';salvar(false);},TXT.enterTomb);
+  transicao(()=>{const A=areaTumba(k);G.curTomb=k;A.reiniciar&&A.reiniciar();trocarArea(A,A.spawn.x,A.spawn.y,A.spawn.dir);G.lantern=100;G.lanternOn=k!=='final';salvar(false);
+    if(k!=='final'&&G.diary.indexOf('lanterna')<0){addDiary('lanterna',true);setTimeout(()=>{if(G.mode==='play')toast('A lanterna está acesa. Perto das paredes, ela revela marcas de luz dos construtores (opcionais). LUZ ou T acende e apaga.');},1600);}},TXT.enterTomb);
 }
 function sairTumba(derrota){
   const k=G.curTomb;
-  transicao(()=>{const T=TOMBS[k]||TOMBS.steam;G.curTomb=null;trocarArea(AREAS.vale,T.out.x*16+8,T.out.y*16+8,'baixo');G.lanternOn=false;salvar(false);},derrota?null:TXT.backValley);
+  transicao(()=>{const T=TOMBS[k]||TOMBS.steam;G.curTomb=null;trocarArea(AREAS.vale,T.out.x*16+8,T.out.y*16+8,'baixo');G.lanternOn=false;
+    /* a primeira saída depois do saber: a estação de atalho acordou e uma parte do vale voltou a funcionar */
+    if(RELIC_KEYS.indexOf(k)>=0&&saberOk(k)&&G.abertas.indexOf('atalho_'+k)<0){G.abertas.push('atalho_'+k);
+      setTimeout(()=>{if(G.mode==='play')toast('A estação de atalho ao lado da porta acordou com o saber: ela leva ao acampamento e às outras estações acordadas. '+VALE_REAGE[k],'good');},700);}
+    salvar(false);},derrota?null:TXT.backValley);
 }
+const VALE_REAGE={steam:'As chaminés da era do vapor voltaram a fumegar.',diesel:'Os postes da era dos motores voltaram a acender.',atom:'As antenas da era atômica voltaram a piscar.',bio:'Os cogumelos da era viva voltaram a brilhar.'};
 function areaTumba(k){if(!AREAS[k])AREAS[k]=CONSTRUIR[k]();return AREAS[k];}
 const areaExterna=A=>!!A&&(A.id==='vale'||A.id==='treino');
 
@@ -231,13 +243,16 @@ function lsDel(k){try{localStorage.removeItem(k);}catch(e){}}
 function armazenamentoOk(){try{localStorage.setItem('vt2d_teste','1');localStorage.removeItem('vt2d_teste');return true;}catch(e){return false;}}
 function lerJson(k){const r=lsGet(k);if(!r)return null;try{return JSON.parse(r);}catch(e){return null;}}
 function lerSave(){return SAVE2D.limpar(lerJson(SAVE2D_KEY));}
+/* preferências deste aparelho (separadas do progresso): som, volumes, câmera, painel e referência */
+function cfgLer(){const c=lerJson(CFG2D_KEY);return c&&typeof c==='object'&&!Array.isArray(c)?c:{};}
+function cfgGravar(patch){const c=Object.assign(cfgLer(),patch);lsSet(CFG2D_KEY,JSON.stringify(c));return c;}
 function ler3d(){return SAVE2D.ler3d(lerJson(SAVE3D_KEY));}
 let saveAvisou=false;
 function salvar(mostrar){
   if(G.mode==='menu')return false;
   const naTumba=G.area&&G.area.id!=='vale';
   const st={relics:G.relics,learn:G.learn,progs:G.progs,diary:G.diary,insc:G.insc,sec:G.sec,abertas:G.abertas,done:G.done,time:G.time,migr:G.migr,
-    pos:naTumba?null:{x:G.p.x/16,y:G.p.y/16},tomb:naTumba?G.curTomb:null,treino:G.treino,dicas:G.dicas,poi:G.poi,guia:G.guia,solucoes:G.solucoes};
+    pos:naTumba?null:{x:G.p.x/16,y:G.p.y/16},tomb:naTumba?G.curTomb:null,treino:G.treino,dicas:G.dicas,poi:G.poi,guia:G.guia,solucoes:G.solucoes,pistas:G.pistas,fixadas:G.fixadas,marcas:G.marcas};
   const ok=lsSet(SAVE2D_KEY,JSON.stringify(SAVE2D.montar(st)));
   if(!ok&&!saveAvisou){saveAvisou=true;toast(TXT.saveFail,'warn');}else if(ok&&mostrar)toast(TXT.saved);
   G.salvoEm=G.t;return ok;
@@ -246,11 +261,12 @@ function aplicarSave(s){
   G.relics=Object.assign({},s.relics);G.learn=Object.assign({},s.learn);G.progs=s.progs||{};G.diary=s.diary.slice();G.insc=s.insc;G.sec=s.sec;G.abertas=s.abertas.slice();
   G.done=s.done;G.time=s.time;G.migr=s.migr;
   G.treino=Object.assign({},s.treino);G.dicas=Object.assign({},s.dicas);G.poi=Object.assign({},s.poi);G.guia=!!s.guia;G.lumeFalou=G.treino.passo>1;G.solucoes=s.solucoes||{};
+  G.pistas=Object.assign({},s.pistas||{});G.fixadas=(s.fixadas||[]).slice();G.marcas=Object.assign({},s.marcas||{});
 }
 function resetEstado(){
   G.hearts=3;G.invuln=0;G.danoT=0;G.lantern=100;G.lanternOn=false;G.relics={steam:false,diesel:false,atom:false,bio:false};G.learn={};G.progs={};G.diary=[];G.diaryNew=0;
   G.insc={};G.sec={};G.abertas=[];G.done=false;G.time=0.12;G.migr=null;G.checkpoint=null;G.curTomb=null;G.nightSeen=false;$('btnDiary').classList.remove('new');
-  G.treino={feito:false,passo:0,manivela:false};G.dicas={};G.poi={};G.guia=false;G.lumeFalou=false;G.solucoes={};
+  G.treino={feito:false,passo:0,manivela:false};G.dicas={};G.poi={};G.guia=false;G.lumeFalou=false;G.solucoes={};G.pistas={};G.fixadas=[];G.marcas={};
 }
 /* começa: novo jogo, continuar o save 2D ou migrar o save do 3D (sem mexer nele) */
 function iniciarJogo(modo){
@@ -281,8 +297,8 @@ function mostrarTela(id){for(const s of document.querySelectorAll('.tela'))s.hid
 function esconderTelas(){for(const s of document.querySelectorAll('.tela'))s.hidden=true;document.body.classList.remove('modal');}
 function focoPrimeiro(id){const b=document.querySelector('#'+id+' .btn:not([hidden])');if(b)try{b.focus({preventScroll:true});}catch(e){}}
 function ctlHtml(){
-  const rows=IN.mode==='touch'?[['Joystick (lado esquerdo)','andar; empurre até o fim para correr'],['AÇÃO','interagir'],['VER','afastar a câmera'],['LUZ','lanterna nas tumbas'],['Guia','Guia de Programação'],['Diário · II','diário e pausa']]
-    :[['WASD ou setas','andar'],['Shift','correr'],['E, Espaço ou Enter','interagir'],['C','afastar a câmera'],['G','Guia de Programação'],['T','lanterna'],['J','diário'],['Esc','pausa']];
+  const rows=IN.mode==='touch'?[['Joystick (lado esquerdo)','andar; empurre até o fim para correr'],['AÇÃO','interagir'],['VER','aproximar ou afastar a câmera'],['LUZ','lanterna nas tumbas'],['Guia','Guia de Programação'],['Diário · II','diário e pausa']]
+    :[['WASD ou setas','andar'],['Shift','correr'],['E, Espaço ou Enter','interagir'],['C','aproximar ou afastar a câmera'],['G','Guia de Programação'],['T','lanterna'],['J','diário'],['Esc','pausa']];
   return rows.map(r=>'<b>'+r[0]+'</b><span>'+r[1]+'</span>').join('');
 }
 function atualizarInicio(){
@@ -294,7 +310,7 @@ function atualizarInicio(){
     :'Os sistemas da cidade antiga funcionavam com instruções. Explore o vale, entre nas quatro tumbas e aprenda a programar as máquinas da civilização. O jogo salva sozinho.';
   if(!armazenamentoOk())$('startNote').textContent+=' Atenção: este navegador não deixa guardar dados aqui, então o progresso não será salvo.';
   $('ctlStart').innerHTML=ctlHtml();$('ctlPause').innerHTML=ctlHtml();
-  $('pSound').textContent=AU.on?TXT.soundOn:TXT.soundOff;atualizarTelaCheia();
+  $('pSound').textContent=AU.on?TXT.soundOn:TXT.soundOff;$('pMus').value=Math.round(AU.volMus*100);$('pEfx').value=Math.round(AU.volEfx*100);atualizarTelaCheia();
 }
 function irMenu(){salvar(false);G.mode='menu';document.body.classList.remove('jogando','intomb');fecharPainel(true);atualizarInicio();mostrarTela('scStart');focoPrimeiro('scStart');}
 function pausar(){if(G.mode!=='play')return;G.mode='paused';atualizarInicio();$('saveInfo').textContent=G.area.id==='vale'?'O jogo salva sozinho: relíquias, saberes, programas, diário, segredos e a sua posição no vale.':'Tudo está salvo. Se sair agora, você volta à porta desta tumba; os programas e as etapas concluídas ficam guardados.';mostrarTela('scPause');focoPrimeiro('scPause');}
@@ -313,7 +329,9 @@ function ligarBotoes(){
   $('btnNew').onclick=()=>{if(lerSave())confirmar('Começar de novo?','Isso apaga o progresso da versão 2D (o save do jogo 3D não é tocado).','Apagar e começar',()=>iniciarJogo('novo'));else iniciarJogo('novo');};
   $('pResume').onclick=retomar;$('pFull').onclick=alternarTelaCheia;$('btnFull').onclick=alternarTelaCheia;
   $('btnGuiaIni').onclick=()=>abrirGuia();$('pGuiaPausa').onclick=()=>abrirGuia();$('gFechar').onclick=fecharGuia;
-  $('pSound').onclick=()=>{auInit();auSetOn(!AU.on);lsSet(CFG2D_KEY,JSON.stringify({sound:AU.on}));$('pSound').textContent=AU.on?TXT.soundOn:TXT.soundOff;};
+  $('pSound').onclick=()=>{auInit();auSetOn(!AU.on);cfgGravar({sound:AU.on});$('pSound').textContent=AU.on?TXT.soundOn:TXT.soundOff;};
+  $('pMus').oninput=e=>{auInit();auVolumes(e.target.value/100,null);cfgGravar({mus:AU.volMus});};
+  $('pEfx').oninput=e=>{auInit();auVolumes(null,e.target.value/100);cfgGravar({efx:AU.volEfx});SFX.click();};
   $('pDiary').onclick=()=>{esconderTelas();G.mode='play';abrirDiario();};
   $('pErase').onclick=()=>confirmar('Apagar o progresso?','Isso apaga o progresso da versão 2D: relíquias, saberes, programas, diário e segredos. O save do jogo 3D não é tocado.','Apagar',()=>{lsDel(SAVE2D_KEY);iniciarJogo('novo');});
   $('pHome').onclick=irMenu;
@@ -349,9 +367,8 @@ function passoJogo(dt,now){
     if(take('mapa')){abrirDiario('mapa');return;}
     if(take('guia')){abrirGuia();return;}
     if(take('vista'))alternarVista();
-    if(take('lanterna')&&A.id!=='vale'&&A.id!=='final'){if(G.lantern>0){G.lanternOn=!G.lanternOn;SFX.click();}else toast('A lanterna está sem carga. Recarregue num ponto de energia.','warn');}
+    if(take('lanterna')&&A.id!=='vale'&&A.id!=='final'){G.lanternOn=!G.lanternOn;SFX.click();toast(G.lanternOn?'Lanterna acesa: perto das paredes, ela revela marcas de luz.':'Lanterna apagada.');}
     if(A.id==='vale'){G.time=(G.time+dt/DAY_LEN)%1;const n=noiteAgora();if(n>0.6&&!G.nightSeen){G.nightSeen=true;toast(TXT.nightHint);addDiary('night',true);}}
-    else if(G.lanternOn&&A.gastaLanterna!==false){G.lantern=Math.max(0,G.lantern-dt*(A.dreno?A.dreno():1));if(G.lantern<=0){G.lanternOn=false;toast('A lanterna apagou. Recarregue num ponto de energia.','warn');}}
     if(G.invuln>0)G.invuln-=dt;
     if(G.danoT>0)G.danoT-=dt;
     atualizarJogador(dt);
@@ -373,7 +390,7 @@ function passoJogo(dt,now){
 function atualizarGuardas(dt){const A=G.area;if(!A.ents)return;for(const e of A.ents)if(e.update)e.update(dt,G.mode==='play');}
 function desenharJogo(){
   const A=G.area;if(!A){R.g.fillStyle='#000';R.g.fillRect(0,0,R.cv.width,R.cv.height);return;}
-  if(G.mode==='painel'&&PAINEL.foco)camSeguir(PAINEL.foco.x,PAINEL.foco.y,1/60,A);else camSeguir(G.p.x,G.p.y-12,1/60,A);
+  if(G.mode==='painel'&&PAINEL.foco){const f=focoCamPainel(A);camSeguir(f.x,f.y,1/60,A);}else camSeguir(G.p.x,G.p.y-12,1/60,A);
   camPixel();
   desenharChao(A);desenharAgua(A,G.t);
   if(A.desenharChao)A.desenharChao(R.lg,G.t);
@@ -398,7 +415,7 @@ function desenharJogo(){
   if(A.id==='vale'){
     const n=noiteAgora();
     for(const o of VALE.fogo)luz(o.x,o.y-6,46+Math.sin(G.t*9)*2,1,'#ff9a40');
-    for(const o of A.objs)if(o.luz&&naTela(o.x,o.y,80))luz(o.x,o.y+(o.luz.dy||0),o.luz.r,0.9,o.luz.cor);
+    for(const o of A.objs)if(o.luz&&(!o.luzSe||o.luzSe())&&naTela(o.x,o.y,80))luz(o.x,o.y+(o.luz.dy||0),o.luz.r,0.9,o.luz.cor);
     for(const v of VALE.insc)if(n>0.5)luz(v.o.x,v.o.y-12,18,1,'#ffb455');
     for(const f of VALE.feixes)luz(f.x,f.y,22,0.8,f.k==='final'?'#ffd24a':TOMBS[f.k].col);
     luz(p.x,p.y-14,34,0.8);
@@ -407,9 +424,10 @@ function desenharJogo(){
   }else{
     if(G.mode!=='painel'||!PAINEL.foco)luz(p.x,p.y-14,G.lanternOn?84:28,1,G.lanternOn?'#ffe6b0':null);
     if(A.luzes)A.luzes(G.t);
-    desenharLuz(A.escuro,A.tinta);
+    /* com o painel aberto, a sala clareia: o mecanismo precisa ser lido */
+    desenharLuz(G.mode==='painel'?Math.min(A.escuro,0.42):A.escuro,A.tinta);
   }
-  desenharFocoEvento(A);
+  desenharFocoEvento(A);desenharPistas(A);desenharMarcas(A);
   if(A.desenharUi)A.desenharUi(R.lg,G.t);
   desenharSetaObjetivo();
   if(alvoInter&&G.mode==='play'){const it=alvoInter.it,y=Math.round(it.y-(it.alto||26)+R.oy+Math.sin(G.t*6)*1.5);R.lg.drawImage(SPR.get('seta','#ffd24a'),Math.round(it.x+R.ox-3),y);}
@@ -479,7 +497,7 @@ function desenharSetaObjetivo(){
 
 /* ====================== início ====================== */
 function boot(){
-  try{const c=lerJson(CFG2D_KEY);if(c&&typeof c.sound==='boolean')AU.on=c.sound;}catch(e){}
+  try{const c=cfgLer();if(typeof c.sound==='boolean')AU.on=c.sound;R.longe=c.longe!==false;auVolumes(typeof c.mus==='number'?c.mus:null,typeof c.efx==='number'?c.efx:null);}catch(e){}
   renderInit();joyInit();EXP=montarHeroi();hudInit();ligarBotoes();painelInit();
   AREAS.vale=construirVale();
   desenharLogo();
