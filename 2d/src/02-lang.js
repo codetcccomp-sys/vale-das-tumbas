@@ -24,6 +24,12 @@
    Decimais são guardados de forma aproximada, como em qualquer computador: o jogo mostra até 4 casas. */
 /* "1 etapa", "2 etapas", "0 etapas": contagens com singular e plural certos (usado também pelo resto do jogo) */
 function plural(n,um,varios){return n+' '+(n===1?um:varios);}
+/* o nome da lista mais parecido com t (distância de edição até 2, e menor que metade do nome); null se nenhum */
+function parecido(t,lista){
+  const d=(a,b)=>{const m=a.length,n=b.length,D=[];for(let i=0;i<=m;i++){D[i]=[i];for(let j=1;j<=n;j++)D[i][j]=i?Math.min(D[i-1][j]+1,D[i][j-1]+1,D[i-1][j-1]+(a[i-1]===b[j-1]?0:1)):j;}return D[m][n];};
+  let melhor=null,md=99;for(const x of lista){const k=d(String(t).toLowerCase(),x.toLowerCase())||(String(t)!==x?1:0);if(k<md){md=k;melhor=x;}}
+  return melhor&&md>0&&md<=2&&md<Math.max(2,melhor.length/2)?melhor:null;
+}
 const LANG=(function(){
   const TIPOS={
     int:{nome:'inteiro',py:'int',rot:'int',ex:'5',art:'um número inteiro',desc:'um número inteiro',guia:'int'},
@@ -310,6 +316,9 @@ const LANG=(function(){
     const funcs={};for(const b of cfg.blocos||[])if(CMD[b])funcs[CMD[b].py]=b;
     const listaFuncs=Object.keys(funcs).map(f=>f+'()').join(', ')||'nenhuma';
     const listaVars=(cfg.vars||[]).map(d=>d.nome).concat((cfg.sensores||[]).map(d=>d.nome+' (sensor)')).join(', ')||'nenhuma';
+    /* "Você quis dizer…?": o nome da sala mais parecido com o que foi escrito (até 2 letras de diferença) */
+    const nomesF=Object.keys(funcs),nomesV=(cfg.vars||[]).map(d=>d.nome).concat((cfg.sensores||[]).map(d=>d.nome));
+    const quis=(t,lista,suf)=>{const p=parecido(t,lista);return p?' Você quis dizer '+p+(suf||'')+'?':'';};
     const E=(n,titulo,texto,cat,guia)=>({erro:{tipo:'sintaxe',linha:n,titulo,texto,cat:cat||'python',guia:guia||'erros'}});
     /* funções do Python que não existem nas máquinas do jogo */
     const EMBUTIDAS=['print','input','len','int','float','str','bool','type','abs','min','max','sum','round','list','range','sorted','open'];
@@ -350,7 +359,7 @@ const LANG=(function(){
           if(t.v==='true'||t.v==='false'||t.v==='TRUE'||t.v==='FALSE')return{erro:E(n,'NameError: '+t.v+' não existe.','Em Python, os booleanos começam com letra maiúscula: True e False.','python','boolean')};
           if(vars[t.v]||sens[t.v]||loc.indexOf(t.v)>=0){if(tk[i]&&tk[i].v==='(')return{erro:E(n,'TypeError: '+t.v+' é uma variável, não uma função.','Variáveis não levam parênteses. Para ler o valor, escreva só '+t.v+'.','python','variaveis')};return{e:{k:'var',nome:t.v}};}
           if(funcs[t.v])return{erro:SUB(n,t.v+' é uma função, não um valor.','Em Python dá para guardar uma função numa variável, mas aqui as variáveis guardam só int, float, str e bool. Uma função é chamada sozinha numa linha: '+t.v+'().')};
-          return{erro:E(n,'NameError: "'+t.v+'" não existe nesta sala.','Variáveis disponíveis: '+listaVars+'. Se era um texto, ele precisa de aspas: "'+t.v+'".','python','variaveis')};
+          return{erro:E(n,'NameError: "'+t.v+'" não existe nesta sala.'+quis(t.v,nomesV),'Variáveis disponíveis: '+listaVars+'. Se era um texto, ele precisa de aspas: "'+t.v+'".','python','variaveis')};
         }
         if(t.v==='(')return{erro:SUB(n,'Parênteses nas contas existem no Python, mas não neste editor.','Escreva a conta direto: quantidade + 3.')};
         return{erro:E(n,'SyntaxError: faltou um valor antes de '+t.v+'.','Uma expressão começa com um valor: um número, um texto entre aspas, True/False ou uma variável.')};
@@ -437,7 +446,7 @@ const LANG=(function(){
         if(ch){const f=ch[1];
           if(!funcs[f]){if(vars[f]||sens[f]){erro=E(n,'TypeError: '+f+' é uma variável, não uma função.','Para guardar um valor, escreva '+f+' = valor.','python','variaveis');break;}
             if(EMBUTIDAS.indexOf(f)>=0){erro=SUB(n,f+'() existe no Python, mas não nas máquinas desta sala.',(f==='print'?'As máquinas não têm tela para mostrar textos: o resultado aparece no mecanismo e nas variáveis do painel.':'Aqui só existem as funções da sala.')+' Funções disponíveis: '+listaFuncs+'.');break;}
-            erro=E(n,'NameError: a função '+f+'() não existe nesta sala.','Funções disponíveis: '+listaFuncs+'.','python','comandos');break;}
+            erro=E(n,'NameError: a função '+f+'() não existe nesta sala.'+quis(f,nomesF,'()'),'Funções disponíveis: '+listaFuncs+'.','python','comandos');break;}
           if(ch[2].trim()){erro=E(n,'TypeError: '+f+'() não recebe valores.','Deixe os parênteses vazios: '+f+'(). A máquina lê o que precisar das variáveis.','python','comandos');break;}
           out.push({k:'cmd',cmd:funcs[f]});idx++;continue;}
         if(funcs[s]){erro=E(n,'Faltaram os parênteses: a função não foi chamada.','Em Python, escrever só '+s+' não dá erro, mas também não faz nada. Para a máquina executar, escreva '+s+'() com parênteses.','semEfeito','comandos');break;}
@@ -454,7 +463,7 @@ const LANG=(function(){
         if(/^[a-z_][a-z0-9_]*$/i.test(s)){
           if(vars[s]||sens[s]||loc.indexOf(s)>=0){erro=E(n,'"'+s+'" sozinho não faz nada.','Em Python, escrever só o nome de uma variável não dá erro, mas a linha não muda nada. Chame uma função ('+listaFuncs+') ou guarde um valor: '+s+' = valor.','semEfeito','variaveis');break;}
           if(/^(pass|break|continue|return)$/.test(s)){erro=SUB(n,s+' existe no Python, mas não neste editor.','Cada linha aqui chama uma função, guarda um valor ou abre um bloco.');break;}
-          erro=E(n,'NameError: "'+s+'" não existe nesta sala.','Chame uma função com parênteses ('+listaFuncs+') ou guarde um valor numa variável da sala: '+listaVars+'.','python','comandos');break;}
+          erro=E(n,'NameError: "'+s+'" não existe nesta sala.'+(quis(s,nomesF,'()')||quis(s,nomesV)),'Chame uma função com parênteses ('+listaFuncs+') ou guarde um valor numa variável da sala: '+listaVars+'.','python','comandos');break;}
         const pal=(s.match(/^([a-z]+)\b/)||[])[1];
         if(['def','import','from','class','return','try','except','with','lambda','global','print','del','assert','raise','yield','async','await','match'].indexOf(pal)>=0){erro=SUB(n,pal+' existe no Python, mas não neste editor.','Cada linha aqui chama uma função da sala, guarda um valor (x = 5) ou abre um bloco com if, elif, else, for ou while.');break;}
         erro=E(n,'SyntaxError: esta linha não foi entendida.','Uma linha pode chamar uma função, como avancar(); guardar um valor, como x = 5; ou abrir um bloco com if, elif, else, for ou while.');break;

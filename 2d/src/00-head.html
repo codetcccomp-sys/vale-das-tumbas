@@ -44,6 +44,7 @@ body:not(.jogando) #hud,body:not(.jogando) #toqueUi{display:none}
 #goal{display:block;font:600 14px/1.25 var(--f);color:#fff2cc;max-width:min(340px,100%);border-color:#0b0705;box-shadow:inset 0 0 0 2px #8a6a2a}
 #goal b{color:var(--gold);font-weight:800;display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:1px}
 #goal .gs{display:block}
+#goal .bus{display:inline-block;width:13px;height:11px;margin:0 6px -1px 0;background:var(--gold);clip-path:polygon(0 30%,55% 30%,55% 0,100% 50%,55% 100%,55% 70%,0 70%);transition:transform .2s}
 @media (max-width:480px){#goal{font-size:13px}}
 #goal:empty{display:none}
 #goal.flash{animation:gflash 1.4s ease-out}@keyframes gflash{0%{box-shadow:inset 0 0 0 2px #8a6a2a,0 0 0 4px var(--gold)}100%{box-shadow:inset 0 0 0 2px #8a6a2a,0 0 0 0 transparent}}
@@ -139,6 +140,11 @@ body.painel.pAmplo #painel{height:76%}
 #pMsg{flex:none;font:600 14px/1.35 var(--f);padding:6px 10px;background:#2a1e14;border-left:4px solid var(--brass);max-height:5.6em;overflow:auto;user-select:text;-webkit-user-select:text}
 #pMsg.erro{border-left-color:var(--alert);background:#2e1610;color:#ffe0d6}#pMsg.ok{border-left-color:var(--ok);background:#16261a;color:#e2ffe4}#pMsg.passo{border-left-color:var(--ice);background:#16222a}
 #pMsg.lume{border-left-color:var(--gold);background:#2e2610;color:#fff2c8}
+/* enunciado longo: aberto quando cabe; senão recolhido, com esmaecido no corte e o botão para ler o resto */
+#pMsg.aberto{max-height:none}#pMsg.longo:not(.aberto){-webkit-mask-image:linear-gradient(#000 70%,transparent);mask-image:linear-gradient(#000 70%,transparent)}
+#pMsgMais{align-self:flex-end;min-height:34px;margin-top:-4px;padding:2px 12px;font-size:13px}
+/* as informações do desafio: no celular em pé seguem o fluxo do painel; deitado viram a coluna da esquerda */
+#pInfo{display:contents}
 /* previsão antes de executar: pensar no resultado, depois conferir */
 #pPrev{flex:none;padding:8px 10px;background:#1a2a36;border:2px solid #0b0705;box-shadow:inset 0 0 0 2px #4a8aaa}
 #pPrev .q{margin:0 0 6px;font:700 14px/1.35 var(--f);color:#e6f6ff}#pPrev .ops{display:flex;flex-wrap:wrap;gap:5px}#pPrev .btn{min-height:42px;font-size:14px;flex:1 1 auto}
@@ -189,6 +195,20 @@ body.painel #hud,body.painel #toqueUi{display:none}
 body.teclado #painel{bottom:var(--kb,0px);top:auto;height:auto;max-height:calc(100% - var(--kb,0px) - 4px)}
 /* telas baixas: a área de erro rola por dentro e os botões fixos ficam mais baixos (sem perder o tamanho de toque) */
 @media (max-height:600px){#pErro{max-height:6.2em}}
+/* telas de celular: área de erro e referência mais baixas, para o código continuar à vista */
+@media (max-height:960px) and (orientation:portrait){#pErro{max-height:7.2em}#pErro .gbtn{min-height:36px;padding:3px 10px}#pRefC{max-height:22vh}#pTxt{min-height:7.6em}}
+/* celular deitado (tela baixa): duas colunas — à esquerda o desafio (etapas, variáveis, enunciado, erro), à direita o
+   programa com a paleta e os botões; cada coluna rola por conta própria */
+@media (orientation:landscape) and (max-height:560px){
+  #painel{display:grid;grid-template-columns:minmax(0,0.85fr) minmax(0,1.3fr);grid-template-rows:auto minmax(0,1fr) auto;gap:5px 10px;overflow:hidden}
+  body.painel.pAmplo #painel{width:min(80vw,1000px)}
+  #pTopo{grid-column:1/-1}
+  #pInfo{display:flex;flex-direction:column;gap:5px;grid-column:1;grid-row:2/4;overflow-y:auto;min-height:0;overscroll-behavior:contain}
+  #pInfo>*{flex-shrink:0}#pMsg{max-height:none}#pMsg.longo:not(.aberto){-webkit-mask-image:none;mask-image:none}#pMsgMais{display:none}#pErro{max-height:70vh}
+  #pCorpo{grid-column:2;grid-row:2;min-height:0;overflow-y:auto}#pCorpo>*{flex-shrink:0}#pProg,#pTxt{max-height:none}#pProg{min-height:5.5em}#pTxt{min-height:6em;flex:1}#pTexto{flex:1}
+  #pRefC{max-height:30vh}
+  #pRodape{grid-column:2;grid-row:3;position:static;margin:0;padding:0;box-shadow:none}
+  #pCtl{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}#pCtl .btn{min-height:40px;min-width:0;padding:3px 4px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
 @media (max-height:420px){#pCtl .btn{min-height:40px;padding:3px 6px}.pb{min-height:46px}}
 
 /* volumes da pausa: música e efeitos separados */
@@ -240,6 +260,10 @@ pre.gcod{margin:0;padding:10px;background:#0f0a07;color:#f0e4c4;font:700 15px/1.
 .gtipos{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px}.gtipo{display:flex;gap:8px;align-items:center;padding:6px;background:#2a1e14;border:2px solid #0b0705}
 .gtipo canvas{width:40px;height:40px}.gtipo span{display:flex;flex-direction:column}.gtipo b{font:800 15px var(--mono);color:var(--ice)}.gtipo code{font:700 14px var(--mono);color:var(--gold)}.gtipo i{font:600 12px var(--f);color:var(--paper2);font-style:normal}
 .gtab{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:center}.gtab code{font:800 14px var(--mono);color:var(--gold);background:#0f0a07;padding:2px 6px;border:2px solid #0b0705}.gtab span{font:600 14px var(--f)}
+/* história: páginas curtas antes do treino (também no menu) */
+#historia .caixa{width:min(560px,100%)}#hImg{width:min(320px,100%);align-self:center;background:#120c08;border:3px solid #0b0705}
+#hTexto{font:600 17px/1.55 var(--f);color:#fff2cc;min-height:6.2em;user-select:text;-webkit-user-select:text}#hPag{margin:0;text-transform:uppercase;letter-spacing:.1em;font-size:12px}
+.hBtns{display:grid;grid-template-columns:1fr 2fr;gap:8px}
 /* conversa com o Lume */
 #dialogo{z-index:10;align-items:end;background:rgba(10,7,5,.45)}
 #dialogo .caixa{width:min(620px,100%);gap:8px;margin-bottom:max(8px,env(safe-area-inset-bottom,0px))}
@@ -281,12 +305,14 @@ body.modal #toqueUi{display:none}
 
   <div id="painel" hidden role="dialog" aria-label="Painel de programação">
     <div id="pTopo"><div id="pTit"><span id="pEtapa"></span><b id="pTitulo"></b></div><button class="btn" id="pLayout" type="button"></button><button class="btn" id="pFechar">✕ Fechar</button></div>
+    <div id="pInfo">
     <div id="pEtapas"></div>
     <div id="pFixas" hidden></div>
     <div id="pSits"></div>
     <div id="pVars"></div>
-    <div id="pPrev" hidden><p class="q"></p><div class="ops"></div></div><div id="pMsg" role="status" aria-live="polite"></div>
+    <div id="pPrev" hidden><p class="q"></p><div class="ops"></div></div><div id="pMsg" role="status" aria-live="polite"></div><button class="btn" id="pMsgMais" type="button" hidden></button>
     <div id="pErro" hidden role="alert"><b class="onde"></b><p class="tit"></p><p class="txt"></p><p class="dica"></p><button class="btn gbtn" type="button"></button></div>
+    </div>
     <div id="pCorpo">
       <details id="pRefBox"><summary>Comandos e variáveis</summary><div id="pRefC"></div></details>
       <ol id="pProg"></ol>
@@ -306,10 +332,18 @@ body.modal #toqueUi{display:none}
     <p class="sub" id="startNote"></p>
     <button class="btn main" id="btnContinue">Continuar</button>
     <button class="btn" id="btnNew">Novo jogo</button>
+    <button class="btn" id="btnHistoria">📜 História</button>
     <button class="btn" id="btnGuiaIni">📖 Guia de Programação</button>
     <button class="btn" id="btnFull">Tela cheia</button>
     <div class="ctl" id="ctlStart"></div>
     <p class="sub" style="font-size:12px">Versão 2D em pixel art. A versão 3D continua disponível separadamente.</p>
+  </div></section>
+  <section class="tela" id="historia" hidden role="dialog" aria-label="História"><div class="caixa moldura">
+    <p class="sub" id="hPag"></p><h2 id="hTit"></h2>
+    <canvas id="hImg" class="px" width="160" height="100"></canvas>
+    <p id="hTexto"></p>
+    <div class="hBtns"><button class="btn" id="hVoltar">◀ Voltar</button><button class="btn main" id="hProx">Continuar ▶</button></div>
+    <button class="btn" id="hPular">Pular a história</button>
   </div></section>
   <section class="tela" id="scPause" hidden><div class="caixa moldura">
     <h2>Pausa</h2><p class="sub" id="saveInfo"></p>

@@ -65,6 +65,19 @@ const GUIA=[
     tabela:[['Instrução','uma linha do programa, como avancar()'],['Função','uma ação que a máquina sabe fazer, como acender_tocha()'],['Programa','todas as instruções, na ordem'],['Tentativa','uma execução do programa: ▶ Executar ou ⏭ Passo. ↺ Reiniciar começa outra sem apagar o programa'],
       ['Etapa','um desafio de uma tumba; as concluídas ganham ✔'],['Saber','o conhecimento de uma tumba: Sequência, Variáveis e tipos, Decisões, Repetições'],['Relíquia','o objeto que guarda o saber; desperta quando todas as etapas da tumba são concluídas']],
     cod:'# um programa com 2 instruções\nacender_tocha()\nacender_tocha()',jogo:'O HUD conta os saberes recuperados (0/4); cada saber tem a sua relíquia.'},
+  /* mecânicas gerais do jogo (sem código): para consultar a qualquer momento */
+  {id:'saberes',g:'ajuda',t:'Saberes e relíquias',ic:['4/4','#ffd24a'],txt:'Cada tumba guarda um saber de programação. Você recupera o saber concluindo todas as etapas do terminal da tumba; aí a relíquia dela desperta e pode ser levada.',
+    tabela:[['Saber','o conceito: Sequência, Dados e variáveis, Decisões, Repetições'],['Relíquia','o objeto da tumba; só sai do pedestal depois do saber'],['HUD','mostra quantos saberes você já tem (0/4 a 4/4)'],['Cidade-Jardim','ao norte; abre com os quatro saberes']],
+    jogo:'O objetivo, no alto da tela, sempre diz a próxima etapa e onde ela fica.'},
+  {id:'caminho',g:'ajuda',t:'Objetivo, bússola e atalhos',ic:['N','#6fd3ff'],txt:'A seta no título do objetivo é a bússola: aponta de você até o alvo da etapa. No vale, as trilhas coloridas levam a cada tumba, e uma seta na borda da tela aparece quando o alvo está longe.',
+    tabela:[['◆ Marcador','o próximo objeto a usar, com um texto curto'],['Porta selada','diz qual tumba vem antes e para que lado ela fica'],['Estação de atalho','acorda com o saber da tumba e leva ao acampamento'],['Mapa','no diário; os fragmentos encontrados completam o mapa']],
+    jogo:'No celular, o objetivo encolhe depois de alguns segundos: toque nele para ler de novo.'},
+  {id:'diario',g:'ajuda',t:'Diário e pistas',ic:['!','#ffd24a'],txt:'O diário guarda o que você descobre: anotações, os saberes com o seu programa, os exemplos, as pistas e o mapa. As placas com ! são pistas para os desafios.',
+    tabela:[['Notas','o que você encontrou no vale e nas tumbas'],['Saberes','o conceito e o programa que você escreveu'],['Pistas','as placas lidas; dá para fixar uma no alto do terminal'],['Mapa','o vale, com os fragmentos já encontrados']],
+    jogo:'Abra pelo botão Diário (ou tecla J). Uma pista fixada continua no terminal de qualquer tumba.'},
+  {id:'lanterna',g:'ajuda',t:'Lanterna e marcas de luz',ic:['luz','#ffd76a'],txt:'Nas tumbas, a lanterna (botão LUZ ou tecla T) ilumina em volta e não gasta. Acesa e bem perto da parede, ela revela marcas de luz: desenhos dos construtores que contam como eles pensavam o saber da tumba.',
+    tabela:[['Acesa','ilumina e revela as marcas de luz perto das paredes'],['Apagada','a sala continua legível; nenhum desafio depende dela'],['Marcas de luz','duas por tumba, opcionais, guardadas no diário']],
+    jogo:'O quadro do acampamento conta quantas marcas de luz você já encontrou.'},
   {id:'exemplos',g:'ajuda',t:'Seus exemplos',ic:['meus','#7ee08a'],txt:'O código das etapas que você já concluiu.'}
 ];
 /* grupos do índice: os assuntos da tumba atual aparecem primeiro e marcados */
@@ -151,9 +164,44 @@ function mostrarTopico(id){
   if(T.tipos){const g=el('div','gtipos');for(const[ico,rot,ex,d]of T.tipos){const it=document.createElement('div');it.className='gtipo';const im=escalar(SPR.get('valor',ico),2);im.className='px';it.appendChild(im);
     const tx=document.createElement('span');tx.innerHTML='<b></b><code></code><i></i>';tx.children[0].textContent=rot;tx.children[1].textContent=ex;tx.children[2].textContent=d;it.appendChild(tx);g.appendChild(it);}}
   if(T.tabela){const tb=el('div','gtab');for(const[a,b]of T.tabela){const x=document.createElement('code');x.textContent=a;const y=document.createElement('span');y.textContent=b;tb.appendChild(x);tb.appendChild(y);}}
-  el('p','gsub','Exemplo');el('pre','gcod').appendChild(realcarCodigo(T.cod));
+  if(T.cod){el('p','gsub','Exemplo');el('pre','gcod').appendChild(realcarCodigo(T.cod));}
   if(T.passos){el('p','gsub','Resultado (o que acontece)');const p=el('div','gpassos');T.passos.forEach((s,i)=>{const d=document.createElement('span');d.textContent=s;p.appendChild(d);if(i<T.passos.length-1){const a=document.createElement('b');a.textContent='→';p.appendChild(a);}});}
   el('p','gjogo','No jogo: '+T.jogo);
+}
+
+/* ---------- história: quem é a personagem, o que aconteceu no vale e qual é a missão ---------- */
+const HISTORIA=[
+  {t:'A cidade das instruções',s:()=>RELIC_KEYS.map(k=>SPR.get('torre',k)),
+   x:'Há muito tempo, a cidade deste vale funcionava com instruções. Portões, motores, reatores e jardins seguiam programas escritos pelos construtores, linha por linha.'},
+  {t:'O sono das máquinas',s:()=>RELIC_KEYS.map(k=>SPR.get('reliquia',k,0)),
+   x:'Um dia, as máquinas pararam. Antes de partir, os construtores guardaram o que sabiam em quatro tumbas: Sequência, Dados e variáveis, Decisões e Repetições. Cada saber tem uma relíquia, que hoje dorme.'},
+  {t:'Você',s:()=>[EXP.baixo.parado[0],EXP.direita.parado[0]],
+   x:'Você chega ao vale com uma bengala de mecanismo e um tapa-olho de muitas viagens. Não veio saquear as tumbas: veio entender como a cidade pensava e ajudá-la a acordar. Fala com calma, agradece às máquinas e não tem medo de errar.'},
+  {t:'O Lume',s:()=>[SPR.get('lume',0),EXP.direita.parado[0]],
+   x:'No pátio da entrada, um pequeno autômato-lanterna espera por você: o Lume. Ele explica os controles e a programação, dá dicas e acompanha você nas tumbas, mas nunca entrega a resposta.'},
+  {t:'A missão',s:()=>[EXP.direita.parado[0]].concat(RELIC_KEYS.map(k=>SPR.get('reliquia',k,2))),
+   x:'Recupere os quatro saberes programando as máquinas de cada tumba. Com eles, as relíquias despertam e a Cidade-Jardim, ao norte, pode voltar à vida. Primeiro, um treino rápido no pátio.'}
+];
+const HIST={pag:0,fim:null,volta:null};
+/* abre a história; fim() roda ao terminar ou pular (começar o jogo, ou voltar ao menu) */
+function abrirHistoria(fim,rotuloFim){
+  HIST.pag=0;HIST.fim=fim;HIST.rotulo=rotuloFim||'Começar';HIST.volta=G.mode;G.mode='historia';
+  mostrarTela('historia');mostrarPaginaHistoria();
+  $('hVoltar').onclick=()=>{if(HIST.pag>0){HIST.pag--;SFX.page();mostrarPaginaHistoria();}};
+  $('hProx').onclick=()=>{SFX.page();if(HIST.pag<HISTORIA.length-1){HIST.pag++;mostrarPaginaHistoria();}else fecharHistoria();};
+  $('hPular').onclick=()=>{SFX.click();fecharHistoria();};
+  try{$('hProx').focus({preventScroll:true});}catch(e){}
+}
+function fecharHistoria(){$('historia').hidden=true;G.mode=HIST.volta==='historia'?'menu':HIST.volta;const f=HIST.fim;HIST.fim=null;if(f)f();}
+function mostrarPaginaHistoria(){
+  const P0=HISTORIA[HIST.pag],ult=HIST.pag===HISTORIA.length-1;
+  $('hPag').textContent=(HIST.pag+1)+' de '+HISTORIA.length;$('hTit').textContent=P0.t;$('hTexto').textContent=P0.x;
+  $('hVoltar').disabled=HIST.pag===0;$('hProx').textContent=ult?HIST.rotulo+' ▶':'Continuar ▶';$('hPular').hidden=ult;
+  /* ilustração: os sprites do próprio jogo, lado a lado, no maior tamanho inteiro (ou reduzidos) que couber */
+  const c=$('hImg'),g=ctx2(c),ims=P0.s(),gap=6;g.clearRect(0,0,c.width,c.height);
+  const w=ims.reduce((a,i)=>a+i.width,0)+gap*(ims.length-1),h=Math.max(...ims.map(i=>i.height));
+  const k=Math.min((c.width-8)/w,(c.height-6)/h),kk=k>=1?Math.floor(k):k;let x=Math.round((c.width-w*kk)/2);
+  g.imageSmoothingEnabled=false;for(const im of ims){const ih=Math.round(im.height*kk);g.drawImage(im,x,c.height-3-ih,Math.round(im.width*kk),ih);x+=Math.round((im.width+gap)*kk);}
 }
 
 /* ---------- conversas (Lume e placas com opções) ---------- */

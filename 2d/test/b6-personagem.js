@@ -23,10 +23,16 @@ const t=suite('b6-personagem');
     const xs=d==='direita'?[16,17,18]:d==='esquerda'?[21,22,23]:[19,20];let top=-1;for(let y=0;y<c.height&&top<0;y++)for(const x of xs)if(px[(y*c.width+x)*4+3]>0){top=y;break;}tops.push(top);});
     return{min:Math.min(...tops),max:Math.max(...tops)};});
   t.ok(r.max-r.min<=2,'altura do personagem coerente entre os quadros',r);
-  /* esquerda é o espelho exato da direita */
+  /* esquerda é o espelho da direita, menos a cabeça (linhas 11 a 28): de cada lado aparece um olho diferente */
   r=await ev(()=>{let ok=true;for(const a in EXP.direita)EXP.direita[a].forEach((c,i)=>{const e=EXP.esquerda[a][i];const A=c.getContext('2d').getImageData(0,0,40,46).data,B=e.getContext('2d').getImageData(0,0,40,46).data;
-    for(let y=0;y<46;y++)for(let x=0;x<40;x++)for(let k=0;k<4;k++)if(A[(y*40+x)*4+k]!==B[(y*40+39-x)*4+k])ok=false;});return ok;});
-  t.ok(r,'lateral esquerda espelha a direita pixel a pixel',r);
+    for(let y=0;y<46;y++){if(y>=11&&y<29)continue;for(let x=0;x<40;x++)for(let k=0;k<4;k++)if(A[(y*40+x)*4+k]!==B[(y*40+39-x)*4+k])ok=false;}});return ok;});
+  t.ok(r,'lateral esquerda espelha a direita pixel a pixel (fora da cabeça)',r);
+  /* tapa-olho no olho direito da personagem: de frente fica à esquerda da tela; de perfil para a direita cobre o olho
+     visível; de perfil para a esquerda aparece o olho livre (escuro), sem o tapa-olho */
+  r=await ev(()=>{const cor=(c,x,y)=>{const d=c.getContext('2d').getImageData(x,y,1,1).data;return'#'+[d[0],d[1],d[2]].map(v=>v.toString(16).padStart(2,'0')).join('');};
+    const f=EXP.baixo.parado[0],dir=EXP.direita.parado[0],esq=EXP.esquerda.parado[0];
+    return{frentePatch:cor(f,15,23),frenteOlho:cor(f,23,23),dirPatch:cor(dir,23,22),esqOlho:cor(esq,39-23,22),G:HEROI_PAL.G,o:HEROI_PAL.o};});
+  t.ok(r.frentePatch===r.G&&r.frenteOlho===r.o&&r.dirPatch===r.G&&r.esqOlho===r.o,'tapa-olho no olho direito: de frente à esquerda da tela, no perfil direito; no perfil esquerdo o olho fica livre',r);
 
   /* ---------- colisão ---------- */
   r=await ev(()=>({PW,PH,cfg:HEROI_CONFIG.colisao}));

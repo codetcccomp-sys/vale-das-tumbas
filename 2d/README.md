@@ -1,7 +1,7 @@
 # Vale das Tumbas 2D
 
 Aventura em pixel art vista de cima, no estilo dos RPGs de 16 bits, para quem está começando em lógica de programação.
-De proteção de cabeça com óculos, roupa ocre e dourada e uma bengala alta, o personagem cruza o vale, entra em quatro tumbas e recupera os conhecimentos de uma civilização que controlava máquinas,
+Com tapa-olho no olho direito, roupa ocre e dourada e uma bengala alta, a personagem cruza o vale, entra em quatro tumbas e recupera os conhecimentos de uma civilização que controlava máquinas,
 geradores, portais e organismos artificiais com instruções, dados e regras lógicas. Cada relíquia é um saber: só desperta
 quando o jogador monta, executa e corrige programas que fazem o mecanismo da sala funcionar.
 
@@ -19,6 +19,14 @@ foram atendidas, e traz os roteiros de teste em celular real e com estudantes in
 - O jogo salva sozinho no navegador. A câmera começa **afastada** (mostra mais do lugar) sempre que a tela comporta com pixels
   nítidos e legíveis; a escolha do jogador, os volumes e o jeito do painel ficam guardados neste aparelho.
 - **Pausa:** Som ligado/desligado e os volumes de **Música** e **Efeitos**, separados.
+
+## História
+**Novo jogo** abre uma história curta (5 páginas, com os sprites do próprio jogo; dá para pular): a cidade do vale
+funcionava com instruções; as máquinas adormeceram e os construtores guardaram o que sabiam em quatro tumbas, cada saber com
+sua relíquia; **você** chega com a bengala de mecanismo e o **tapa-olho no olho direito**, não para saquear, mas para
+entender a cidade e ajudá-la a acordar (com calma, agradecendo às máquinas, sem medo de errar); o Lume acompanha sem
+entregar respostas; a missão é recuperar os quatro saberes e levar tudo à Cidade-Jardim. O botão **📜 História** do menu
+mostra a história de novo.
 
 ## Começo: o Pátio de Treino
 Um jogo novo começa num pátio curto, antes da primeira tumba, que ensina jogando (sem blocos de texto): o objetivo no alto
@@ -41,7 +49,8 @@ ao pátio a qualquer momento (numa visita depois do treino, o portão já está 
   máquinas, int, float, str, bool), **Decisões** (comparações, if, else, elif), **Repetições** (for, while) e **Ajuda**
   (recuo, tipos de erro, o que o editor aceita, palavras do jogo, seus exemplos) — e o grupo da tumba atual vem marcado
   com ★ e aberto; tocar num grupo abre o primeiro assunto dele, e no celular os assuntos ficam numa fileira que rola para o
-  lado, para o texto ficar com a maior parte da altura. Cada
+  lado, para o texto ficar com a maior parte da altura. Em **Ajuda** também ficam as mecânicas do jogo (saberes e relíquias,
+  objetivo, bússola e atalhos, diário e pistas, lanterna e marcas de luz). Cada
   assunto tem ícone, uma frase, um exemplo de código colorido, o resultado (o que acontece) passo a passo e a ligação com o jogo — por
   exemplo `quantidade = 5` ("Uma variável funciona como uma caixa usada para guardar uma informação") e
   `if porta_aberta:` / `    entrar()` ("O comando IF verifica uma condição antes de executar uma ação"). No painel, o Guia já
@@ -74,6 +83,13 @@ ao pátio a qualquer momento (numa visita depois do treino, o portão já está 
   conta ×2. No celular, no máximo dois avisos, compactos, logo abaixo do HUD. O que o explorador leva na mão (a cápsula do
   pátio dos Motores) fica no HUD. O objetivo pisca só quando muda; no celular, depois de 9 s encolhe para o título e uma
   linha, e um toque abre de novo.
+- **Bússola e portas seladas** — a seta no título do objetivo aponta do explorador até o alvo da etapa (some quando ele
+  está perto). Uma porta selada diz qual tumba vem antes e para que lado ela fica a partir dali.
+- **Rótulos do cenário legíveis** — quando a letra de pixel (5 px) ficaria com menos de 9 px na tela (celular com a câmera
+  afastada), os rótulos do mundo ("aceita str · pede ABRIR", valores das cápsulas, sensores) saem em dobro, empilhados sem
+  se cobrir. No toque, a câmera reserva a faixa dos botões VER, LUZ e AÇÃO, então o explorador não fica atrás deles.
+- **Você quis dizer…?** — num nome errado (`acender_toxa()`, `quantidad`, `Energia`), o erro sugere o nome da sala mais
+  parecido.
 - **Alvo da etapa e nome dos objetos** — o próximo objeto a usar tem um marcador com símbolo, texto curto e cor (◆ Programe
   aqui, ◆ Manivela, ◆ Tumba das Engrenagens); ao chegar perto de algo, o nome dele aparece em cima. Quando o explorador
   encobre um obstáculo, o obstáculo aparece por cima, semitransparente e com contorno; atrás de uma coluna alta, o contorno
@@ -122,7 +138,10 @@ O mesmo painel em todas as tumbas, com recursos liberados aos poucos. Ele abre c
 maior parte da tela e a sala vira uma faixa compacta centrada no mecanismo (durante a execução, acompanha o que a instrução
 da vez mexe), com a câmera de perto. **🔍 Ver a sala** inverte (a escolha fica guardada). **Comandos e variáveis** é uma
 referência recolhível nos dois modos: funções, variáveis (tipo aceito e valor atual), sensores, valores da bancada,
-estruturas e as pistas lidas na sala. Há dois jeitos de programar:
+estruturas e as pistas lidas na sala. No celular: o enunciado aparece inteiro quando cabe (senão, "▾ ler o resto"; com 3
+linhas ou mais no programa ele recolhe sozinho); com um erro no modo Escrever, a referência recolhe e o campo de código fica
+à vista junto da área de erro; deitado, o painel vira duas colunas (o desafio à esquerda, o programa com a paleta e os
+botões à direita). Há dois jeitos de programar:
 - **Por toques**, sem arrastar: tocar numa linha da paleta (`avancar()`, `variável = valor`, `if`, `if … else`, `elif`,
   `for … in range(n)`, `while`) escreve no cursor ▸; tocar numa linha a seleciona e abre o editor dela (subir, descer,
   remover, escolher o valor, a condição, o número de voltas, `+ elif`, `+ else`).
@@ -196,16 +215,18 @@ nada treme nem deforma. Tiles de 16×16, personagem em células de 40×46 (cerca
 contorno escuro de 1 px em tudo.
 
 ### Personagem principal
-Desenhado a partir da imagem de referência oficial (poses laterais): proteção de cabeça com óculos de lentes verdes sobre o
-cabelo preso em coque, roupa ocre e dourada, faixa roxo-azulada no peito, lenço e cartucheira vermelhos, bolsinha, babado
+Desenhada a partir da imagem de referência oficial (poses laterais): **tapa-olho no olho direito**, com a tira em volta da
+cabeça, sobre o cabelo grisalho preso em coque, roupa ocre e dourada, faixa roxo-azulada no peito, lenço e cartucheira vermelhos, bolsinha, babado
 amarelo, botas escuras e a bengala com ponta, anel verde, mecanismo, empunhadura ocre e pé largo. As vistas de frente e de
-costas foram criadas com as mesmas proporções; a lateral esquerda é o espelho exato da direita.
+costas foram criadas com as mesmas proporções. De frente, o tapa-olho fica à esquerda da tela; de perfil para a direita,
+cobre o olho visível; de perfil para a esquerda (o espelho da direita, menos a cabeça) aparece o olho esquerdo, livre,
+e só a tira passa pelo cabelo; de costas, a tira cruza a nuca.
 - **Folha de sprites:** `recursos/heroi.png` (fundo transparente, células de 40×46, 8 colunas, uma linha por direção e
   animação) e `recursos/heroi.json` (ordem das linhas, âncora, colisão e tempos). O jogo monta os mesmos quadros por código
   (`folhaHeroi()`), então a folha nunca fica diferente do que aparece na tela (há teste para isso).
 - **Ponto de referência:** (20, 44) na célula, o centro da linha de contato das botas com o chão; é ele que vai na posição
   do personagem. Em todo quadro pelo menos uma bota está apoiada nessa linha.
-- **Animações:** repouso (4 quadros, respiração e reflexo nos óculos), caminhada (8 quadros por ciclo de dois passos; a
+- **Animações:** repouso (4 quadros, respiração), caminhada (8 quadros por ciclo de dois passos; a
   bengala fica apoiada no primeiro passo e é levada à frente no segundo, e a mão acompanha a empunhadura), interação (3
   quadros: a mão livre alcança o objeto na direção em que o personagem olha) e dano (2 quadros com clarão, depois pisca
   enquanto está protegido). A caminhada avança com a distância andada, então não escorrega nem corre à toa.
@@ -254,6 +275,7 @@ Precisam de `node` e do pacote `playwright` com o Chromium: `npm install` e `npx
 | `b11-terminal.js` | navegador | placa com ! vira pista no diário e no terminal, fixar a pista, editor amplo, Comandos e variáveis nos dois modos (tipo e valor atual), paleta no modo Escrever, escrever no cursor com recuo e trecho selecionado, elif no recuo do if, Guia sem perder texto/cursor/seleção, Ver a sala guardado, aviso de pista não lida, riscos parados com o painel aberto, pistas depois de recarregar |
 | `b12-vale-som.js` | navegador | câmera afastada por padrão, de perto com o painel aberto e guardada; lanterna sem gasto, marcas de luz só com ela acesa e perto, no diário; estações de atalho adormecidas e acordadas, viagem ao acampamento, quadro do acampamento; luzes do vale que dependem do saber; trilha sonora por região (vale, noite, tumba), mais baixa com o painel, volumes de música e efeitos separados e guardados, som desligado |
 | `b13-tela.js` | navegador | tela limpa no celular: cápsula da mão no HUD (sem aviso), aviso da interação nova substitui o anterior (×2 na mesma), no máximo dois avisos compactos abaixo do HUD e acima do explorador, objetivo refeito só quando muda, encolhe e abre com um toque, marcador inteiro na tela e por baixo do HUD, texto da ação longe de VER/LUZ/AÇÃO, Guia com o exemplo inteiro e o conteúdo com a maior parte da altura (em pé, deitado e no computador), grupo abre o primeiro assunto |
+| `b14-mvp.js` | navegador | história antes do treino (pulável, no menu), "Você quis dizer…?", painel no celular (código à vista no modo Escrever com erro em 412 e 360 px, enunciado inteiro ou "ler o resto", duas colunas deitado), rótulos do cenário em dobro no celular e normais no computador, explorador fora dos botões na entrada das tumbas, porta selada que aponta a tumba da vez, bússola do objetivo, Guia com as mecânicas do jogo |
 | `b9-validacoes.js` | navegador | armazenamento bloqueado (aviso e jogo seguindo), sair para outro aplicativo e voltar (pausa e salva), teclado virtual simulado (painel, código e Executar acima dele), sem rolagem horizontal |
 | `b6-personagem.js` | navegador | quadros de todas as direções e animações, linha do chão e altura coerentes, espelho, colisão nos pés, passagem de 1 tile, porta da tumba, atrás/na frente do pilar, transições repouso → caminhada → repouso, interação e dano, folha exportada igual à do jogo |
 | `b7-ajuda.js` | navegador | Guia na tela inicial, no HUD, na tecla G, na pausa e no painel (os dez assuntos com exemplo); pular e revisitar o treino; câmera na tecla C (começa afastada); Lume no acampamento e na tumba com dicas em ordem que não entregam o programa; pontos de interesse no diário; Reiniciar depois de um erro; a área de erro diz a origem (Python, regra da máquina, o que o editor não tem) e leva ao assunto do Guia em um toque, sem perder o programa; Passo a passo que mostra o resultado na última instrução e marca o mecanismo afetado |

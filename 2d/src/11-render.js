@@ -21,6 +21,8 @@ function redimensionar(){
   const dw=Math.round(w*dpr),dh=Math.round(h*dpr);
   const longe=R.longe&&!(typeof PAINEL!=='undefined'&&PAINEL.aberto)&&longePossivel(dw,dh,dpr);
   R.dpr=dpr;R.k=kDe(dw,dh,longe);R.longeAtivo=longe;
+  /* rótulos do cenário em dobro quando a letra de 5 px ficaria com menos de 9 px de tela (celular com a câmera afastada) */
+  R.etq=R.k/R.dpr*5<9?2:1;
   R.W=Math.ceil(dw/R.k);R.H=Math.ceil(dh/R.k);
   R.cv.width=dw;R.cv.height=dh;R.cv.style.width=w+'px';R.cv.style.height=h+'px';
   R.lo.width=R.W;R.lo.height=R.H;R.luz.width=R.W;R.luz.height=R.H;
@@ -35,12 +37,14 @@ function areaVisivel(){
 function camSeguir(alvoX,alvoY,dt,A,imediato){
   const v=areaVisivel();
   /* centro desejado do alvo na parte visível da tela */
-  const hudC=R.vista?0:(R.hudTopo||0)*0.5;
+  /* no toque, os botões VER, LUZ e AÇÃO ocupam a faixa de baixo: o centro fica entre o HUD e essa faixa */
+  const base=R.vista||!document.body.classList.contains('touch')?0:Math.round(104*R.dpr/R.k);
+  const hudC=R.vista?0:(R.hudTopo||0)*0.5-base*0.5;
   let cx=alvoX-(v.x+v.w/2),cy=alvoY-(v.y+v.h/2)-hudC;
-  /* limites da área (quando a área é menor que a tela, centraliza). Em cima sobra a altura do HUD, para o explorador
-     nunca ficar escondido atrás dele perto da borda de cima do mapa. */
+  /* limites da área (quando a área é menor que a tela, centraliza). Em cima sobra a altura do HUD e, no toque, embaixo sobra a faixa
+     dos botões, para o explorador nunca ficar escondido atrás deles perto das bordas do mapa. */
   const mw=A.w*TILE,mh=A.h*TILE,hud=R.vista?0:(R.hudTopo||0);
-  const minX=-v.x,maxX=mw-(v.x+v.w),minY=-v.y-hud,maxY=mh-(v.y+v.h);
+  const minX=-v.x,maxX=mw-(v.x+v.w),minY=-v.y-hud,maxY=mh-(v.y+v.h)+base;
   cx=maxX<minX?(minX+maxX)/2:clamp(cx,minX,maxX);cy=maxY<minY?(minY+maxY)/2:clamp(cy,minY,maxY);
   if(imediato){R.cam.x=cx;R.cam.y=cy;}
   else{const q=1-Math.exp(-8*dt);R.cam.x+=(cx-R.cam.x)*q;R.cam.y+=(cy-R.cam.y)*q;}

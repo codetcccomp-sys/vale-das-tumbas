@@ -127,8 +127,8 @@ CONSTRUIR.diesel=function(){
     const spr=k==='disjuntor'?'disjuntor':k==='bomba'?'bombaHidro':'painelSenha';
     const o=objeto(A,SPR.get(spr,false,0),x,y,{col:k==='porta'?[-10,-6,10,0]:[-10,-8,10,0]});
     o.desenho=(g,ob,t)=>{const on=feita(k);blit(g,SPR.get(spr,on,Math.floor(t*4)%4),ob.x,ob.y,ob.ax,ob.ay);
-      etiqueta(g,ob.x,ob.y-ob.ay-16,'aceita '+LANG.TIPOS[m.tipo].py,{int:'#6fd3ff',float:'#5dff7a',str:'#e9dcbc',bool:'#ffb43a'}[m.tipo]);
-      etiqueta(g,ob.x,ob.y-ob.ay-8,on?'ok':'pede '+LANG.fmt(LV(m.tipo,m.val)).replace(/^"|"$/g,'"')+(m.unid||''),on?'#5dff7a':'#ffffff');};
+      const topo=etiqueta(g,ob.x,ob.y-ob.ay-8,on?'ok':'pede '+LANG.fmt(LV(m.tipo,m.val)).replace(/^"|"$/g,'"')+(m.unid||''),on?'#5dff7a':'#ffffff');
+      etiqueta(g,ob.x,topo-6,'aceita '+LANG.TIPOS[m.tipo].py,{int:'#6fd3ff',float:'#5dff7a',str:'#e9dcbc',bool:'#ffb43a'}[m.tipo]);};
     A.lampadas.push({x,y:y-20,get r(){return feita(k)?40:18;},get cor(){return feita(k)?'#5dff7a':'#ffb43a';}});
     interacao(A,{x,y:y+8,r:24,alto:52,nome:m.nome,label:()=>feita(k)?m.nome+' (funcionando)':pat.carrega?'Pôr '+rot(pat.caps[pat.carrega].val)+' '+m.em:'Ler a etiqueta: '+m.nome,
       use:()=>usarMaquina(k)});
@@ -250,16 +250,16 @@ function desenharOficina(A,g,t){
       /* janela: vazia (pontilhada) ou com o valor */
       if(val===null){gg.fillStyle='#5a6a7a';for(let i=0;i<18;i+=3){gg.fillRect(x-9+i,y-29,2,1);gg.fillRect(x-9+i,y-10,2,1);}for(let j=0;j<20;j+=3){gg.fillRect(x-9,y-29+j,1,2);gg.fillRect(x+8,y-29+j,1,2);}FONTE.rotulo(gg,'vazio',x,y-22,'#8a9aaa');}
       else{const o=(cfg.objetos||[]).map(id=>OBJ[id]).find(o=>o.val.t===val.t&&o.val.v===val.v);if(o)gg.drawImage(SPR.get('valor',o.icone),x-12,y-32);
-        const txt=LANG.fmt(val)+(v.unid?' '+v.unid:'');const w=FONTE.larg(txt);gg.fillStyle='#0b0705';gg.fillRect(x-Math.ceil(w/2)-2,y-14,w+4,7);FONTE.rotulo(gg,txt,x,y-13,'#ffd24a');}
+        const txt=LANG.fmt(val)+(v.unid?' '+v.unid:'');FONTE.caixa(gg,txt,x,y-14,'#ffd24a');}
       /* nome e tipo acima */
-      const nm=v.nome,w=FONTE.larg(nm);gg.fillStyle='#0b0705';gg.fillRect(x-Math.ceil(w/2)-2,y-46,w+4,7);FONTE.rotulo(gg,nm,x,y-45,'#ffffff');
-      const tp=LANG.TIPOS[v.t].py,w2=FONTE.larg(tp);gg.fillStyle='#1a3a4a';gg.fillRect(x-Math.ceil(w2/2)-2,y-38,w2+4,7);FONTE.rotulo(gg,tp,x,y-37,'#6fd3ff');
+      /* tipo logo acima do contêiner e o nome acima do tipo (em dobro no celular, empilhados sem se cobrir) */
+      const ht=FONTE.caixa(gg,LANG.TIPOS[v.t].py,x,y-38,'#6fd3ff','#1a3a4a');FONTE.caixa(gg,v.nome,x,y-38-ht-1,'#ffffff');
     });
   }
   /* caixas separadas na esteira, com o número de peças */
   (ws.lotes||[]).forEach((n,i)=>{const x=11*16+i*18,y=13*16+4;enfileirar(y,gg=>{blit(gg,SPR.get('caixaLote'),x,y,8,14);FONTE.rotulo(gg,String(n),Math.round(x+R.ox),Math.round(y-10+R.oy),'#fff6dc','#0b0705');});});
   /* pedido em cima da separadora */
-  const ped=cfg.situacoes[0]&&cfg.situacoes[0].pedidos;if(ped){const txt='pedido: '+ped.join(' e ');const x=Math.round(8*16+R.ox),y=Math.round(9*16+6+R.oy),w=FONTE.larg(txt);g.fillStyle='#e9d8ae';g.fillRect(x-Math.ceil(w/2)-2,y-1,w+4,7);FONTE.rotulo(g,txt,x,y,'#24160d');}
-  const tqs=cfg.situacoes[0]&&cfg.situacoes[0].tanques;if(tqs){const txt='pedido: '+tqs.map(x=>LANG.fmtDec(x).replace('.',',')+' L').join(' e ');const x=Math.round(24*16+R.ox),y=Math.round(10*16+6+R.oy),w=FONTE.larg(txt);g.fillStyle='#e9d8ae';g.fillRect(x-Math.ceil(w/2)-2,y-1,w+4,7);FONTE.rotulo(g,txt,x,y,'#24160d');}
+  const ped=cfg.situacoes[0]&&cfg.situacoes[0].pedidos;if(ped){const txt='pedido: '+ped.join(' e ');FONTE.caixa(g,txt,Math.round(8*16+R.ox),Math.round(9*16+6+R.oy)-1,'#24160d','#e9d8ae');}
+  const tqs=cfg.situacoes[0]&&cfg.situacoes[0].tanques;if(tqs){const txt='pedido: '+tqs.map(x=>LANG.fmtDec(x).replace('.',',')+' L').join(' e ');FONTE.caixa(g,txt,Math.round(24*16+R.ox),Math.round(10*16+6+R.oy)-1,'#24160d','#e9d8ae');}
   if(cfg.id==='d5'){const x=Math.round(21*16+R.ox),y=Math.round(8*16+R.oy);const L=['carga 12','óleo 0,75 L','código MOTOR','freio solto'];g.fillStyle='#e9d8ae';g.fillRect(x-24,y-4,48,30);L.forEach((l,i)=>FONTE.texto(g,l,x-22,y-2+i*7,'#24160d'));}
 }

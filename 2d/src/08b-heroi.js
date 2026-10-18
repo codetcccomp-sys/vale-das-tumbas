@@ -1,5 +1,5 @@
 /* ====================== personagem principal ======================
-   Desenhado a partir da referência oficial: proteção de cabeça com óculos (faixa escura com lentes verdes) sobre o
+   Desenhado a partir da referência oficial: tapa-olho escuro no olho direito (com a tira em volta da cabeça) sobre o
    cabelo grisalho preso em coque, roupa ocre e dourada com textura gasta, faixa roxo-azulada atravessada no peito, lenço
    vermelho, cinto com cartucheira vermelha e bolsinha, babado amarelo, botas escuras e a bengala alta: ponta escura,
    anel verde, mecanismo de suportes, empunhadura ocre e pé largo.
@@ -23,13 +23,17 @@ const BENG_LADO=['.....P...','....PPP..','....PXP..','...PPXPP.','...PXXPP.','..
 const BENG_FRENTE=['...P...','..PPP..','..PXP..','.PPXPP.','.PXXPP.','.PXXfP.','.PPXPP.','.PPXPP.','..PXP..','..PXP..',
   '..cCc..','.aAeAa.','.aAAAa.','..aAa..','..CXC..','..MmM..','.MMmMM.','..MMM..','..CXC..','.MMmMM.','.MmmMM.','.MMMMM.','..MMM..',
   '..CXC..','..CXC..','..JkJ..','..JkJ..','..JkJ..','..JkJ..','..jJj..','..jJj..','...j...','..cCc..','...C...','.FFfFF.','FFFfFFF','ccccccc'];
-/* cabeças: de lado (olhando para a direita), de frente e de costas */
-const CAB_LADO=['.LLHH..........','LHLHHh.........','HHbHHhoHHH.....','hHHHHHHLHHHHH..','.hHHbHHHHHLHHH.','HHHHHHhHHHHbHHH','HhHbHHHGGGGGGGG',
-  'HHHHHGGGGGGlgGG','hHHHHSsGGGGggGG','.hHHsSSSSSSSSSSK','..hHsSSSSSSSoSSs','...hhsSSSSSSSs..','.....sSSSSSs....'];
-const CAB_FRENTE=['.....LHHL.....','....LHHbHh....','....hHHHhh....','..HHhhhhhhHH..','.HLHHHHbHHLHHH','.HHbHHHHHHHHbH','HhHHHHLHHHhHHH',
-  'HGGGGGGGGGGGGH','GGlgGGGGGGlgGG','HGggGSSSSGggGh','hHSSSSSKSSSSHh','.hsSSSSsSSSSh.','..sSSSoSSSSs..','...sSSSSSSs...'];
-const CAB_COSTAS=['.....LHHL.....','....LHbHHh....','....hHHHhh....','..HHhhhhhhHH..','.HHHbHHHLHHHHH','.HLHHHHHHHHbHH','HhHHHHbHHHHHhH',
-  'HGGGGGGGGGGGGH','GGHHHhHHHbHHGG','HHhHHHHHHHhHHh','hHHHbHHHHHHHHh','.hHHHhHHHhHHh.','..hhHHhhHHhh..','...ssSSSSss...'];
+/* cabeças: de lado (olhando para a direita), de frente e de costas. Tapa-olho no olho DIREITO da personagem: de frente
+   ele fica à esquerda da tela; de perfil para a direita, é o olho que se vê; de perfil para a esquerda aparece o olho
+   esquerdo, livre, e só a tira passa por cima do cabelo; de costas, a tira cruza a nuca. G = tapa-olho e tira. */
+const CAB_LADO=['.LLHH..........','LHLHHh.........','HHbHHhoHHH.....','hHHHHHHLHHHHH..','.hHHbHHHHHLHHH.','HHHHHHhHHHHbHHH','HhGGGHHHHHHHHHH',
+  'HHHHHGGGGGGGGSS','hHHHHSsSSSGGGSS','.hHHsSSSSSGGSSSK','..hHsSSSSSSSrSSs','...hhsSSSSSSSs..','.....sSSSSSs....'];
+const CAB_LADO_ESQ=['.LLHH..........','LHLHHh.........','HHbHHhoHHH.....','hHHHHHHLHHHHH..','.hHHbHHGGGGGHHH','HHGGGGGHHHHbHHH','HhHbHHHHHHHHHHH',
+  'HHHHHHHHHHSSSSS','hHHHHSsSSSSoSSS','.hHHsSSSSSSSSSSK','..hHsSSSSSSSrSSs','...hhsSSSSSSSs..','.....sSSSSSs....'];
+const CAB_FRENTE=['.....LHHL.....','....LHHbHh....','....hHHHhh....','..HHhhhhhhHH..','.HLHHHHbHHGGHH','.HHbHHHHGGHHbH','HhHHHHGGHHhHHH',
+  'HhHHGGSSSSSSHH','HGGGGSSSSSSSSH','hGGGGSSSSSoSHh','hHGGSSSKSSSSHh','.hsSSSSsSSSSh.','..sSSSrrSSSs..','...sSSSSSSs...'];
+const CAB_COSTAS=['.....LHHL.....','....LHbHHh....','....hHHHhh....','..HHhhhhhhHH..','.HGGbHHHLHHHHH','.HLHGGHHHHHbHH','HhHHHHGGHHHHhH',
+  'HHHHHHHHGGHHHH','HHHHHhHHHbGGHH','HHhHHHHHHHhHGG','hHHHbHHHHHHHHh','.hHHHhHHHhHHh.','..hhHHhhHHhh..','...ssSSSSss...'];
 /* troncos: lenço, vestido com a faixa, cinto com cartucheira e bolsinha, babado */
 const TRONCO_LADO=['.....RRRRrRR..','....DDDRRrRDD.','...DEDDUUUDpDD','..DEDDUUuDDDDD','..DDpUUuDDDDdD','..DDUUuDDpDDdD','..TTUuTTTZWZTT',
   '..DdDDDDOOODdD','.DDpDDDDOqODDdD','.DEDDDDpDOODDDd','DDDDDDDDDDDpDDdD','YyYYyYYyYYyYYyYY','.y..y..y..y..y..'];
@@ -65,7 +69,7 @@ function heroiQuadro(vista,q){
     if(q.livre==='quadril')heroiBraco(g,[[15+dx,29+dy],[11+dx,32+dy],[13+dx,35+dy]]),heroiMapa(g,MAO_LIVRE,11+dx,34+dy);
     else if(q.livre==='dano')heroiBraco(g,[[15+dx,29+dy],[11+dx,27+dy],[9+dx,24+dy]]),heroiMapa(g,MAO_LIVRE,7+dx,22+dy);
     heroiMapa(g,TRONCO_LADO,12+dx,27+dy);
-    heroiMapa(g,CAB_LADO,12+dx+(q.inclina||0),14+dy+(q.dano?-1:0),troca);
+    heroiMapa(g,q.esq?CAB_LADO_ESQ:CAB_LADO,12+dx+(q.inclina||0),14+dy+(q.dano?-1:0),troca);
     if(q.dano){g.fillStyle=HEROI_PAL.o;g.fillRect(24+dx,23+dy,2,2);}
     /* bengala e a mão da frente agarrada à empunhadura */
     heroiMapa(g,BENG_LADO,27+bx,7+by);
@@ -137,7 +141,8 @@ HEROI_ANIM.costas=HEROI_ANIM.frente;
 function montarHeroi(){
   const S={},vistas={baixo:'frente',cima:'costas',direita:'lado'};
   for(const dir in vistas){const v=vistas[dir],A=HEROI_ANIM[v];S[dir]={};for(const an in A)S[dir][an]=A[an].map(q=>heroiQuadro(v,q));}
-  S.esquerda={};for(const an in S.direita)S.esquerda[an]=S.direita[an].map(espelhar);
+  /* a esquerda é o perfil espelhado, mas com a cabeça do lado esquerdo (olho livre; o tapa-olho fica do outro lado) */
+  S.esquerda={};for(const an in HEROI_ANIM.lado)S.esquerda[an]=HEROI_ANIM.lado[an].map(q=>espelhar(heroiQuadro('lado',Object.assign({},q,{esq:1}))));
   return S;
 }
 /* configuração das animações (também vai para o JSON junto com a folha de sprites) */

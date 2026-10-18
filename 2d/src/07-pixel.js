@@ -79,20 +79,25 @@ const FONTE=(function(){
     'Á':['A','agudo'],'Ã':['A','til'],'É':['E','agudo'],'Ê':['E','circ'],'Í':['I','agudo'],'Ó':['O','agudo'],'Õ':['O','til'],'Ú':['U','agudo'],'Ç':['C','ced']};
   function larg(t){let w=0;for(const ch of t)w+=4;return Math.max(0,w-1);}
   /* desenha o texto com o canto superior esquerdo em (x,y) */
-  function texto(g,t,x,y,cor){
-    g.fillStyle=cor;let cx=x|0;y|=0;
+  function texto(g,t,x,y,cor,e){
+    e=e||1;g.fillStyle=cor;let cx=x|0;y|=0;const px=(a,b,w,h)=>g.fillRect(cx+a*e,y+b*e,(w||1)*e,(h||1)*e);
     for(const ch0 of String(t)){
       let ch=ch0,ac=null;if(ACENTO[ch0]){ch=ACENTO[ch0][0];ac=ACENTO[ch0][1];}
       const b=G[ch]||G['?'];
-      for(let i=0;i<15;i++)if(b[i]==='1')g.fillRect(cx+i%3,y+((i/3)|0),1,1);
-      if(ac==='agudo')g.fillRect(cx+2,y-2,1,1);else if(ac==='grave')g.fillRect(cx,y-2,1,1);
-      else if(ac==='circ'){g.fillRect(cx,y-1,1,1);g.fillRect(cx+1,y-2,1,1);g.fillRect(cx+2,y-1,1,1);}
-      else if(ac==='til'){g.fillRect(cx,y-2,2,1);g.fillRect(cx+2,y-2,1,1);}
-      else if(ac==='ced')g.fillRect(cx+1,y+5,1,1);
-      cx+=4;
+      for(let i=0;i<15;i++)if(b[i]==='1')px(i%3,(i/3)|0);
+      if(ac==='agudo')px(2,-2);else if(ac==='grave')px(0,-2);
+      else if(ac==='circ'){px(0,-1);px(1,-2);px(2,-1);}
+      else if(ac==='til'){px(0,-2,2);px(2,-2);}
+      else if(ac==='ced')px(1,5);
+      cx+=4*e;
     }
   }
+  /* rótulos desenhados no cenário: no celular, com a câmera afastada, um pixel do jogo vale ~1 px de tela e a letra de
+     5 px ficava ilegível; aí os rótulos do mundo saem em dobro (R.etq = 2), crescendo para cima a partir da base */
+  const escMundo=g=>typeof R!=='undefined'&&R.lg===g&&R.etq>1?R.etq:1;
   /* texto com sombra de 1 px, centralizado em x */
-  function rotulo(g,t,x,y,cor,sombra){const w=larg(t),x0=Math.round(x-w/2);if(sombra){texto(g,t,x0+1,y+1,sombra);}texto(g,t,x0,y,cor);return w;}
-  return{texto,rotulo,larg,G};
+  function rotulo(g,t,x,y,cor,sombra){const e=escMundo(g),w=larg(t),x0=Math.round(x-w*e/2),y0=y-5*(e-1);if(sombra){texto(g,t,x0+e,y0+e,sombra,e);}texto(g,t,x0,y0,cor,e);return w*e;}
+  /* rótulo com caixa de fundo; (x,y) em pixels da tela do jogo, y no topo da caixa em escala 1 (a base fica no lugar) */
+  function caixa(g,t,x,y,cor,fundo){const e=escMundo(g),w=larg(t)*e,h=5*e+2,yb=y+6;g.fillStyle=fundo||'#0b0705';g.fillRect(x-Math.ceil(w/2)-2,yb-h,w+4,h);rotulo(g,t,x,y+1,cor);return h;}
+  return{texto,rotulo,caixa,larg,G,escMundo};
 })();

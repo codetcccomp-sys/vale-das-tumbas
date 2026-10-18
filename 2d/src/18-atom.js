@@ -136,4 +136,5 @@ CONSTRUIR.atom=function(){
   return A;
 };
 /* rótulo em pixels com fundo escuro, para valores no mundo */
-function etiqueta(g,x,y,txt,cor){const w=FONTE.larg(txt),px=Math.round(x+R.ox),py=Math.round(y+R.oy);g.fillStyle='#0b0705';g.fillRect(px-Math.ceil(w/2)-2,py-1,w+4,7);FONTE.rotulo(g,txt,px,py,cor||'#ffffff');}
+/* rótulo do cenário com caixa; devolve o topo da caixa (em coordenadas do mundo) para empilhar outro rótulo acima */
+function etiqueta(g,x,y,txt,cor,fundo){const Y=Math.round(y+R.oy)-1,h=FONTE.caixa(g,txt,Math.round(x+R.ox),Y,cor||'#ffffff',fundo);return Y+6-h-R.oy;}

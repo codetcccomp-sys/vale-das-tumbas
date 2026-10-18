@@ -59,8 +59,10 @@ const inter=(a,b)=>a&&b&&a.w>0&&b.w>0&&a.x<b.x+b.w-1&&b.x<a.x+a.w-1&&a.y<b.y+b.h
     t.ok(p.fmin>=11,nome+': textos do painel com pelo menos 11 px',p.fmin);
     t.ok(p.ultimo,nome+': os controles do fim do painel são alcançáveis'+(p.rola?' (o painel rola)':''),p.rola);
     const ve=await ev(()=>{document.getElementById('painel').scrollTop=0;mostrarErro({linha:3,titulo:'Erro de teste (TypeError): era esperado um número inteiro (int).',texto:'Explicação do erro de teste, com duas ou três linhas de texto para ocupar o espaço que uma explicação de verdade ocupa.'});
-      const b=document.getElementById('pErro').getBoundingClientRect(),f=document.getElementById('pRodape').getBoundingClientRect();return{topo:b.top,fim:b.bottom,rodape:f.top};});
-    t.ok(ve.topo>=0&&ve.fim<=ve.rodape+1,nome+': a área de erro aparece inteira, acima dos botões fixos do painel',ve);
+      const b=document.getElementById('pErro').getBoundingClientRect(),f=document.getElementById('pRodape').getBoundingClientRect(),inf=document.getElementById('pInfo'),i=inf.getBoundingClientRect();
+      /* deitado (duas colunas): a área de erro fica na coluna da esquerda, inteira à vista dentro dela */
+      const duas=getComputedStyle(inf).display!=='contents';return{duas,topo:b.top,fim:b.bottom,rodape:f.top,iTopo:i.top,iFim:i.bottom,dir:b.right<=f.left+1};});
+    t.ok(ve.duas?(ve.topo>=ve.iTopo-1&&ve.fim<=ve.iFim+1&&ve.dir):(ve.topo>=0&&ve.fim<=ve.rodape+1),nome+': a área de erro aparece inteira'+(ve.duas?' na coluna do desafio, ao lado do programa':', acima dos botões fixos do painel'),ve);
     /* "Ver a sala": a sala ganha espaço; depois volta ao editor amplo */
     const sala=await ev(()=>{document.getElementById('pLayout').click();const r=document.getElementById('painel').getBoundingClientRect();const m=r.y>40?r.y/innerHeight:r.x/innerWidth;document.getElementById('pLayout').click();return m;});
     t.ok(sala>=0.3,nome+': "Ver a sala" deixa a sala com '+Math.round(sala*100)+'% da tela',sala);

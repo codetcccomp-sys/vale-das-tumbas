@@ -1,7 +1,7 @@
 /* ====================== estado do jogo ====================== */
 const $=id=>document.getElementById(id);
 const G={
-  mode:'menu',   // menu | play | paused | painel | diario | guia | dialogo | trans | fim
+  mode:'menu',   // menu | historia | play | paused | painel | diario | guia | dialogo | trans | fim
   area:null,curTomb:null,hearts:3,invuln:0,danoT:0,lantern:100,lanternOn:false,
   relics:{steam:false,diesel:false,atom:false,bio:false},learn:{},progs:{},diary:[],diaryNew:0,insc:{},sec:{},abertas:[],done:false,time:0.12,migr:null,
   treino:{feito:true,passo:0,manivela:false},dicas:{},poi:{},guia:false,lumeFalou:false,pistas:{},fixadas:[],marcas:{},
@@ -85,8 +85,10 @@ function atualizarHud(){
      alguns segundos, e tocar nele abre de novo */
   const go=objetivo(),gk=go?go.t+'\n'+go.s:'',el=$('goal');
   if(gk!==atualizarHud.gk){atualizarHud.gk=gk;el.textContent='';el.classList.remove('curto');GOAL.t=performance.now();
-    if(go){const b=document.createElement('b');b.textContent=go.t;const s=document.createElement('span');s.className='gs';s.textContent=go.s;el.appendChild(b);el.appendChild(s);el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');}}
+    if(go){const b=document.createElement('b');const bs=document.createElement('i');bs.className='bus';bs.title='Direção do objetivo';b.appendChild(bs);b.appendChild(document.createTextNode(go.t));const s=document.createElement('span');s.className='gs';s.textContent=go.s;el.appendChild(b);el.appendChild(s);el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');}}
   else if(go&&!el.classList.contains('curto')&&telaCompacta()&&performance.now()-GOAL.t>GOAL.ms){el.classList.add('curto');R.hudTopo=0;}
+  /* bússola: a seta no título do objetivo aponta do explorador para o alvo da etapa (some quando ele já está perto) */
+  const bs=el.querySelector('.bus');if(bs){const al=go&&go.alvo;if(al){const dx=al.x-G.p.x,dy=al.y-G.p.y;bs.hidden=Math.hypot(dx,dy)<40;bs.style.transform='rotate('+Math.atan2(dy,dx).toFixed(2)+'rad)';}else bs.hidden=true;}
 }
 const GOAL={t:0,ms:9000};
 function alternarObjetivo(){const el=$('goal');if(el.classList.contains('curto')){el.classList.remove('curto');GOAL.t=performance.now();}else if(telaCompacta())el.classList.add('curto');R.hudTopo=0;SFX.click();}
@@ -346,7 +348,10 @@ function mostrarDicaToque(){const z=$('zoneHint');if(IN.mode!=='touch'){z.hidden
 function aoMudarEntrada(){if(G.mode==='paused'||G.mode==='menu')atualizarInicio();if(IN.mode!=='touch')$('zoneHint').hidden=true;}
 function ligarBotoes(){
   $('btnContinue').onclick=()=>iniciarJogo(lerSave()?'continuar':'migrar');
-  $('btnNew').onclick=()=>{if(lerSave())confirmar('Começar de novo?','Isso apaga o progresso da versão 2D (o save do jogo 3D não é tocado).','Apagar e começar',()=>iniciarJogo('novo'));else iniciarJogo('novo');};
+  /* novo jogo: primeiro a história (pulável); nos testes automáticos ela só aparece com #vt-historia */
+  const novo=()=>{if(window.__vt&&location.hash.indexOf('historia')<0)iniciarJogo('novo');else abrirHistoria(()=>iniciarJogo('novo'));};
+  $('btnNew').onclick=()=>{if(lerSave())confirmar('Começar de novo?','Isso apaga o progresso da versão 2D (o save do jogo 3D não é tocado).','Apagar e começar',novo);else novo();};
+  $('btnHistoria').onclick=()=>abrirHistoria(()=>{mostrarTela('scStart');focoPrimeiro('scStart');},'Fechar');
   $('pResume').onclick=retomar;$('pFull').onclick=alternarTelaCheia;$('btnFull').onclick=alternarTelaCheia;
   $('btnGuiaIni').onclick=()=>abrirGuia();$('pGuiaPausa').onclick=()=>abrirGuia();$('gFechar').onclick=fecharGuia;
   $('pSound').onclick=()=>{auInit();auSetOn(!AU.on);cfgGravar({sound:AU.on});$('pSound').textContent=AU.on?TXT.soundOn:TXT.soundOff;};

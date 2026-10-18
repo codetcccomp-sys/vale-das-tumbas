@@ -20,7 +20,7 @@ function painelInit(){
   $('pFechar').onclick=()=>fecharPainel();
   $('pRun').onclick=()=>painelExecutar();$('pStep').onclick=()=>painelPassoBtn();$('pStop').onclick=()=>painelParar(true);
   $('pReset').onclick=()=>painelReiniciar();$('pClear').onclick=()=>painelLimpar();$('pDica').onclick=()=>painelDica();
-  $('pGuia').onclick=()=>abrirGuia(topicoGuia(PAINEL.cfg));$('pModo').onclick=()=>painelModoTexto(!PAINEL.texto);
+  $('pMsgMais').onclick=()=>{PAINEL.msgAberta=!$('pMsg').classList.contains('aberto');ajustarMsg();if(!PAINEL.msgAberta)$('pMsg').scrollIntoView({block:'nearest'});};$('pGuia').onclick=()=>abrirGuia(topicoGuia(PAINEL.cfg));$('pModo').onclick=()=>painelModoTexto(!PAINEL.texto);
   $('pLayout').onclick=()=>alternarLayoutPainel();
   /* aberta ou fechada, a referência lembra a escolha (uma para cada modo) */
   $('pRefBox').addEventListener('toggle',()=>{if(PAINEL.refAuto)return;cfgGravar(PAINEL.texto?{refTexto:$('pRefBox').open}:{refBlocos:$('pRefBox').open});});
@@ -92,7 +92,18 @@ function mensagemInicial(){
   if(g&&!G.learn[c.id])t=t+' → '+g.texto;
   painelMsg(t,'');
 }
-function painelMsg(t,tipo){PAINEL.msg=t;PAINEL.msgTipo=tipo||'';const m=$('pMsg');m.textContent=t;m.className=tipo||'';m.scrollTop=0;}
+function painelMsg(t,tipo){PAINEL.msg=t;PAINEL.msgTipo=tipo||'';const m=$('pMsg');m.textContent=t;m.className=tipo||'';m.scrollTop=0;PAINEL.msgAberta=false;ajustarMsg();}
+/* enunciado longo: abre inteiro quando cabe no painel sem esconder o programa; senão fica recolhido, com "ler o resto" */
+function ajustarMsg(){
+  const m=$('pMsg'),b=$('pMsgMais');if(!m||!PAINEL.aberto){if(b)b.hidden=true;return;}
+  m.classList.remove('longo','aberto');
+  if(m.scrollHeight<=m.clientHeight+2){b.hidden=true;return;}
+  m.classList.add('longo','aberto');const P=$('painel');
+  /* recolhe quando não cabe, ou quando o programa já tem 3 linhas ou mais (aí o código precisa do espaço) */
+  if(!PAINEL.msgAberta&&(P.scrollHeight>P.clientHeight+2||(PAINEL.prog&&PAINEL.prog.length>=3))&&getComputedStyle($('pInfo')).display==='contents')m.classList.remove('aberto');
+  const ab=m.classList.contains('aberto');b.hidden=getComputedStyle($('pInfo')).display!=='contents'||(ab&&!PAINEL.msgAberta);
+  b.textContent=ab?'▴ recolher':'▾ ler o resto';
+}
 /* área de erro: o que deu errado (com o nome do erro em Python) e o que fazer, em linguagem simples */
 /* área de erro: de onde vem o problema (Python, regra da máquina, objetivo…), a linha, o que deu errado e o que fazer;
    o botão abre o Guia no assunto do erro, sem perder o programa */
@@ -104,7 +115,13 @@ function mostrarErro(x){
   box.querySelector('.dica').textContent=(PAINEL.cfg&&PAINEL.cfg.dicas?'Se precisar, peça uma 💡 Dica ao Lume.':'');
   const top=x.guia||topicoGuia(PAINEL.cfg),T=GUIA.find(g=>g.id===top),gb=box.querySelector('.gbtn');
   gb.hidden=!T;if(T){gb.textContent='📖 Ver no Guia: '+T.t;gb.onclick=()=>abrirGuia(top);}
-  aVista(box);
+  /* no modo Escrever, o código é o que se corrige: a referência recolhe (se não couber) e o campo fica à vista com o erro */
+  if(PAINEL.texto){const P=$('painel'),C=$('pCorpo'),sobra=el=>el.scrollHeight>el.clientHeight+2;
+    if((sobra(P)||sobra(C))&&$('pRefBox').open){PAINEL.refAuto=true;$('pRefBox').open=false;setTimeout(()=>{PAINEL.refAuto=false;},0);}
+    ajustarMsg();aVista($('pTxt'));if(box.getBoundingClientRect().top<P.getBoundingClientRect().top)aVista(box);
+    /* deitado (duas colunas), cada coluna rola sozinha: o campo de código fica à vista na dele */
+    if(getComputedStyle($('pInfo')).display!=='contents'){$('pTxt').scrollIntoView({block:'nearest'});box.scrollIntoView({block:'nearest'});}}
+  else if(getComputedStyle($('pInfo')).display!=='contents')box.scrollIntoView({block:'nearest'});else aVista(box);
 }
 /* rola o painel até o elemento ficar visível acima da barra fixa de linhas e controles (telas baixas) */
 function aVista(el){
@@ -143,6 +160,7 @@ function renderPainel(){
   $('pModo').textContent=txt?'✔ Pronto':'✎ Escrever';
   if(c.dicas){const n=G.dicas[c.id]||0;$('pDica').textContent='💡 Dica '+(n>=3?'3/3':(n+1)+'/3');}
   $('pRun').textContent=rodando&&PAINEL.run.modo==='passo'?'▶ Continuar':'▶ Executar';
+  ajustarMsg();
 }
 function renderVars(){
   const c=PAINEL.cfg,V=$('pVars');V.textContent='';

@@ -76,6 +76,23 @@ comparação em `capturas/F-celular-antes-depois.png`.
 | Caixa de texto do Guia pequena | **Defeito de layout**: o quadro **Exemplo** encolhia dentro da área que rola e mostrava só uma faixa (o código ficava cortado). Os assuntos do grupo ocupavam até 5 fileiras de botões. | Nenhum bloco do conteúdo encolhe mais (o exemplo aparece inteiro, no celular, deitado e no computador). No celular, os assuntos ficam **numa fileira que rola para o lado** (o aberto fica à vista) e o cabeçalho é mais baixo: o conteúdo passou de 59% para **77% da caixa**. Tocar num grupo já abre o primeiro assunto dele. |
 | Testado | `b13-tela` (22 verificações): HUD da cápsula, substituição dos avisos, limite e posição, objetivo (não refeito, encolhe, abre), marcador dentro da tela e por baixo do HUD, texto da ação × VER/LUZ/AÇÃO, Guia em pé, deitado e no computador. Não testado num celular de verdade. |
 
+### I — Documentos de 18/10/2026: "Registro de melhorias – MVP 0.1" e "Plano de melhorias" (técnico)
+Cada item foi conferido no jogo antes. O que já existia está marcado; o que faltava foi feito agora e testado em `b14-mvp`.
+| Item | Situação |
+|---|---|
+| MVP 01–02 · História e introdução | **Feito agora.** História de 5 páginas antes do treino (pulável; **📜 História** no menu): a cidade das instruções, o sono das máquinas, quem é você, o Lume e a missão. |
+| MVP 03 · Guia do jogador | Comandos com sintaxe e exemplos, erros, o que o editor aceita e palavras do jogo **já existiam**; **agora** também as mecânicas: saberes e relíquias, objetivo/bússola/atalhos, diário e pistas, lanterna. |
+| MVP 04 · Bússola e navegação | Objetivo, marcador ◆, seta na borda e trilhas **já existiam**; **agora** a seta-bússola no título do objetivo e a porta selada que diz qual tumba é a da vez e para que lado. |
+| MVP 05 · Personagem | **Corrigido:** o desenho tinha óculos de proteção; agora tem **tapa-olho no olho direito** (de frente à esquerda da tela; perfil direito cobre o olho; perfil esquerdo mostra o olho livre e a tira; de costas, a tira na nuca), boca em tom mais suave. A história apresenta a personalidade gentil. Folha de sprites refeita (`recursos/heroi*.png`). |
+| MVP 06 · Jogabilidade e testes | Treino existente; o teste com iniciantes continua **pendente** (roteiro na seção 3). |
+| P0-01 a P0-03 | **Já feitos** (b10, b3/b9, b2). |
+| P1-01 / P1-08 · Editor e celular | **Feito agora:** no Escrever com erro o código fica à vista (antes: 29 px visíveis em 412 px); enunciado inteiro ou "ler o resto" (antes: cortado em 24 de 25 etapas); deitado em duas colunas (antes: o programa saía da tela). Celular físico: pendente. |
+| P1-03 · Câmera e legibilidade | **Feito agora:** rótulos do cenário em dobro no celular (de 5,7 para 11,4 px de altura); a câmera reserva a faixa dos botões de toque (o explorador saía coberto pelo VER no celular pequeno). |
+| 6.2 · Diagnósticos | **Feito agora:** "Você quis dizer acender_tocha()?" nos nomes errados (funções e variáveis, inclusive maiúsculas). |
+| P1-04 · Outras tumbas no modelo do pátio | **Pendente**, como o documento pede: só depois de validar a tumba-piloto (Motores) com iniciantes. |
+| P2-02 · Créditos e permissão da arte | **Pendente** (depende do autor da referência da personagem). |
+| 6.3 · Métricas de desempenho | **Pendente.** |
+
 ### Entrega (seção 7 do documento)
 - Resumo: esta seção 0 e o README. Testes: seção 4. Investigação da coleta antecipada e do áudio: tabelas P0 e G.
 - Tutorial, puzzles alterados e salvamento: `b1-percurso` (o jogo inteiro, com o pátio novo e recarga depois de cada tumba).
@@ -190,4 +207,4 @@ Anote o aparelho, o navegador e o que falhou (com captura de tela).
 ## 4. Testes automáticos executados
 `2d/test/rodar.sh` (Node + Chromium sem janela): l1-linguagem, l2-save, b1-percurso, b2-painel, b3-save, b4-telas,
 b5-perigos, b6-personagem, b7-ajuda, b8-leitura, b9-validacoes e, nesta atualização, b10-recompensa, b11-terminal,
-b12-vale-som e b13-tela: **767 verificações, todas passando**. O README lista o que cada um confere.
+b12-vale-som, b13-tela e b14-mvp: **785 verificações, todas passando**. O README lista o que cada um confere.

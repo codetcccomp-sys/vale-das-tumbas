@@ -209,11 +209,16 @@ function lerQuadroAcampamento(){
   SFX.page();falar(t,[{t:'🗺 Abrir o mapa do diário',fn:()=>{fecharFala();abrirDiario('mapa');}},{t:'Entendi',main:true}],'Quadro do acampamento','quadroExplorar');
 }
 /* ---------- portas ---------- */
+/* direção (rosa dos ventos) de um deslocamento no mapa: y cresce para o sul */
+function rumo(dx,dy){const i=Math.round((Math.atan2(-dy,dx)/(Math.PI/4)+8))%8;return['leste','nordeste','norte','noroeste','oeste','sudoeste','sul','sudeste'][i];}
 function tumbaAnterior(k){const i=ORDEM_TUMBAS.indexOf(k);return i>0?ORDEM_TUMBAS[i-1]:null;}
 function tumbaAberta(k){const a=tumbaAnterior(k);return!a||saberOk(a);}
 function tumbaRotulo(k){const T=TOMBS[k];return tumbaAberta(k)?'Entrar: '+T.name+' ('+SABERES[T.saber].nome+')':T.name+' (selada)';}
 function usarPortaTumba(k){
-  if(!tumbaAberta(k)){const a=tumbaAnterior(k);SFX.deny();toast('O selo desta porta responde a quem já sabe '+SABERES[TOMBS[a].saber].nome.toLowerCase()+'. Primeiro recupere esse saber na '+TOMBS[a].name+'.','warn');return;}
+  if(!tumbaAberta(k)){const a=tumbaAnterior(k),prox=ORDEM_TUMBAS.find(t=>!saberOk(t));SFX.deny();
+    /* a porta selada também diz para onde ir: a tumba da vez, na direção a partir daqui (e a bússola do objetivo aponta) */
+    const ir=prox&&prox!==k?' A próxima é a '+TOMBS[prox].name+', a '+rumo(TOMBS[prox].x-TOMBS[k].x,TOMBS[prox].y-TOMBS[k].y)+' daqui: siga a seta do objetivo, no alto da tela.':'';
+    toast('O selo desta porta responde a quem já sabe '+SABERES[TOMBS[a].saber].nome.toLowerCase()+'. Primeiro recupere esse saber na '+TOMBS[a].name+'.'+ir,'warn');return;}
   entrarTumba(k);
 }
 function usarPortaFinal(){

@@ -197,3 +197,17 @@ início. Hipótese; precisa de teste com pessoas.
 4. Acabamento P3 (fontes de 12 px, alvos de 44 px, títulos, contraste do "novo").
 5. Ritmo: enxugar as guiadas dos Motores e pôr distratores e previsões nas práticas.
 6. Teste com celular real e com iniciantes. Só então redesenhar mais uma tumba (Reator) no modelo do pátio.
+
+## 7. O que já foi feito depois desta reanálise
+Junto com os documentos "Registro de melhorias – MVP 0.1" e "Plano de melhorias" (ver `VALIDACAO.md`, seção I):
+- **Painel no celular (os três P1):**
+  - no modo Escrever com erro, o código fica à vista em 412 e 360 px;
+  - o enunciado aparece inteiro ou com "▾ ler o resto";
+  - deitado, o painel tem duas colunas.
+- **Rótulos do cenário:** em dobro no celular (11,4 px de altura).
+- **Câmera:** reserva a faixa dos botões de toque, e o explorador não fica mais atrás do VER.
+- **Navegação:** a porta selada aponta a tumba da vez, e a seta-bússola no objetivo mostra a direção.
+- **Personagem:** tapa-olho no olho direito; história curta antes do treino; "Você quis dizer…?"; mecânicas do jogo no
+  Guia.
+- **Continuam pendentes:** os itens P2 de ritmo e aprendizagem, o acabamento P3, e os testes com celular real e com
+  iniciantes.
