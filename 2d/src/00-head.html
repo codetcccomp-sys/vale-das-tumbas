@@ -74,6 +74,13 @@ body.touch #prompt kbd{display:none}
 #marcaAlvo::before{content:'◆ ';color:#8a3a10}#marcaAlvo::after{content:'';position:absolute;left:50%;bottom:-8px;margin-left:-5px;border:5px solid transparent;border-top-color:#0b0705}
 #nomeObj{position:absolute;transform:translate(-50%,-100%);pointer-events:none;white-space:nowrap;padding:2px 7px;font:700 13px/1.2 var(--f);color:#fff2cc;background:rgba(23,16,11,.9);border:2px solid #0b0705;box-shadow:inset 0 0 0 1px #8a6a2a}
 #nomeObj.alvo{color:#24160d;background:#ffd24a}
+/* bússola: seta na borda da tela quando o alvo do objetivo está fora dela (nome e distância); nunca fica sob o HUD nem sob os botões */
+#bordaAlvo{position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;--c:#ffd24a}
+#bordaAlvo .baSeta{position:absolute;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:rgba(23,16,11,.92);border:3px solid var(--c);box-shadow:0 0 0 2px #0b0705;box-sizing:border-box}
+#bordaAlvo .baSeta::after{content:'';position:absolute;left:50%;top:50%;margin:-7px 0 0 -3px;border-left:12px solid var(--c);border-top:7px solid transparent;border-bottom:7px solid transparent}
+#bordaAlvo .baSeta::before{content:'';position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -9px;background:var(--c);opacity:.55}
+#bordaAlvo .baTxt{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;padding:3px 8px;font:800 12px/1.15 var(--f);color:#fff2cc;background:rgba(23,16,11,.94);border:2px solid #0b0705;box-shadow:inset 0 0 0 1px var(--c);text-align:center}
+#bordaAlvo .baTxt small{display:block;font-weight:600;font-size:11px;color:#e8d8b0}
 #seta{position:absolute;width:28px;height:28px;pointer-events:none;image-rendering:pixelated}
 /* avisos */
 #msgs{position:absolute;left:50%;transform:translateX(-50%);top:calc(var(--st) + 54px);width:min(460px,calc(100vw - 24px));display:flex;flex-direction:column;gap:6px;align-items:center}
@@ -323,6 +330,7 @@ body.modal #toqueUi{display:none}
   <div id="hud">
     <!-- marcas do mundo primeiro: ficam por baixo do HUD e dos avisos -->
     <div id="marcaAlvo" hidden></div><div id="nomeObj" hidden></div>
+    <div id="bordaAlvo" hidden aria-hidden="true"><i class="baSeta"></i><span class="baTxt"><b></b><small></small></span></div>
     <div id="hl">
       <div class="chip"><div id="hearts"></div><div id="relics"></div><span id="relicTxt"></span></div>
       <div class="hlinha"><div class="chip" id="lantern"><span>Lanterna</span><span id="ltxt"></span></div><div class="chip" id="mao" hidden></div></div>

@@ -457,6 +457,7 @@ function desenharJogo(){
   camPixel();
   desenharChao(A);desenharAgua(A,G.t);
   if(A.desenharChao)A.desenharChao(R.lg,G.t);
+  desenharAnelBussola();
   for(const o of A.objs){
     if(!o.on||!naTela(o.x,o.y-o.ay/2,Math.max(o.img.width,o.img.height)))continue;
     enfileirar(o.y+(o.camada||0),g=>{
@@ -470,6 +471,7 @@ function desenharJogo(){
   if(A.ents)for(const e of A.ents)if(e.desenhar)e.desenhar();
   if(A.id==='vale'||A.mostraJogador!==false)desenharJogador();
   desenharFila();
+  desenharAnelBussola(true);
   desenharEncobertos(A);
   desenharParticulas();
   if(A.desenharTopo)A.desenharTopo(R.lg,G.t);
@@ -492,10 +494,9 @@ function desenharJogo(){
   }
   desenharFocoEvento(A);desenharPistas(A);desenharMarcas(A);
   if(A.desenharUi)A.desenharUi(R.lg,G.t);
-  desenharSetaObjetivo();
   if(alvoInter&&G.mode==='play'){const it=alvoInter.it,y=Math.round(it.y-(it.alto||26)+R.oy+Math.sin(G.t*6)*1.5);R.lg.drawImage(SPR.get('seta','#ffd24a'),Math.round(it.x+R.ox-3),y);}
   apresentar();
-  atualizarMarcas();
+  atualizarMarcas();atualizarBordaAlvo();
 }
 /* durante a execução, um anel pulsante marca o mecanismo que a instrução da vez mexeu (vermelho quando deu erro) */
 function desenharFocoEvento(A){
@@ -547,16 +548,78 @@ function atualizarMarcas(){
   if(nome){const y=it.y-(it.alto||26)-4;n.hidden=false;if(n.textContent!==nome||!n._w){n.textContent=nome;n._w=n.offsetWidth;}n.classList.toggle('alvo',!!mesmo);pos(n,it.x,y);}else n.hidden=true;
   if(a&&!mesmo&&ok(a.x,a.y)){m.hidden=false;if(m.textContent!==a.txt||!m._w){m.textContent=a.txt;m._w=m.offsetWidth;}pos(m,a.x,a.y+Math.round(Math.sin(G.t*4)*1.5));}else m.hidden=true;
 }
-/* seta na borda da tela apontando para o objetivo (só no vale e quando ele está fora da tela) */
-function desenharSetaObjetivo(){
-  if(G.mode!=='play'||!G.area||G.area.id!=='vale')return;const go=objetivo();if(!go||!go.alvo)return;
-  const x=go.alvo.x+R.ox,y=go.alvo.y+R.oy;if(x>8&&y>8&&x<R.W-8&&y<R.H-8)return;
-  const cx=R.W/2,cy=R.H/2,dx=x-cx,dy=y-cy,a=Math.atan2(dy,dx),m=14;
-  const k=Math.min((R.W/2-m)/Math.abs(Math.cos(a)||1e-6),(R.H/2-m)/Math.abs(Math.sin(a)||1e-6));
-  const px=Math.round(cx+Math.cos(a)*k),py=Math.round(cy+Math.sin(a)*k),g=R.lg;
-  const pul=Math.floor(G.t*4)%2;
-  g.fillStyle='#0b0705';P.circ(g,px,py,6+pul,'#0b0705');P.circ(g,px,py,5+pul,go.cor||'#ffd24a');
-  g.fillStyle='#0b0705';for(let i=1;i<=4;i++){g.fillRect(Math.round(px+Math.cos(a)*(i+1))-1,Math.round(py+Math.sin(a)*(i+1))-1,2,2);}
+/* ====================== bússola ======================
+   Duas peças que se completam: o anel no chão, em volta dos pés do explorador, com a ponta na cor do objetivo apontando para
+   ele (o olho já está na personagem; some perto do alvo, onde o marcador ◆ assume); e a seta na borda da tela, só quando o
+   alvo está fora dela, com o nome e a distância (DOM: texto nítido, sem cobrir o HUD, os avisos nem os botões de toque). */
+const BUSSOLA={perto:40};
+function alvoBussola(){
+  if(G.mode!=='play'||!G.area)return null;const go=objetivo();if(!go||!go.alvo)return null;
+  const dx=go.alvo.x-G.p.x,dy=go.alvo.y-G.p.y;return{go,al:go.alvo,dx,dy,d:Math.hypot(dx,dy),ang:Math.atan2(dy,dx),cor:go.cor||'#ffd24a'};
+}
+/* um triângulo em pixels inteiros (sem borrar a pixel art) */
+function triPx(g,a,b,c,cor){
+  const x0=Math.floor(Math.min(a[0],b[0],c[0])),x1=Math.ceil(Math.max(a[0],b[0],c[0])),y0=Math.floor(Math.min(a[1],b[1],c[1])),y1=Math.ceil(Math.max(a[1],b[1],c[1]));
+  const s=(p,q,r)=>(p[0]-r[0])*(q[1]-r[1])-(q[0]-r[0])*(p[1]-r[1]);g.fillStyle=cor;
+  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const p=[x+0.5,y+0.5],d1=s(p,a,b),d2=s(p,b,c),d3=s(p,c,a);if(!((d1<0||d2<0||d3<0)&&(d1>0||d2>0||d3>0)))g.fillRect(x,y,1,1);}
+}
+/* em duas passadas: o anel vai no chão (antes dos objetos, os pés ficam por cima dele); a ponta vai por cima de tudo,
+   senão, com o alvo ao norte, ela ficaria escondida atrás do corpo do explorador */
+const ANEL={rx:18,ry:7};
+function desenharAnelBussola(topo){
+  const b=alvoBussola();if(!topo)R.bussolaAnel=null;if(!b||b.d<BUSSOLA.perto||G.p.caindo>0)return;
+  const g=R.lg,cx=Math.round(G.p.x+R.ox),cy=Math.round(G.p.y+R.oy)+1,rx=ANEL.rx,ry=ANEL.ry,c=Math.cos(b.ang),s=Math.sin(b.ang);
+  if(!topo){
+    /* anel tracejado, com sombra de 1 px para aparecer na areia clara e no piso escuro */
+    for(let i=0;i<40;i+=2){const t=i/40*TAU,x=Math.round(cx+Math.cos(t)*rx),y=Math.round(cy+Math.sin(t)*ry);
+      g.fillStyle='rgba(11,7,5,0.45)';g.fillRect(x,y+1,2,1);g.fillStyle='rgba(255,242,184,0.85)';g.fillRect(x,y,2,1);}
+    R.bussolaAnel={ang:b.ang,cor:b.cor,rx,ry};return;
+  }
+  /* a ponta: um triângulo na borda do anel, na direção do alvo, com contorno escuro; e um ponto que pisca mais à frente */
+  const ex=cx+c*rx,ey=cy+s*ry,px=-s,py=c,tip=[ex+c*10,ey+s*8],l=[ex+px*5.5,ey+py*3.5],r=[ex-px*5.5,ey-py*3.5];
+  const gros=(p,k)=>[p[0]+(p[0]-ex)*k,p[1]+(p[1]-ey)*k];
+  triPx(g,gros(tip,0.3),gros(l,0.45),gros(r,0.45),'#0b0705');triPx(g,tip,l,r,b.cor);
+  if(Math.floor(G.t*2.5)%2===0){const x=Math.round(ex+c*15)-1,y=Math.round(ey+s*11)-1;g.fillStyle='#0b0705';g.fillRect(x-1,y-1,4,4);g.fillStyle=b.cor;g.fillRect(x,y,2,2);}
+}
+function atualizarBordaAlvo(){
+  const el=$('bordaAlvo');if(!el)return;const b=alvoBussola();
+  if(!b){el.hidden=true;return;}
+  /* só quando o alvo está fora da tela: na tela, o marcador ◆ já mostra onde ele está */
+  if(b.al.x+R.ox>4&&b.al.x+R.ox<R.W-4&&b.al.y+R.oy>10&&b.al.y+R.oy<R.H-4){el.hidden=true;return;}
+  const k=R.k/R.dpr,tx=(b.al.x+R.ox)*k,ty=(b.al.y+R.oy)*k,m=26,esq=m,dir=innerWidth-m,topo=m,baixo=innerHeight-m;
+  /* o que a seta e o rótulo não podem cobrir: o HUD, os botões de toque e os avisos (passageiros, mas por cima) */
+  const obs=[];for(const id of['hl','hr','bUse','bVer','bLan']){const e=$(id);if(e&&e.offsetParent){const q=e.getBoundingClientRect();if(q.width&&q.height)obs.push(q);}}
+  for(const e of $('msgs').children){const q=e.getBoundingClientRect();if(q.width&&q.height)obs.push(q);}
+  const cobre=(x0,y0,x1,y1)=>{let a=0;for(const q of obs)a+=Math.max(0,Math.min(x1,q.right)-Math.max(x0,q.left))*Math.max(0,Math.min(y1,q.bottom)-Math.max(y0,q.top));return a;};
+  /* do explorador até o alvo: a seta vai onde a linha cruza a borda da tela; se ali há HUD ou botão, recua pela linha;
+     se a linha toda está coberta, procura na borda o ponto livre mais próximo da direção certa (até ~50°; a seta gira para o alvo) */
+  const px=clamp((G.p.x+R.ox)*k,esq,dir),py=clamp((G.p.y-12+R.oy)*k,topo,baixo),vx=tx-px,vy=ty-py,a=Math.atan2(vy,vx),L=Math.hypot(vx,vy);
+  const t0=Math.min(vx>0?(dir-px)/vx:vx<0?(esq-px)/vx:Infinity,vy>0?(baixo-py)/vy:vy<0?(topo-py)/vy:Infinity);
+  const r=26,longe=64;let x=0,y=0,ok=false;
+  for(let d=t0*L;d>=longe;d-=4){x=px+vx/L*d;y=py+vy/L*d;if(!cobre(x-r,y-r,x+r,y+r)){ok=true;break;}}
+  if(!ok){let melhor=0.9;const dif=q=>Math.abs(Math.atan2(Math.sin(q-a),Math.cos(q-a)));
+    const testa=(qx,qy)=>{if(Math.hypot(qx-px,qy-py)<longe||cobre(qx-r,qy-r,qx+r,qy+r))return;const e=dif(Math.atan2(qy-py,qx-px));if(e<melhor){melhor=e;x=qx;y=qy;ok=true;}};
+    for(let q=esq;q<=dir;q+=8){testa(q,topo);testa(q,baixo);}for(let q=topo;q<=baixo;q+=8){testa(esq,q);testa(dir,q);}}
+  if(!ok){el.hidden=true;return;}
+  const aa=Math.atan2(ty-y,tx-x);
+  el.hidden=false;el.style.setProperty('--c',b.cor);
+  const seta=el.firstChild,txt=el.lastChild;
+  seta.style.left=Math.round(x)+'px';seta.style.top=Math.round(y)+'px';seta.style.transform='rotate('+aa.toFixed(2)+'rad)';
+  const nome=b.al.txt||'Objetivo',dist='≈ '+Math.max(1,Math.round(b.d/TILE))+' m';
+  if(txt.firstChild.textContent!==nome){txt.firstChild.textContent=nome;txt._w=0;}
+  if(txt.lastChild.textContent!==dist)txt.lastChild.textContent=dist;
+  if(!txt._w){txt.hidden=false;txt._w=txt.offsetWidth;txt._h=txt.offsetHeight;}
+  /* o rótulo: ao lado da seta (para dentro da tela primeiro), onde não cobre HUD, avisos, botões nem o explorador; sem lugar livre, só a seta */
+  const w=txt._w/2,h=txt._h/2,c=Math.cos(aa),s=Math.sin(aa),hx=(G.p.x+R.ox)*k,hy=(G.p.y-14+R.oy)*k,hk=18*k;
+  obs.push({left:x-r,right:x+r,top:y-r,bottom:y+r});
+  const heroi={left:hx-hk,right:hx+hk,top:hy-hk*1.4,bottom:hy+hk},g=6;
+  const cand=[[x-c*(w+r+g),y-s*(h+r+g)],[x-(w+r+g),y],[x+(w+r+g),y],[x,y+h+r+g],[x,y-h-r-g],[x-(w+r+g),y+h+r+g],[x+(w+r+g),y+h+r+g],[x-(w+r+g),y-h-r-g],[x+(w+r+g),y-h-r-g]];
+  let lx=0,ly=0,pior=Infinity;
+  for(const q of cand){const cx=clamp(q[0],w+8,innerWidth-w-8),cy=clamp(q[1],h+8,innerHeight-h-8);
+    const v=cobre(cx-w,cy-h,cx+w,cy+h)+4*Math.max(0,Math.min(cx+w,heroi.right)-Math.max(cx-w,heroi.left))*Math.max(0,Math.min(cy+h,heroi.bottom)-Math.max(cy-h,heroi.top));
+    if(v<pior){pior=v;lx=cx;ly=cy;if(!v)break;}}
+  txt.hidden=pior>0;txt.style.left=Math.round(lx)+'px';txt.style.top=Math.round(ly)+'px';
+  el.dataset.ang=aa.toFixed(3);
 }
 
 /* ====================== início ====================== */

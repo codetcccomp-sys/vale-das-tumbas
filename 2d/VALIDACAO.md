@@ -158,6 +158,17 @@ e o guardião só é purificado depois dos quatro. Teste novo: verificações em
 Limites: Chromium sem janela; o ritmo da luta (golpes durante as fases 2 a 4) e a clareza das placas precisam de teste com
 iniciantes.
 
+### N — Bússola: anel nos pés e seta na borda
+A seta antiga ficava pequena, longe de onde o olho está. Agora são duas peças: um **anel no chão** em volta dos pés do
+explorador, com a ponta na cor do objetivo apontando o alvo (some a menos de 40 px dele, onde o marcador ◆ assume), e uma
+**seta na borda** da tela, só com o alvo fora dela, com o nome e a distância ("≈ 35 m"). A seta fica na linha do explorador ao
+alvo; se ali há HUD, aviso ou botão de toque, recua pela linha ou vai ao ponto livre da borda mais próximo (até 50°, girando
+para o alvo); sem espaço, espera. O rótulo escolhe um lado livre e não cobre o explorador. Teste novo: `b20-bussola`
+(30 verificações em 360 × 640, 640 × 360 e 1280 × 800).
+
+Limites: Chromium sem janela com aparelhos simulados; a leitura do anel com o explorador andando e a seta em tela real
+(brilho, dedo por cima) precisam de celular físico.
+
 ## 1. O documento, item por item
 
 ### P1 — Relação entre o jogo e o Python
