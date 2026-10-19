@@ -275,5 +275,6 @@ Anote o aparelho, o navegador e o que falhou (com captura de tela).
 
 ## 4. Testes automáticos executados
 `2d/test/rodar.sh` (Node + Chromium sem janela): l1-linguagem, l2-save, b1-percurso, b2-painel, b3-save, b4-telas,
-b5-perigos, b6-personagem, b7-ajuda, b8-leitura, b9-validacoes e, nesta atualização, b10-recompensa, b11-terminal,
-b12-vale-som, b13-tela, b14-mvp, b15-plano, l3-relatorio, b16-melhorias e, nesta atualização, b17-exploracao: **870 verificações, todas passando**. O README lista o que cada um confere.
+b5-perigos, b6-personagem, b7-ajuda, b8-leitura, b9-validacoes, b10-recompensa, b11-terminal, b12-vale-som, b13-tela,
+b14-mvp, b15-plano, l3-relatorio, b16-melhorias, b17-exploracao, b18-camara, b19-boss-polimento e, nesta atualização,
+b20-bussola: **1000 verificações, todas passando**. O README lista o que cada um confere.
