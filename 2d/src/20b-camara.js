@@ -160,16 +160,17 @@ CONSTRUIR.camara=function(){
       B.prox-=dt;if(B.prox<=0){const n=1+B.fase;for(let i=0;i<n;i++)golpe();B.prox=Math.max(2.4,4.6-0.8*B.fase);}
     },
     desenhar(){
-      if(!naTela(BOSS.x,BOSS.y,90))return;
+      if(!naTela(BOSS.x,BOSS.y,110))return;
+      const bPeq=(g,al)=>{const m=bossArte('peq',Math.floor(G.t*3)%3);if(m)blit(g,m,BOSS.x,BOSS.y,m.width/2,m.height-1,al);};
       enfileirar(BOSS.y,g=>{
         const f=Math.floor(G.t*3)%3,fr=G.t<B.fracoAte?'fraco':'transf';
-        if(B.puro||(!B.acordou&&!bossFeito())){sombra(g,BOSS.x,BOSS.y,9,3);blit(g,SPR.get('bossProv','puro',Math.floor(G.t*2)),BOSS.x,BOSS.y,15,22);return;}
+        if(B.puro||(!B.acordou&&!bossFeito())){sombra(g,BOSS.x,BOSS.y,9,3);bPeq(g,1);return;}
         let p=1;if(B.trans!==null)p=clamp(B.trans/1.5,0,1);else if(B.pur!==null)p=1-clamp(B.pur/2.6,0,1);
         const grande=p>=1?1:(B.trans!==null?clamp((p-0.45)/0.4,0,1):clamp((p-0.15)/0.4,0,1)),bol=(p>0&&p<1)?1:0;
         sombra(g,BOSS.x,BOSS.y,10+34*grande,3+9*grande);
-        if(grande<1)blit(g,SPR.get('bossProv','puro',Math.floor(G.t*2)),BOSS.x,BOSS.y,15,22,1-grande);
-        if(grande>0)blit(g,SPR.get('bossProv',fr,f),BOSS.x,BOSS.y,64,106,grande);
-        if(bol)blit(g,SPR.get('bossBolhas',Math.floor(G.t*6)%2),BOSS.x,BOSS.y-16,42,40,Math.sin(p*Math.PI));
+        if(grande<1)bPeq(g,1-grande);
+        if(grande>0){const k=fr==='fraco'?'fraco':'big',m=bossArte(k,fr==='fraco'?0:Math.floor(G.t*2.5)%2);if(m)blit(g,m,BOSS.x,BOSS.y,m.width/2,m.height-2,grande);}
+        if(bol){const m=bossArte('bol',Math.floor(G.t*6)%2);if(m)blit(g,m,BOSS.x,BOSS.y-4,m.width/2,m.height-2,Math.sin(p*Math.PI));}
       });
     }
   };

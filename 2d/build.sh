@@ -5,7 +5,7 @@
 set -e
 cd "$(dirname "$0")"
 mkdir -p build build/teste
-ARQS="01-core.js 02-lang.js 03-learn.js 04-save.js 05-audio.js 06-input.js 07-pixel.js 08-sprites.js 08b-heroi.js 09-tiles.js 10-objetos.js 11-render.js 12-mapa.js 13-painel.js 13b-guia.js 13c-relatorio.js 14-vale.js 14b-treino.js 14c-ambiente.js 15-tumbas.js 16-steam.js 17-diesel.js 18-atom.js 19-bio.js 20-city.js 20b-camara.js 21-segredos.js 22-game.js"
+ARQS="01-core.js 02-lang.js 03-learn.js 04-save.js 05-audio.js 06-input.js 07-pixel.js 08-sprites.js 08b-heroi.js 09-tiles.js 10-objetos.js 11-render.js 12-mapa.js 13-painel.js 13b-guia.js 13c-relatorio.js 14-vale.js 14b-treino.js 14c-ambiente.js 15-tumbas.js 16-steam.js 17-diesel.js 18-atom.js 19-bio.js 20-city.js 20b-camara.js 20c-bossarte.js 21-segredos.js 22-game.js"
 montar(){ # $1 = js de saída, $2 = arquivos extras
   : > "$1"
   for f in $ARQS $2; do [ -f "src/$f" ] && { cat "src/$f"; echo; } >> "$1"; done
