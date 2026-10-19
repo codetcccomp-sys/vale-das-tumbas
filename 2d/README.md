@@ -220,8 +220,17 @@ tinha concluído o Jardim antes desta câmara existir segue direto para a cidade
   leva à Cidade-Jardim. A escada ao sul volta ao vale.
 - **Estados do chefe:** *adormecido* (pequeno) → *transformado* (gigante) → *enfraquecido* (logo depois de cada fase) →
   *purificado*. A transformação começa quando o jogador chega perto do terminal; com o painel aberto o chefe não ataca.
-- **Golpes:** os tentáculos avisam antes (círculo vermelho no chão por mais de 1 s); só fere quem fica no círculo. A cada fase
-  concluída soltam-se mais golpes por rodada, e o intervalo diminui.
+- **Golpes:** o círculo vermelho avisa 1,3 s antes; a área que fere (raio 20) é a mesma que o círculo mostra e o dano vale só no
+  instante do impacto (1 coração, depois 1,6 s de invulnerabilidade). Os golpes nunca caem sobre mecanismos, terminal, Lume ou
+  placas, nem um sobre o outro. Com o editor aberto nada ataca e os avisos pendentes são apagados; ao fechar há 1,5 s de calma.
+  A cada fase concluída soltam-se mais golpes por rodada.
+- **Animação (quadros da folha do autor, sem recortar de novo):** repouso = quadro 6; golpe a caminho = quadro 7 (tentáculo
+  erguido); enfraquecido = quadro 8 (também aparece com a válvula aberta, pela seiva drenada). O dano ao chefe é o piscar claro
+  com tremida de 1 px ao vencer a fase, diferente do ataque. Cada grupo de quadros tem origem fixa (`ORI`): nada se desloca.
+- **Indicador:** a batalha tem um único desafio (`k1`) com quatro mecanismos, então o objetivo mostra "mecanismos n/4"; o texto
+  de detalhe só aparece ao tocar no objetivo (telas pequenas) ou sempre (computador).
+- **Purificação (4,6 s):** núcleo perde intensidade → tentáculos pálidos pingam → bolhas e volta ao tamanho pequeno → a luz das
+  lâmpadas volta → portão abre. Sem tremida forte nem flash.
 - **Fase 1 · Sequência (`k1`, pronta):** quatro mecanismos (`cortar_energia()`, `abrir_valvula()`, `alinhar_espelhos()`,
   `disparar_ressonador()`) com dependências: a válvula só gira sem o campo de energia e o ressonador só dispara com a válvula
   aberta e os espelhos alinhados. Há mais de uma ordem certa (os espelhos podem vir antes) e cada erro diz o que faltou. As
@@ -229,8 +238,9 @@ tinha concluído o Jardim antes desta câmara existir segue direto para a cidade
 - **Fases seguintes (previstas):** Variáveis (energia dos dispositivos e tipos), Condicionais (sinais antes de cada ataque e
   defesas com `if/elif/else`) e Repetição (`for`/`while` para automatizar os mecanismos e desativar o núcleo). Cada uma entra
   como um novo desafio da tumba `camara` em `03-learn.js` (`bossFeito()` exige todos).
-- **Sprites:** o chefe atual (`OBJS.bossProv` em `20b-camara.js`) é **provisório**, desenhado por código; a folha de sprites
-  final (capivara pequena, nuvem de bolhas, chefe com tentáculos) entra no lugar dele.
+- **Sprites:** quadros da folha de sprites do autor embutidos em `20c-bossarte.js` (fundo removido, 50%). A fonte é um JPG
+  reduzido; com o `.aseprite` ou um PNG transparente os quadros podem ser trocados sem perda.
+- **Demonstração:** em prévias da Vercel (ou com `?demo` no endereço) o jogo novo já começa com as quatro tumbas concluídas.
 
 ## Estrutura
 Os arquivos de `src/` são concatenados nesta ordem pelo `build.sh`:

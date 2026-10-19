@@ -17,10 +17,10 @@ function relicEstado(k){return!G.relics[k]?0:saberOk(k)?2:1;}
 /* ====================== avisos (mesmo sistema do 3D: sem repetição, com prioridade e tempo de leitura) ====================== */
 /* acao: número da ação do jogador (AÇÃO, VER, LUZ) que gerou o aviso; o aviso de uma ação nova tira os das anteriores */
 const TOASTS={on:[],queue:[],last:new Map(),acao:0,naAcao:false};
-function toastMs(text,kind){return Math.min(9500,Math.max(kind==='warn'?5200:4300,text.length*62));}
+function toastMs(text,kind){if(kind==='dano')return 1900;if(kind==='curto')return 3200;return Math.min(9500,Math.max(kind==='warn'?5200:4300,text.length*62));}
 const telaCompacta=()=>innerWidth<=620||innerHeight<=520;
 function toast(text,kind){
-  R.hudTopo=0;const now=performance.now(),pri=kind==='warn'?2:kind==='good'?1:0,acao=TOASTS.naAcao?TOASTS.acao:0;
+  R.hudTopo=0;const now=performance.now(),pri=kind==='warn'||kind==='dano'||kind==='curto'?2:kind==='good'?1:0,acao=TOASTS.naAcao?TOASTS.acao:0;
   /* o jogador já passou para outro item: o aviso do item anterior sai em vez de empilhar */
   if(acao){for(const t of TOASTS.on.slice())if(t.acao&&t.acao<acao&&t.text!==text)toastOut(t,now,true);
     for(let i=TOASTS.queue.length-1;i>=0;i--)if(TOASTS.queue[i].acao&&TOASTS.queue[i].acao<acao)TOASTS.queue.splice(i,1);}
@@ -83,15 +83,20 @@ function atualizarHud(){
   if(nk!==atualizarHud.nk){atualizarHud.nk=nk;const e=$('mao');e.hidden=!nm;e.textContent='';if(nm){const s=document.createElement('span');s.textContent='Na mão';const b=document.createElement('b');b.textContent=nm.t;b.style.color=nm.cor||'';e.appendChild(s);e.appendChild(b);}}
   /* objetivo: refeito (e pisca) só quando o texto muda; nas telas pequenas encolhe para o título e uma linha depois de
      alguns segundos, e tocar nele abre de novo */
-  const go=objetivo(),gk=go?go.t+'\n'+go.s:'',el=$('goal');
-  if(gk!==atualizarHud.gk){atualizarHud.gk=gk;el.textContent='';el.classList.remove('curto');GOAL.t=performance.now();
-    if(go){const b=document.createElement('b');const bs=document.createElement('i');bs.className='bus';bs.title='Direção do objetivo';b.appendChild(bs);b.appendChild(document.createTextNode(go.t));const s=document.createElement('span');s.className='gs';s.textContent=go.s;el.appendChild(b);el.appendChild(s);el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');}}
-  else if(go&&!el.classList.contains('curto')&&telaCompacta()&&performance.now()-GOAL.t>GOAL.ms){el.classList.add('curto');R.hudTopo=0;}
+  const go=objetivo(),gk=go?go.t+'\n'+go.s+(go.d?'\n'+go.d:''):'',el=$('goal');
+  if(gk!==atualizarHud.gk){atualizarHud.gk=gk;el.textContent='';el.classList.remove('curto','aberto','comdet');GOAL.t=performance.now();
+    if(go){const b=document.createElement('b');const bs=document.createElement('i');bs.className='bus';bs.title='Direção do objetivo';b.appendChild(bs);b.appendChild(document.createTextNode(go.t));const s=document.createElement('span');s.className='gs';s.textContent=go.s;el.appendChild(b);el.appendChild(s);el.classList.toggle('comdet',!!go.d);if(go.d){const d=document.createElement('span');d.className='gd';d.textContent=go.d;el.appendChild(d);}el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');}}
+  else if(go&&!el.classList.contains('curto')&&telaCompacta()&&performance.now()-GOAL.t>GOAL.ms){el.classList.remove('aberto');el.classList.add('curto');R.hudTopo=0;}
   /* bússola: a seta no título do objetivo aponta do explorador para o alvo da etapa (some quando ele já está perto) */
   const bs=el.querySelector('.bus');if(bs){const al=go&&go.alvo;if(al){const dx=al.x-G.p.x,dy=al.y-G.p.y;bs.hidden=Math.hypot(dx,dy)<40;bs.style.transform='rotate('+Math.atan2(dy,dx).toFixed(2)+'rad)';}else bs.hidden=true;}
 }
 const GOAL={t:0,ms:9000};
-function alternarObjetivo(){const el=$('goal');if(el.classList.contains('curto')){el.classList.remove('curto');GOAL.t=performance.now();}else if(telaCompacta())el.classList.add('curto');R.hudTopo=0;SFX.click();}
+function alternarObjetivo(){const el=$('goal'),det=!!el.querySelector('.gd');
+  /* toques no objetivo (telas pequenas): recolhido → normal → (se houver detalhe) expandido → recolhido */
+  if(el.classList.contains('curto')){el.classList.remove('curto');GOAL.t=performance.now();}
+  else if(det&&!el.classList.contains('aberto')){el.classList.add('aberto');GOAL.t=performance.now();}
+  else{el.classList.remove('aberto');if(telaCompacta())el.classList.add('curto');}
+  R.hudTopo=0;SFX.click();}
 /* objetivo: sempre a próxima etapa de aprendizagem */
 function objetivo(){
   if(!G.area)return null;
@@ -200,9 +205,9 @@ function aposQueda(){
   if(G.mode!=='play')return;
   const c=G.checkpoint||G.area.spawn;posicionar(c.x,c.y,c.dir);toast(G.checkpoint?TXT.backPoint:TXT.backEntrance);camSeguir(G.p.x,G.p.y,0,G.area,true);
 }
-function ferir(msg,semInvuln){
+function ferir(msg,semInvuln,tipo){
   if(!semInvuln&&G.invuln>0)return;
-  G.hearts--;G.invuln=1.6;G.danoT=HEROI_CONFIG.animacoes.dano.duracao;SFX.hit();R.treme=0.5;toast(msg,'warn');
+  G.hearts--;G.invuln=1.6;G.danoT=HEROI_CONFIG.animacoes.dano.duracao;SFX.hit();R.treme=tipo==='dano'?0.3:0.5;toast(msg,tipo||'warn');
   if(G.hearts<=0){G.hearts=3;toast(TXT.deathTomb,'warn');if(G.area.id!=='vale'){sairTumba(true);return;}posicionar(G.area.spawn.x,G.area.spawn.y,'baixo');}
 }
 function curarOasis(){if(G.hearts<3){G.hearts=3;SFX.heal();toast('A água fresca do oásis fechou as feridas.','good');}else toast('A água está fresca. Você já está bem.');addDiary('oasis');}

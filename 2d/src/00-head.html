@@ -45,6 +45,9 @@ body:not(.jogando) #hud,body:not(.jogando) #toqueUi{display:none}
 #goal{display:block;font:600 14px/1.25 var(--f);color:#fff2cc;max-width:min(340px,100%);border-color:#0b0705;box-shadow:inset 0 0 0 2px #8a6a2a}
 #goal b{color:var(--gold);font-weight:800;display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:1px}
 #goal .gs{display:block}
+#goal .gd{display:none;font-weight:500;font-size:12.5px;line-height:1.3;color:#e8d8b0;margin-top:3px}#goal.aberto .gd{display:block}
+@media (min-width:621px) and (min-height:521px){#goal:not(.curto) .gd{display:block}}
+@media (max-width:620px),(max-height:520px){#goal.comdet.aberto b::after{content:' ▴';color:var(--paper2)}#goal.comdet:not(.curto):not(.aberto) b::after{content:' ▾';color:var(--paper2)}}
 #goal .bus{display:inline-block;width:13px;height:11px;margin:0 6px -1px 0;background:var(--gold);clip-path:polygon(0 30%,55% 30%,55% 0,100% 50%,55% 100%,55% 70%,0 70%);transition:transform .2s}
 @media (max-width:480px){#goal{font-size:13px}}
 #goal:empty{display:none}
@@ -76,6 +79,7 @@ body.touch #prompt kbd{display:none}
 #msgs{position:absolute;left:50%;transform:translateX(-50%);top:calc(var(--st) + 54px);width:min(460px,calc(100vw - 24px));display:flex;flex-direction:column;gap:6px;align-items:center}
 .toast{padding:8px 12px;font:600 14px/1.3 var(--f);background:rgba(23,16,11,.92);border:2px solid #0b0705;box-shadow:inset 0 0 0 2px #5a3e22;max-width:100%;transition:opacity .4s,transform .4s;display:flex;gap:8px;align-items:flex-start}
 .toast.good{box-shadow:inset 0 0 0 2px #8a7a2a;color:#fff2c0}.toast.warn{box-shadow:inset 0 0 0 2px #9a3a2a;color:#ffd8cc}
+.toast.dano,.toast.curto{padding:3px 9px;font-size:12px;line-height:1.2;box-shadow:inset 0 0 0 2px #9a3a2a;color:#ffd8cc;width:auto}
 .toast .n{font:800 12px var(--f);color:var(--gold)}.toast.out{opacity:0;transform:translateY(-6px)}
 /* telas pequenas: avisos mais compactos (no máximo dois por vez, logo abaixo do HUD) */
 @media (max-width:620px),(max-height:520px){.toast{padding:6px 10px;font-size:13px}}

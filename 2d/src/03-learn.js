@@ -713,7 +713,7 @@ const DESAFIOS=[
 
   /* ---------- Cidade-Jardim: tudo junto ---------- */
   /* ---------- Câmara Final: o Devorador do Vale (quatro fases; cada uma põe um saber à prova) ---------- */
-  {id:'k1',tumba:'camara',saber:'tudo',etapa:'aplicacao',titulo:'Devorador · 1ª fase: a sequência',mundo:'arenaSeq',maxLinhas:6,
+  {id:'k1',tumba:'camara',saber:'tudo',etapa:'aplicacao',titulo:'Devorador do Vale: a sequência',mundo:'arenaSeq',maxLinhas:6,
     tarefa:'Desestabilize o Devorador: ligue os mecanismos na ordem certa e termine com o ressonador.',
     intro:['Os tentáculos do Devorador estão presos por um campo de energia. Quatro mecanismos da arena podem desestabilizá-lo: cortar_energia(), abrir_valvula(), alinhar_espelhos() e disparar_ressonador().',
       'As placas da sala dizem como eles dependem uns dos outros. Pense na ordem antes de executar: a máquina executa uma linha de cada vez, de cima para baixo, e para na linha que não consegue cumprir.'],

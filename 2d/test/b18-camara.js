@@ -71,7 +71,7 @@ const t=suite('b18-camara');
   t.ok(s1.k1&&s1.feito,'concluir a fase 1 purifica o guardião (bossFeito)',s1);
 
   /* ---- o portão estava fechado e abre; o guardião volta ao tamanho original ---- */
-  await ev(()=>{__vt.quadros(200);toastClear();});
+  await ev(()=>{__vt.quadros(330);toastClear();});
   b=await ev(()=>({puro:G.area.boss.puro,pur:G.area.boss.pur,fim:G.diary.indexOf('camara_fim')>=0,obj:objetivo().t}));
   t.ok(b.puro&&b.pur===null&&b.fim&&/purificado/.test(b.obj),'o guardião é purificado, o diário guarda o fim da luta e o objetivo muda',b);
   const lb=await ev(()=>__vt.usarEm(14*16,2*16+22,'cima'));
