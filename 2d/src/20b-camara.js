@@ -7,6 +7,8 @@
    Estados visuais: dorme (pequeno) → transformado (gigante, com tentáculos) → enfraquecido (logo após cada fase) →
    purificado (volta ao tamanho original). Os golpes dos tentáculos avisam antes (círculo vermelho no chão) e ficam mais
    numerosos a cada fase concluída. Com o painel aberto o chefe não ataca.
+   Fases: k1 sequência (energia, válvula, espelhos, ressonador) · k2 variáveis (as duas camadas do núcleo, frequencia e potencia) ·
+   k3 decisões (a fúria de cada golpe decide a defesa) · k4 repetições (for nos quatro selos, while no núcleo).
    Arte do chefe: quadros da folha de sprites do autor (20c-bossarte.js). A origem de cada grupo de quadros é fixa (ORI), então
    trocar de quadro ou de estado nunca desloca a criatura. */
 Object.assign(ENTRIES,{
@@ -67,7 +69,14 @@ Object.assign(OBJS,{
   }
 });
 /* posições (em pixels) dos mecanismos da arena */
-const ARENA={valvula:{x:6*16+8,y:11*16+14},espelhos:[{x:22*16+8,y:9*16+14},{x:22*16+8,y:13*16+14}],resso:{x:14*16+13,y:12*16+14}};
+const ARENA={valvula:{x:6*16+8,y:11*16+14},espelhos:[{x:22*16+8,y:9*16+14},{x:22*16+8,y:13*16+14}],resso:{x:14*16+13,y:12*16+14},
+  /* fase 4: os quatro selos do chão, em volta do guardião */
+  selos:[{x:9*16+8,y:8*16+8},{x:19*16+8,y:8*16+8},{x:9*16+8,y:13*16+8},{x:19*16+8,y:13*16+8}],
+  placas:[{x:8*16+8,y:15*16+14},{x:20*16+8,y:15*16+14},{x:5*16+8,y:6*16+14},{x:22*16+8,y:6*16+14},{x:10*16+8,y:17*16+14}]};
+const NUCLEO={x:BOSS.x+6,y:BOSS.y-40};   // centro do núcleo, onde os pulsos e a luz batem
+/* nome de cada fase (uma por saber) e a fase da vez: 0 a 3, ou 4 quando as quatro foram vencidas */
+const FASES_CAMARA=['sequência','variáveis','decisões','repetições'];
+function faseCamara(){const l=desafiosDa('camara'),i=l.findIndex(d=>!G.learn[d.id]);return i<0?l.length:i;}
 function irParaCidade(){
   transicao(()=>{const A=areaTumba('final');G.curTomb='final';A.reiniciar&&A.reiniciar();trocarArea(A,A.spawn.x,A.spawn.y,A.spawn.dir);G.lantern=100;G.lanternOn=false;salvar(false);},'Rumo à Cidade-Jardim…');
 }
@@ -83,9 +92,11 @@ CONSTRUIR.camara=function(){
   for(const l of lampsParedes){const r0=l.r;Object.defineProperty(l,'r',{get:()=>r0*(1+0.4*restaura())});}
   const fases=()=>desafiosDa('camara').filter(d=>G.learn[d.id]).length;
   /* estado dos mecanismos: o que o painel mostra, ou o estado geral da sala */
-  const arena=()=>{const v=PAINEL.aberto&&PAINEL.area===A?painelVis():null;
-    if(v&&v.cfg.mundo==='arenaSeq')return v.ws;
-    return G.learn.k1?{energia:false,valvula:true,espelhos:true,disparou:true}:{energia:true,valvula:false,espelhos:false,disparou:false};};
+  const doPainel=m=>{const v=PAINEL.aberto&&PAINEL.area===A?painelVis():null;return v&&v.cfg.mundo===m?v.ws:null;};
+  const arena=()=>doPainel('arenaSeq')||(G.learn.k1?{energia:false,valvula:true,espelhos:true,disparou:true}:{energia:true,valvula:false,espelhos:false,disparou:false});
+  /* fases 2 a 4: o que a sala mostra fora do painel depende só das fases vencidas */
+  const camadas=()=>doPainel('arenaVar')||{camadas:[7,9],quebradas:G.learn.k2?2:0};
+  const selos=()=>doPainel('arenaRep')||{selos:G.learn.k4?4:0,nucleo:null};
   const vivo=()=>!bossFeito()||(B.pur!==null);
   /* mecanismos */
   const oV=objeto(A,SPR.get('bValvula',false,0),ARENA.valvula.x,ARENA.valvula.y,{col:[-8,-5,8,0]});oV.desenho=(g,ob,t)=>blit(g,SPR.get('bValvula',!!arena().valvula,Math.floor(t*4)%8),ob.x,ob.y,ob.ax,ob.ay);
@@ -98,6 +109,9 @@ CONSTRUIR.camara=function(){
   /* placas com as regras dos mecanismos (as pistas desta fase) */
   placaLeitura(A,8*16+8,15*16+14,'Placa da válvula','O volante da válvula é preso pelo campo de energia: com o campo ligado ele não gira. Cortada a energia, a válvula abre e drena a seiva dos tentáculos.','#c9a6ff');
   placaLeitura(A,20*16+8,15*16+14,'Placa do ressonador','O ressonador só dispara quando a seiva já foi drenada (válvula aberta) e os espelhos estão alinhados. Os espelhos não dependem de nenhum outro mecanismo.','#c9a6ff');
+  placaLeitura(A,5*16+8,6*16+14,'Placa do núcleo','O núcleo do guardião se fecha em duas camadas: a externa vibra em 7, a interna em 9. O ressonador dispara com potência 2.5 e lê a frequência na hora do pulso. A frequência é um número inteiro (int); a potência é decimal (float).','#c9a6ff');
+  placaLeitura(A,22*16+8,6*16+14,'Placa dos sinais','Antes de cada golpe, a fúria do guardião aparece aos pés dele. Fúria 7 ou mais: erga o escudo. De 4 a 6: desvie. Abaixo de 4 a guarda dele baixa: canalize a luz das relíquias.','#c9a6ff');
+  placaLeitura(A,10*16+8,17*16+14,'Placa dos selos','Quatro selos no chão cercam o guardião. Com os quatro acesos, cada purificação tira 1 de energia do núcleo. A energia do núcleo não é sempre a mesma: purifique enquanto ela for maior que 0.','#c9a6ff');
   /* terminal e Lume */
   const foco={x:14*16,y:11*16};A.focoPainel=foco;
   terminal(A,14,15,'camara',foco,'consoleCity','Programar o ressonador');
@@ -110,7 +124,7 @@ CONSTRUIR.camara=function(){
   /* ---------- o guardião: estados, golpes e desenho ---------- */
   const PUR={nucleo:0.8,fraco:1.8,encolhe:3.2,luz:3.4,fim:4.6};   // marcos da purificação, em segundos
   /* golpes: caem perto do explorador, mas nunca sobre os mecanismos, o terminal, o Lume ou a saída, nem uns sobre os outros */
-  const protegidos=()=>[A.term,{x:18.5*16,y:16.5*16},ARENA.valvula,ARENA.espelhos[0],ARENA.espelhos[1],ARENA.resso,{x:8*16+8,y:15*16+14},{x:20*16+8,y:15*16+14}].filter(Boolean);
+  const protegidos=()=>[A.term,{x:18.5*16,y:16.5*16},ARENA.valvula,ARENA.espelhos[0],ARENA.espelhos[1],ARENA.resso].concat(ARENA.placas).filter(Boolean);
   const golpeLivre=(x,y)=>{
     for(const q of protegidos())if(Math.hypot(x-q.x,y-(q.y-8))<GOLPE.raio+16)return false;
     for(const o of B.golpes)if(Math.hypot(x-o.x,y-o.y)<GOLPE.raio*2+6)return false;
@@ -160,10 +174,12 @@ CONSTRUIR.camara=function(){
       B.golpes=B.golpes.filter(g=>g.t<GOLPE.fim);
       if(G.t<B.fracoAte)return;
       if(B.graca>0){B.graca-=dt;return;}
-      B.prox-=dt;if(B.prox<=0){const n=1+B.fase;for(let i=0;i<n;i++)golpe();B.prox=Math.max(2.6,4.8-0.8*B.fase);}
+      /* a cada fase vencida, um golpe a mais por rodada (no máximo 3) e rodadas um pouco mais rápidas */
+      B.prox-=dt;if(B.prox<=0){const n=Math.min(3,1+B.fase);for(let i=0;i<n;i++)golpe();B.prox=Math.max(2.8,4.8-0.6*B.fase);}
     },
     desenhar(){
       if(!naTela(BOSS.x,BOSS.y,110))return;
+      const v0=visual;
       /* cópia tingida de um quadro (só para o piscar de dano), guardada para não refazer a cada frame */
       const tingido=(m,cor)=>{m.tint=m.tint||{};if(!m.tint[cor]){const c=cnv(m.width,m.height),q=ctx2(c);q.drawImage(m,0,0);q.globalCompositeOperation='source-atop';q.fillStyle=cor;q.fillRect(0,0,c.width,c.height);m.tint[cor]=c;}return m.tint[cor];};
       const peq=(g,al)=>{const m=bossArte('peq',Math.floor(G.t*3)%3);if(m)blit(g,m,BOSS.x,BOSS.y,ORI.peq.ax,ORI.peq.ay,al);};
@@ -186,12 +202,30 @@ CONSTRUIR.camara=function(){
         }
         if(v.bol>0){const m=bossArte('bol',Math.floor(G.t*6)%2);if(m)blit(g,m,BOSS.x,BOSS.y,ORI.bol.ax,ORI.bol.ay,clamp(v.bol,0,1));}
       });
+      if(v0().g<1||B.pur!==null||B.puro)return;
+      /* fase 2: as duas camadas do núcleo (anéis com a frequência de cada uma); racham com o pulso certo */
+      const cw=doPainel('arenaVar');
+      if(cw||faseCamara()===1)enfileirar(BOSS.y+2,g=>{const c=camadas();
+        c.camadas.forEach((f,i)=>{const rx=26+i*-9,ry=11+i*-4,ok=i<c.quebradas,cor=ok?'#5a4a6a':i===0?'#8fe0ff':'#ffd0ff';
+          for(let k=0;k<36;k++){if(ok&&k%3)continue;const a=k/36*TAU+G.t*(i?-0.8:0.6);P.r(g,Math.round(NUCLEO.x+Math.cos(a)*rx+R.ox),Math.round(NUCLEO.y+Math.sin(a)*ry+R.oy),2,2,cor);}
+          if(!ok)etiqueta(g,NUCLEO.x+(i?-rx-8:rx+8),NUCLEO.y-4,String(f),cor);});});
+      /* fase 3: a fúria do golpe da vez aparece aos pés do guardião (o sensor furia do painel), à vista na faixa da sala */
+      const fw=doPainel('arenaCond');
+      if(fw)enfileirar(BOSS.y+2,g=>etiqueta(g,BOSS.x,BOSS.y+8,'fúria '+fw.furia,fw.furia>=7?'#ff8a6a':fw.furia>=4?'#ffd24a':'#9aff9a'));
+      /* fase 4: a energia que resta no núcleo */
+      const rw=doPainel('arenaRep');
+      if(rw)enfileirar(BOSS.y+2,g=>etiqueta(g,BOSS.x,BOSS.y+8,'núcleo '+rw.nucleo,rw.nucleo>0?'#ffd0ff':'#9aff9a'));
     }
   };
   A.ents.push(ent);
   /* ---------- chão: campo de energia, avisos e golpes ---------- */
   A.desenharChao=(g,t)=>{
     const ws=arena();
+    /* fase 4: os quatro selos (aparecem quando a fase chega, ficam acesos depois de vencida) */
+    if(faseCamara()>=3||doPainel('arenaRep')){const n=selos().selos;
+      ARENA.selos.forEach((p,i)=>{const cx=Math.round(p.x+R.ox),cy=Math.round(p.y+R.oy),on=i<n;
+        P.anel(g,cx,cy,9,1,on?'#ffd24a':'#5a4a6a');P.anel(g,cx,cy,5,1,on?'#fff2b8':'#4a3a5a');
+        if(on){P.circ(g,cx,cy,2,'#ffffff');for(let k=0;k<4;k++){const a=k*TAU/4+t*1.2;P.p(g,Math.round(cx+Math.cos(a)*7),Math.round(cy+Math.sin(a)*7),'#ffd24a');}}});}
     if(ws.energia&&vivo()&&(B.acordou||PAINEL.aberto)&&!B.puro){
       for(let i=0;i<56;i++){const a=i/56*TAU+t*0.5,x=BOSS.x+Math.cos(a)*74,y=BOSS.y-6+Math.sin(a)*30;P.r(g,Math.round(x+R.ox),Math.round(y+R.oy),2,2,i%2?'#c9a6ff':'#8a64d0');}
     }
@@ -207,26 +241,39 @@ CONSTRUIR.camara=function(){
     if(pt!==null&&pt<PUR.nucleo)luz(BOSS.x,BOSS.y-24,96,0.55-0.35*pt/PUR.nucleo,'#c9a6ff');   // o núcleo perde intensidade
     else luz(BOSS.x,BOSS.y-24,96,B.puro?0.7:pt!==null?0.2+0.5*restaura():0.55,ws.energia&&!B.puro&&pt===null?'#c9a6ff':'#ffe9a0');
     for(const p of ARENA.espelhos)if(ws.espelhos)luz(p.x,p.y-14,24,0.6,'#fff2b8');
+    if(faseCamara()>=3||doPainel('arenaRep')){const n=selos().selos;ARENA.selos.forEach((p,i)=>{if(i<n)luz(p.x,p.y,26,0.5,'#ffd24a');});}
   };
-  A.focoEvento=(ev,ws,cfg)=>{if(!ev.cmd||cfg.mundo!=='arenaSeq')return null;
-    return ev.cmd==='bcorte'?{x:BOSS.x,y:BOSS.y-44}:ev.cmd==='bvalvula'?{x:ARENA.valvula.x,y:ARENA.valvula.y-20}:ev.cmd==='bespelho'?{x:ARENA.espelhos[0].x,y:ARENA.espelhos[0].y-16}:{x:ARENA.resso.x,y:ARENA.resso.y-18};};
+  A.focoEvento=(ev,ws,cfg)=>{if(!ev.cmd)return null;const c=ev.cmd;
+    if(cfg.mundo==='arenaSeq')return c==='bcorte'?{x:BOSS.x,y:BOSS.y-44}:c==='bvalvula'?{x:ARENA.valvula.x,y:ARENA.valvula.y-20}:c==='bespelho'?{x:ARENA.espelhos[0].x,y:ARENA.espelhos[0].y-16}:{x:ARENA.resso.x,y:ARENA.resso.y-18};
+    if(c==='bselo'){const p=ARENA.selos[clamp((ws.selos||1)-1,0,3)];return{x:p.x,y:p.y};}
+    if(c==='bescudo'||c==='bdesvio')return A.term?{x:A.term.x,y:A.term.y-10}:null;
+    return{x:NUCLEO.x,y:NUCLEO.y};};
   A.aoEvento=(ev)=>{const a=ev.anim||{};
     if(a.energia===false){SFX.sensor();faiscas(BOSS.x,BOSS.y-30,18,['#c9a6ff','#ffffff','#8fe0ff']);}
     if(a.valvula){SFX.agua();gotas(ARENA.valvula.x,ARENA.valvula.y-6,8);}
     if(a.espelhos){SFX.rotate();faiscas(ARENA.espelhos[0].x,ARENA.espelhos[0].y-18,8,['#fff2b8','#ffffff']);}
     if(a.ressonador){SFX.relic();R.treme=0.5;faiscas(BOSS.x,BOSS.y-30,24,['#ffffff','#ffd0ff','#c9a6ff']);}
+    if(a.pulso!==undefined){SFX.sensor();R.treme=0.3;faiscas(NUCLEO.x,NUCLEO.y,14,a.camada?['#ffd0ff','#ffffff']:['#8fe0ff','#ffffff']);}
+    if(a.escudo&&A.term){SFX.lever();faiscas(A.term.x,A.term.y-14,12,['#ffd24a','#c8743a','#ffffff']);}
+    if(a.desvio&&A.term){SFX.click();for(let i=0;i<8;i++)particula({x:A.term.x+(Math.random()-0.5)*20,y:A.term.y,z:2,vx:(Math.random()<0.5?-1:1)*(30+Math.random()*20),vy:0,vz:6,vida:0.4,cor:'#c9b89a',tam:2,fade:true});}
+    if(a.luz){SFX.bioChime();R.treme=0.3;for(const p of ARENA.espelhos)faiscas(p.x,p.y-16,6,['#fff2b8','#ffffff']);faiscas(NUCLEO.x,NUCLEO.y,18,['#fff2b8','#ffffff','#ffd24a']);}
+    if(a.selo!==undefined){const p=ARENA.selos[a.selo];SFX.node(a.selo);faiscas(p.x,p.y,10,['#ffd24a','#fff2b8']);}
+    if(a.purifica!==undefined){SFX.agua();bolhas(NUCLEO.x+(Math.random()-0.5)*20,NUCLEO.y);faiscas(NUCLEO.x,NUCLEO.y,8,['#ffffff','#cfe8ff']);}
     if(a.falha||ev.tipo==='erro'){SFX.deny();R.treme=0.25;}};
-  A.aoConcluir=(cfg)=>{R.treme=0.4;B.danoAte=G.t+0.8;B.fracoAte=G.t+9;
-    setTimeout(()=>toast(bossFeito()?'O ressonador atingiu o núcleo! Feche o painel para ver o Devorador.':'O Devorador cambaleou e ficou vulnerável por alguns instantes.','good'),700);};
+  A.aoConcluir=(cfg)=>{R.treme=0.4;B.danoAte=G.t+0.8;B.fracoAte=G.t+9;const f=faseCamara();
+    setTimeout(()=>toast(bossFeito()?'A quarta fase foi vencida! Feche o painel para ver o Devorador ser purificado.':'Fase '+f+' de 4 vencida: o Devorador cambaleou. Próxima: '+FASES_CAMARA[f]+' (no alto do painel).','good'),700);};
   /* com o guardião gigante, a câmera sobe um pouco quando o jogador está nos andares de baixo, para o corpo dele aparecer */
   A.camDy=()=>B.acordou&&!B.puro?-clamp((G.p.y-8*16)/(9*16),0,1)*64:0;
   A.reiniciar=()=>{B.acordou=false;B.trans=null;B.pur=null;B.puro=bossFeito();B.golpes=[];B.prox=3;B.fracoAte=0;B.danoAte=0;B.graca=0;sGrande.on=false;sPeq.on=true;addDiary('camara_enter',true);};
   A.objetivo=()=>{
     if(bossFeito())return{t:'Câmara Final · guardião purificado',s:'O portão ao norte está aberto: siga para a Cidade-Jardim.',alvo:{x:14*16,y:2*16,txt:'Cidade-Jardim'}};
-    /* a batalha é um único desafio (sequência) com quatro mecanismos: o indicador mostra os mecanismos, não "fases" que não existem */
-    const ws=arena(),n=(ws.energia?0:1)+(ws.valvula?1:0)+(ws.espelhos?1:0)+(ws.disparou?1:0);
-    return{t:'Câmara Final · mecanismos '+n+'/4',s:'Programe o terminal ◆ (a sequência).',
-      d:'Corte a energia, abra a válvula, alinhe os espelhos e dispare o ressonador. Os círculos vermelhos no chão só ferem quem está dentro deles quando o golpe cai.',alvo:A.term};
+    /* quatro fases, uma por saber; na primeira, o indicador também conta os mecanismos ligados */
+    const f=faseCamara(),cab='Câmara Final · fase '+(f+1)+' de 4',golpes=' Os círculos vermelhos no chão só ferem quem está dentro deles quando o golpe cai.';
+    if(f===0){const ws=arena(),n=(ws.energia?0:1)+(ws.valvula?1:0)+(ws.espelhos?1:0)+(ws.disparou?1:0);
+      return{t:cab+' · mecanismos '+n+'/4',s:'Programe o terminal ◆ (a sequência).',d:'Corte a energia, abra a válvula, alinhe os espelhos e dispare o ressonador.'+golpes,alvo:A.term};}
+    if(f===1)return{t:cab+' · variáveis',s:'Programe o terminal ◆: quebre as duas camadas do núcleo.',d:'A placa do núcleo diz a frequência de cada camada e a potência do ressonador.'+golpes,alvo:A.term};
+    if(f===2)return{t:cab+' · decisões',s:'Programe o terminal ◆: a defesa certa para cada fúria.',d:'A placa dos sinais diz a defesa para cada fúria do Devorador.'+golpes,alvo:A.term};
+    return{t:cab+' · repetições',s:'Programe o terminal ◆: acenda os selos e purifique o núcleo.',d:'A placa dos selos explica como a energia do núcleo é tirada.'+golpes,alvo:A.term};
   };
   return A;
 };

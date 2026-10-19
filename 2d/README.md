@@ -110,7 +110,7 @@ ao pátio a qualquer momento (numa visita depois do treino, o portão já está 
 Primeiro comando → sequência e lógica de execução → variáveis e tipos → if, elif e else → for e while → tudo junto. Cada tumba
 só abre depois do saber da anterior, e o objetivo no alto da tela sempre mostra a próxima etapa. Em todas as etapas o ciclo é
 o mesmo: **programar → executar → observar → corrigir**. Não há múltipla escolha: o jogador escreve (ou monta por toques),
-completa, reorganiza ou corrige código, e o código mexe no cenário. São 27 etapas (a Câmara Final, descrita abaixo, tem a sua). Cada tumba tem os três momentos —
+completa, reorganiza ou corrige código, e o código mexe no cenário. São 30 etapas (a Câmara Final, descrita abaixo, tem quatro). Cada tumba tem os três momentos —
 **demonstração**, **prática com ajuda** e um **desafio independente** (aplicação, sem guia, numa situação nova) — e o jogo
 confere o resultado no mecanismo, não uma resposta única: soluções alternativas que cumprem as regras são aceitas.
 
@@ -223,21 +223,30 @@ tinha concluído o Jardim antes desta câmara existir segue direto para a cidade
 - **Golpes:** o círculo vermelho avisa 1,3 s antes; a área que fere (raio 20) é a mesma que o círculo mostra e o dano vale só no
   instante do impacto (1 coração, depois 1,6 s de invulnerabilidade). Os golpes nunca caem sobre mecanismos, terminal, Lume ou
   placas, nem um sobre o outro. Com o editor aberto nada ataca e os avisos pendentes são apagados; ao fechar há 1,5 s de calma.
-  A cada fase concluída soltam-se mais golpes por rodada.
+  A cada fase concluída solta-se um golpe a mais por rodada (1, 2, 3; nunca mais de 3).
 - **Animação (quadros da folha do autor, sem recortar de novo):** repouso = quadro 6; golpe a caminho = quadro 7 (tentáculo
   erguido); enfraquecido = quadro 8 (também aparece com a válvula aberta, pela seiva drenada). O dano ao chefe é o piscar claro
   com tremida de 1 px ao vencer a fase, diferente do ataque. Cada grupo de quadros tem origem fixa (`ORI`): nada se desloca.
-- **Indicador:** a batalha tem um único desafio (`k1`) com quatro mecanismos, então o objetivo mostra "mecanismos n/4"; o texto
-  de detalhe só aparece ao tocar no objetivo (telas pequenas) ou sempre (computador).
+- **Indicador:** o objetivo mostra a fase ("fase n de 4 · variáveis"…); na fase 1 também conta os mecanismos ("mecanismos
+  n/4"). O texto de detalhe só aparece ao tocar no objetivo (telas pequenas) ou sempre (computador).
 - **Purificação (4,6 s):** núcleo perde intensidade → tentáculos pálidos pingam → bolhas e volta ao tamanho pequeno → a luz das
   lâmpadas volta → portão abre. Sem tremida forte nem flash.
 - **Fase 1 · Sequência (`k1`, pronta):** quatro mecanismos (`cortar_energia()`, `abrir_valvula()`, `alinhar_espelhos()`,
   `disparar_ressonador()`) com dependências: a válvula só gira sem o campo de energia e o ressonador só dispara com a válvula
   aberta e os espelhos alinhados. Há mais de uma ordem certa (os espelhos podem vir antes) e cada erro diz o que faltou. As
   regras estão nas duas placas da sala.
-- **Fases seguintes (previstas):** Variáveis (energia dos dispositivos e tipos), Condicionais (sinais antes de cada ataque e
-  defesas com `if/elif/else`) e Repetição (`for`/`while` para automatizar os mecanismos e desativar o núcleo). Cada uma entra
-  como um novo desafio da tumba `camara` em `03-learn.js` (`bossFeito()` exige todos).
+- **Fase 2 · Variáveis (`k2`):** o núcleo se fecha em duas camadas (anéis em volta dele, com a frequência escrita). `disparar_pulso()`
+  lê `frequencia` (int) e `potencia` (float) **na hora do disparo**: a externa vibra em 7 e a interna em 9, então o valor precisa
+  mudar entre os pulsos (`frequencia = frequencia + 2` ou `= 9`). `"7"` (texto) é recusado pelo contrato; disparar duas vezes
+  com 7 explica que a camada interna vibra em 9. Placa do núcleo.
+- **Fase 3 · Decisões (`k3`):** antes de cada golpe a fúria aparece aos pés do Devorador (sensor `furia`). Fúria 7 ou mais:
+  `erguer_escudo()`; de 4 a 6: `desviar()`; abaixo de 4: `canalizar_luz()`. Cinco situações (9, 5, 2 e as fronteiras 7 e 4):
+  `if/elif/else` na ordem certa e com `>=`. Placa dos sinais.
+- **Fase 4 · Repetições (`k4`):** quatro selos no chão em volta do guardião e o núcleo com energia diferente em cada situação (3,
+  5 e 1). O painel tem 4 linhas: `for` para os quatro `acender_selo()` e `while nucleo > 0:` para `purificar_nucleo()`. Um `for`
+  com número fixo só serve para uma situação; purificar com o núcleo em 0 ou antes dos selos é explicado. Placa dos selos.
+- **Purificação:** só depois das quatro fases (`bossFeito()` exige k1 a k4). Quem já tinha vencido só a fase 1 continua da
+  fase 2; quem já concluiu o Jardim segue direto para a cidade.
 - **Sprites:** quadros da folha de sprites do autor embutidos em `20c-bossarte.js` (fundo removido, 50%). A fonte é um JPG
   reduzido; com o `.aseprite` ou um PNG transparente os quadros podem ser trocados sem perda.
 
@@ -361,7 +370,7 @@ Precisam de `node` e do pacote `playwright` com o Chromium: `npm install` e `npx
 | `l3-relatorio.js` | lógica (Node) | relatório de aprendizagem: partida nova sem números inventados, totais, etapa antiga "sem registro", pendentes, os sete lugares com o conceito, TXT e CSV com os mesmos números e sem dados pessoais |
 | `b16-melhorias.js` | navegador | tarefa da etapa, previsão sobre o programa do jogador (b3) com o caminho da execução e a situação escolhida, sensor marcado "antes → depois" no Passo, situação ↻ depois de mudar o programa, botões de execução e Ctrl+Enter, Dica sugerida após três erros seguidos, funções do jogo × Python no painel e no Guia, relatório no Diário com TXT e CSV baixados e salvos no save, lembrete sem progresso |
 | `b17-exploracao.js` | navegador | editor em 360 × 640 em sete etapas (programa à vista ao abrir, Executar na tela, controles em duas fileiras, nenhum rótulo cortado, textos ≥ 11 px, sem rolagem para o lado); alavancas das Engrenagens (ordem errada volta sem dano, ordem certa para os pistões, manual legível, reinício por visita); painel de blindagem do Reator (radiação, regra, escolha errada explicada, escolha certa protege, caminho do senão); bomba de seiva da Viva (nível, parar cedo, vazar, clones calmos diante da canção errada); tabuleiro e canteiros em texto no painel; etiqueta dos Motores em painel |
-| `b18-camara.js` | navegador | Câmara Final: a porta do vale leva à câmara (e direto à cidade para quem já terminou), o chefe dorme até alguém chegar perto, golpes só ferem depois do aviso e só no círculo, painel aberto pausa os ataques, ordem errada falha explicando, ordem certa purifica e abre o portão, o Jardim continua pendente, save dentro da câmara, relatório, diário e derrota |
+| `b18-camara.js` | navegador | Câmara Final: a porta do vale leva à câmara (e direto à cidade para quem já terminou), o chefe dorme até alguém chegar perto, golpes só ferem depois do aviso e só no círculo, painel aberto pausa os ataques, ordem errada falha explicando, as fases 2 a 4 (variável que muda entre os pulsos, if/elif/else nas cinco fúrias, for nos selos e while no núcleo, com os atalhos que falham), golpes por fase (1, 2, 3, no máximo 3), placas de cada fase, purificação só depois das quatro e o portão abrindo, o Jardim continua pendente, save dentro da câmara, relatório, diário e derrota |
 | `b9-validacoes.js` | navegador | armazenamento bloqueado (aviso e jogo seguindo), sair para outro aplicativo e voltar (pausa e salva), teclado virtual simulado (painel, código e Executar acima dele), sem rolagem horizontal |
 | `b6-personagem.js` | navegador | quadros de todas as direções e animações, linha do chão e altura coerentes, espelho, colisão nos pés, passagem de 1 tile, porta da tumba, atrás/na frente do pilar, transições repouso → caminhada → repouso, interação e dano, folha exportada igual à do jogo |
 | `b7-ajuda.js` | navegador | Guia na tela inicial, no HUD, na tecla G, na pausa e no painel (os dez assuntos com exemplo); pular e revisitar o treino; câmera na tecla C (começa afastada); Lume no acampamento e na tumba com dicas em ordem que não entregam o programa; pontos de interesse no diário; Reiniciar depois de um erro; a área de erro diz a origem (Python, regra da máquina, o que o editor não tem) e leva ao assunto do Guia em um toque, sem perder o programa; Passo a passo que mostra o resultado na última instrução e marca o mecanismo afetado |

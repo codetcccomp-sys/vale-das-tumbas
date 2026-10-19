@@ -176,10 +176,16 @@ const t=suite('b1-percurso');
   await U.usarEm(15*16,36*16+8,'baixo');await U.transicao();await recarregar('Tumba Viva');
   /* ---------- Cidade-Jardim ---------- */
   p=await ev(()=>__vt.porta('final'));await U.usarEm(p.x,p.y);await U.transicao();e=await U.estado();t.ok(e.area==='camara','a porta final abre com os quatro saberes e leva à Câmara Final, antes da Cidade-Jardim');
-  /* ---------- Câmara Final: fase 1 (sequência) e purificação do guardião ---------- */
+  /* ---------- Câmara Final: as quatro fases (sequência, variáveis, decisões, repetições) e a purificação do guardião ---------- */
   await U.usarEm(14*16+8,15*16+6,'cima');await ev(()=>__vt.velocidade(8));
   w=await U.escrever('cortar_energia()\nabrir_valvula()\nalinhar_espelhos()\ndisparar_ressonador()');
   r=await U.executarTodas();e=await U.estado();t.ok(w.aceito&&e.learn.k1,'Câmara Final, fase 1: a ordem certa dos quatro mecanismos desestabiliza o Devorador',[r.msg,r.prog]);
+  await U.etapa(1);w=await U.escrever('potencia = 2.5\nfrequencia = 7\ndisparar_pulso()\nfrequencia = frequencia + 2\ndisparar_pulso()');
+  r=await U.executarTodas();e=await U.estado();t.ok(w.aceito&&e.learn.k2,'fase 2: guardar e mudar frequencia quebra as duas camadas do núcleo',[r.msg,r.prog]);
+  await U.etapa(2);w=await U.escrever('if furia >= 7:\n    erguer_escudo()\nelif furia >= 4:\n    desviar()\nelse:\n    canalizar_luz()');
+  r=await U.executarTodas();e=await U.estado();t.ok(w.aceito&&e.learn.k3,'fase 3: if/elif/else escolhe a defesa nas cinco situações',[r.msg,r.prog]);
+  await U.etapa(3);w=await U.escrever('for i in range(4):\n    acender_selo()\nwhile nucleo > 0:\n    purificar_nucleo()');
+  r=await U.executarTodas();e=await U.estado();t.ok(w.aceito&&e.learn.k4,'fase 4: for nos selos e while no núcleo, nas três situações',[r.msg,r.prog]);
   await ev(()=>fecharPainel());await page.waitForTimeout(3800);
   lb=await U.usarEm(14*16,2*16+22,'cima');await U.transicao();e=await U.estado();t.ok(e.area==='final'&&!e.learn.c1,'guardião purificado: a passagem ao norte leva à Cidade-Jardim, com o desafio do Jardim ainda por fazer',lb);
   await U.usarEm(14*16+8,15*16+6,'cima');await ev(()=>__vt.velocidade(8));

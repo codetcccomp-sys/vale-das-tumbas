@@ -34,7 +34,13 @@ Object.assign(LANG.CMD,{
   bcorte:{py:'cortar_energia',sim:'⏻',ajuda:'desliga o campo de energia que prende os tentáculos do Devorador'},
   bvalvula:{py:'abrir_valvula',sim:'◉',ajuda:'gira a válvula que drena a seiva dos tentáculos (o volante só gira sem energia)'},
   bespelho:{py:'alinhar_espelhos',sim:'◇',ajuda:'vira os espelhos para a luz do ressonador atingir o núcleo'},
-  bresso:{py:'disparar_ressonador',sim:'☄',ajuda:'dispara o ressonador contra o núcleo (precisa de seiva drenada e espelhos alinhados)'}
+  bresso:{py:'disparar_ressonador',sim:'☄',ajuda:'dispara o ressonador contra o núcleo (precisa de seiva drenada e espelhos alinhados)'},
+  bpulso:{py:'disparar_pulso',sim:'◎',ajuda:'o ressonador lê frequencia e potencia e dispara um pulso na camada do núcleo'},
+  bescudo:{py:'erguer_escudo',sim:'⛨',ajuda:'ergue o escudo de bronze contra um golpe forte'},
+  bdesvio:{py:'desviar',sim:'↯',ajuda:'salta para o lado: escapa de um golpe médio'},
+  bluz:{py:'canalizar_luz',sim:'✧',ajuda:'com a guarda do Devorador baixa, canaliza a luz das relíquias para o núcleo'},
+  bselo:{py:'acender_selo',sim:'✺',ajuda:'acende o próximo dos quatro selos do chão'},
+  bpurif:{py:'purificar_nucleo',sim:'❂',ajuda:'com os quatro selos acesos, tira 1 de energia do núcleo'}
 });
 /* nome e símbolo das linhas de estrutura (aparecem na paleta junto com as funções) */
 const BLOCO_INFO={
@@ -87,6 +93,10 @@ const OBJ={
   n90:{icone:'plaq',rotulo:'90',nome:'Plaqueta 90',val:LV('int',90)},
   s4:{icone:'placa',rotulo:'"4"',nome:'Placa com a inscrição 4',val:LV('str','4')},
   f4:{icone:'plaqDec',rotulo:'4.0',nome:'Plaqueta decimal 4.0',val:LV('float',4)},
+  /* Câmara Final: frequências e potência do ressonador */
+  n9:{icone:'plaq',rotulo:'9',nome:'Plaqueta 9',val:LV('int',9)},
+  s7:{icone:'placa',rotulo:'"7"',nome:'Placa com a inscrição 7',val:LV('str','7')},
+  d25:{icone:'plaqDec',rotulo:'2.5',nome:'Plaqueta decimal 2.5',val:LV('float',2.5)},
   seco:{icone:'placa',rotulo:'"seco"',nome:'Placa com a palavra seco',val:LV('str','seco')},
   umido:{icone:'placa',rotulo:'"úmido"',nome:'Placa com a palavra úmido',val:LV('str','úmido')}
 };
@@ -325,6 +335,71 @@ MUNDOS.arenaSeq={
   fim(w){
     if(w.disparou)return{ok:true};
     return{ok:false,erro:{tipo:'semDisparo',titulo:'O Devorador não ficou vulnerável.',msg:'o programa terminou sem disparar o ressonador. Ele é a última peça: antes dele, a energia, a válvula e os espelhos precisam estar prontos.'}};
+  }
+};
+
+/* --- Câmara Final · Fase 2 (Variáveis e tipos): o núcleo tem duas camadas, cada uma vibra numa frequência.
+   disparar_pulso() lê frequencia (int) e potencia (float) na hora em que é chamada: o valor precisa mudar entre os pulsos. --- */
+MUNDOS.arenaVar={
+  init(sit){return{camadas:sit.camadas.slice(),quebradas:0,sit};},
+  cmd(w,c,s){
+    if(c!=='bpulso')return{erro:{tipo:'desconhecido'}};
+    const p=lerVar(s,'potencia');if(p.erro)return p;const f=lerVar(s,'frequencia');if(f.erro)return f;
+    if(p.val.v!==w.sit.potencia)return{erro:{tipo:'potencia',titulo:'O pulso não atravessou a carapaça.',msg:'o ressonador precisa de potencia = '+fmtV(LV('float',w.sit.potencia))+' (a placa do núcleo), e potencia vale '+fmtV(p.val)+'.'},anim:{falha:'pulso'}};
+    const i=w.quebradas;
+    if(i>=w.camadas.length)return{erro:{tipo:'semCamada',titulo:'Não há mais camadas.',msg:'as '+w.camadas.length+' camadas do núcleo já estavam quebradas. Conte quantas vezes disparar_pulso() é chamada.'},anim:{falha:'pulso'}};
+    const alvo=w.camadas[i],nome=i===0?'externa':'interna';
+    if(f.val.v!==alvo)return{erro:{tipo:'freqErrada',titulo:'O pulso não ressoou.',msg:'a camada '+nome+' vibra em '+alvo+', e frequencia vale '+fmtV(f.val)+'. O ressonador usa o valor que estiver na variável no momento do disparo.'},anim:{falha:'pulso',freq:f.val.v}};
+    w.quebradas++;
+    const fim=w.quebradas>=w.camadas.length;
+    return{fimOk:fim,anim:{pulso:alvo,camada:i},msg:'disparar_pulso() leu frequencia ('+alvo+') e potencia ('+fmtV(p.val)+'): a camada '+nome+' do núcleo rachou.'+(fim?' O Devorador cambaleou!':'')};
+  },
+  fim(w){
+    if(w.quebradas>=w.camadas.length)return{ok:true};
+    if(!w.quebradas)return{ok:false,erro:{tipo:'semPulso',titulo:'Nenhum pulso foi disparado.',msg:'as variáveis só fazem efeito quando disparar_pulso() é chamada: o ressonador lê os valores nesse momento.'}};
+    return{ok:false,erro:{tipo:'faltaCamada',titulo:'Uma camada continua inteira.',msg:'a camada interna vibra em '+w.camadas[w.quebradas]+'. Mude o valor de frequencia e dispare de novo.'}};
+  }
+};
+/* --- Câmara Final · Fase 3 (Decisões): antes de cada golpe o Devorador mostra a fúria (sensor). A regra da placa decide a defesa. --- */
+MUNDOS.arenaCond={
+  init(sit){return{furia:sit.furia,escudo:false,desvio:false,luz:false,sit};},
+  sensores(w){return{furia:{t:'int',val:LV('int',w.furia)}};},
+  cmd(w,c){
+    if(c==='bescudo'){w.escudo=true;return{anim:{escudo:true},msg:'erguer_escudo(): o escudo de bronze subiu.'};}
+    if(c==='bdesvio'){w.desvio=true;return{anim:{desvio:true},msg:'desviar(): um salto para o lado.'};}
+    if(c==='bluz'){w.luz=true;return{anim:{luz:true},msg:'canalizar_luz(): a luz das relíquias atravessou o núcleo.'};}
+    return{erro:{tipo:'desconhecido'}};
+  },
+  fim(w){
+    const e=w.sit.espera,T={escudo:'erguer o escudo',desvio:'desviar',luz:'canalizar a luz'};
+    for(const k in e){
+      if(e[k]&&!w[k])return{ok:false,erro:{tipo:'faltou',titulo:'Defesa errada para este golpe.',msg:'com fúria '+w.furia+', o certo era '+T[k]+', e o programa não fez isso.'}};
+      if(!e[k]&&w[k])return{ok:false,erro:{tipo:'sobrou',titulo:'Defesa errada para este golpe.',msg:'com fúria '+w.furia+', o programa resolveu '+T[k]+', mas não era a regra desta fúria. Confira as condições e a ordem delas.'}};
+    }
+    return{ok:true,msg:'Fúria '+w.furia+': o programa escolheu a defesa certa.'};
+  }
+};
+/* --- Câmara Final · Fase 4 (Repetições): quatro selos no chão e o núcleo com energia variável.
+   O for acende os quatro selos; o while purifica enquanto o núcleo tiver energia (que muda de uma situação para outra). --- */
+MUNDOS.arenaRep={
+  init(sit){return{selos:0,nucleo:sit.nucleo,ini:sit.nucleo,pulsos:0,sit};},
+  sensores(w){return{nucleo:{t:'int',val:LV('int',w.nucleo)}};},
+  cmd(w,c){
+    if(c==='bselo'){
+      if(w.selos>=4)return{erro:{tipo:'semSelo',titulo:'Não há mais selos apagados.',msg:'os quatro selos já estavam acesos. Conte quantas voltas a repetição dá.'},anim:{falha:'selo'}};
+      w.selos++;return{anim:{selo:w.selos-1},msg:'acender_selo(): o selo '+w.selos+' de 4 acendeu.'};
+    }
+    if(c==='bpurif'){
+      if(w.selos<4)return{erro:{tipo:'selosApagados',titulo:'A luz dos selos não está completa.',msg:'só '+plural(w.selos,'selo está aceso','selos estão acesos')+'. Os quatro selos precisam estar acesos antes de purificar o núcleo.'},anim:{falha:'purificar'}};
+      if(w.nucleo<=0)return{erro:{tipo:'nucleoVazio',titulo:'O núcleo já estava em 0.',msg:'purificar um núcleo sem energia machuca a criatura. A repetição precisa parar quando nucleo chega a 0: pergunte antes de cada volta (while).'},anim:{falha:'purificar'}};
+      w.nucleo--;w.pulsos++;return{anim:{purifica:w.nucleo},msg:'purificar_nucleo(): o núcleo perdeu energia e agora está em '+w.nucleo+'.'};
+    }
+    return{erro:{tipo:'desconhecido'}};
+  },
+  fim(w){
+    if(w.selos<4)return{ok:false,erro:{tipo:'faltaSelo',titulo:'Um selo ficou apagado.',msg:'o programa acendeu '+w.selos+' de 4 selos.'}};
+    if(w.nucleo>0)return{ok:false,erro:{tipo:'nucleoAceso',titulo:'O núcleo ainda tem energia.',msg:'o núcleo começou com '+w.ini+' e terminou com '+w.nucleo+'. purificar_nucleo() precisa repetir enquanto nucleo for maior que 0.'}};
+    return{ok:true,msg:'Selos acesos e núcleo em 0: purificar_nucleo() repetiu '+(w.pulsos===1?'uma vez.':w.pulsos+' vezes.')};
   }
 };
 
@@ -723,6 +798,43 @@ const DESAFIOS=[
       'Programa: cortar_energia() · abrir_valvula() · alinhar_espelhos() · disparar_ressonador(). Os espelhos também podem vir primeiro; o ressonador é sempre o último.'],
     sucesso:'O ressonador atingiu o núcleo! O Devorador cambaleou: a ordem certa das instruções o desestabilizou.',
     exemplo:{titulo:'Sequência na arena',codigo:'cortar_energia()\nabrir_valvula()\nalinhar_espelhos()\ndisparar_ressonador()'}},
+  {id:'k2',tumba:'camara',saber:'tudo',etapa:'aplicacao',titulo:'Devorador do Vale: as variáveis',mundo:'arenaVar',maxLinhas:6,
+    tarefa:'Quebre as duas camadas do núcleo: a externa vibra em 7, a interna em 9.',
+    intro:['O núcleo do Devorador se fechou em duas camadas. A placa do núcleo diz em que frequência cada uma vibra e qual potência o ressonador usa.',
+      'disparar_pulso() lê duas variáveis no momento em que é chamada: frequencia (int) e potencia (float). Cada variável aceita um tipo só.'],
+    blocos:['set','bpulso'],vars:[{nome:'frequencia',t:'int'},{nome:'potencia',t:'float'}],objetos:['n7','s7','n9','n2','d25','pl25'],arit:['+'],
+    situacoes:[{id:'a',nome:'núcleo de duas camadas',camadas:[7,9],potencia:2.5}],
+    dicas:['Uma variável guarda um valor até receber outro. O ressonador lê frequencia e potencia na hora do disparo: para acertar duas camadas, o valor de frequencia precisa mudar entre os pulsos.',
+      'frequencia é int: 7 serve, "7" (texto, com aspas) não. potencia é float: 2.5. Guarde as duas, dispare, mude frequencia para 9 e dispare de novo.',
+      'Um programa possível: potencia = 2.5, frequencia = 7, disparar_pulso(), frequencia = frequencia + 2, disparar_pulso().'],
+    sucesso:'As duas camadas racharam! O Devorador cambaleou: você guardou, usou e alterou os valores na hora certa.',
+    exemplo:{titulo:'Variáveis na arena',codigo:'potencia = 2.5\nfrequencia = 7\ndisparar_pulso()\nfrequencia = frequencia + 2\ndisparar_pulso()'}},
+  {id:'k3',tumba:'camara',saber:'tudo',etapa:'aplicacao',titulo:'Devorador do Vale: as decisões',mundo:'arenaCond',maxLinhas:7,
+    tarefa:'Escolha a defesa certa para cada golpe, pela fúria do Devorador (cinco situações).',
+    intro:['Antes de cada golpe, o Devorador mostra a fúria: o sensor furia. A placa dos sinais diz a defesa de cada caso.',
+      'Fúria 7 ou mais: erguer_escudo(). De 4 a 6: desviar(). Abaixo de 4 a guarda dele baixa: canalizar_luz(). O mesmo programa precisa acertar as cinco situações.'],
+    blocos:['se','sese','elif','bescudo','bdesvio','bluz'],sensores:[{nome:'furia',t:'int'}],objetos:['n3','n4','n5','n7'],ops:['>','>=','<','<=','=='],
+    situacoes:[{id:'A',nome:'A · fúria 9',furia:9,espera:{escudo:true,desvio:false,luz:false}},
+      {id:'B',nome:'B · fúria 5',furia:5,espera:{escudo:false,desvio:true,luz:false}},
+      {id:'C',nome:'C · fúria 2',furia:2,espera:{escudo:false,desvio:false,luz:true}},
+      {id:'D',nome:'D · fúria 7',furia:7,espera:{escudo:true,desvio:false,luz:false}},
+      {id:'E',nome:'E · fúria 4',furia:4,espera:{escudo:false,desvio:true,luz:false}}],
+    dicas:['Só o primeiro caminho com condição True é executado. Comece pela regra mais forte e deixe o else para o caso que sobra.',
+      '"7 ou mais" é furia >= 7. Se não for, mas for 4 ou mais, é desvio. O resto (abaixo de 4) fica no else. As situações D (7) e E (4) testam as fronteiras.',
+      'Um programa possível: if furia >= 7: erguer_escudo() · elif furia >= 4: desviar() · else: canalizar_luz().'],
+    sucesso:'O programa escolheu a defesa certa nas cinco situações, inclusive nas fronteiras. O Devorador cambaleou de novo!',
+    exemplo:{titulo:'Decisões na arena',codigo:'if furia >= 7:\n    erguer_escudo()\nelif furia >= 4:\n    desviar()\nelse:\n    canalizar_luz()'}},
+  {id:'k4',tumba:'camara',saber:'tudo',etapa:'aplicacao',titulo:'Devorador do Vale: as repetições',mundo:'arenaRep',maxLinhas:4,repMax:4,
+    tarefa:'Acenda os quatro selos e purifique o núcleo até a energia dele chegar a 0 (três situações).',
+    intro:['Última fase: quatro selos no chão cercam o Devorador, e o núcleo dele guarda energia — cada situação começa com um valor diferente.',
+      'acender_selo() acende um selo por vez. Com os quatro acesos, purificar_nucleo() tira 1 de energia do núcleo (sensor nucleo). O painel só tem 4 linhas: automatize.'],
+    blocos:['rep','enq','bselo','bpurif'],sensores:[{nome:'nucleo',t:'int'}],objetos:['n0','n1','n4'],ops:['>','>=','<','==','!='],
+    situacoes:[{id:'A',nome:'A · núcleo 3',nucleo:3},{id:'B',nome:'B · núcleo 5',nucleo:5},{id:'C',nome:'C · núcleo 1',nucleo:1}],
+    dicas:['O for repete um número fixo de vezes; o while repete enquanto a condição for True. Use cada um onde ele serve.',
+      'Os selos são sempre quatro: isso é um for. A energia do núcleo muda de uma situação para outra: isso pede um while, que pergunta antes de cada volta.',
+      'Um programa possível: for i in range(4): acender_selo() e, depois do for, while nucleo > 0: purificar_nucleo().'],
+    sucesso:'Os quatro selos brilham e o núcleo chegou a 0 nas três situações. O Devorador está pronto para ser purificado!',
+    exemplo:{titulo:'Repetições na arena',codigo:'for i in range(4):\n    acender_selo()\nwhile nucleo > 0:\n    purificar_nucleo()'}},
   {id:'c1',tumba:'final',saber:'tudo',etapa:'aplicacao',titulo:'Desafio final · acender o Jardim Central',mundo:'jardim',maxLinhas:12,repMax:8,
     tarefa:'Regue só os canteiros secos, conte quantos foram e acenda o jardim.',
     intro:['O robô jardineiro passa por cinco canteiros até a fonte: rega só os secos (os úmidos não podem ser regados de novo) e conta na variável regadas quantos regou; na fonte, acender_jardim() lê essa contagem.',

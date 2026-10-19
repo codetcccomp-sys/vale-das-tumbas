@@ -78,14 +78,14 @@ const t=suite('b19-boss-polimento');
 
   /* ---- indicador de progresso real ---- */
   let o=await ev(()=>objetivo());
-  t.ok(/mecanismos 0\/4/.test(o.t)&&!/fase \d de \d/i.test(o.t)&&o.d&&/válvula/.test(o.d),'o objetivo mostra "mecanismos 0/4" (a batalha tem um desafio com quatro mecanismos, não 4 fases) e o detalhe fica para o modo expandido',o);
+  t.ok(/fase 1 de 4/.test(o.t)&&/mecanismos 0\/4/.test(o.t)&&o.d&&/válvula/.test(o.d),'o objetivo mostra a fase (1 de 4) e, nela, os mecanismos 0/4; o detalhe fica para o modo expandido',o);
   await ev(()=>{__vt.painel('camara');});
   await U.escrever('cortar_energia()\nabrir_valvula()');await U.executar();
   o=await ev(()=>objetivo());t.ok(/mecanismos 2\/4/.test(o.t),'com a energia cortada e a válvula aberta o indicador mostra 2/4',o.t);
   await ev(()=>{fecharPainel();});
 
-  /* ---- vencer: dano do guardião (piscar) e purificação em etapas ---- */
-  await ev(()=>{__vt.painel('camara');});
+  /* ---- vencer: dano do guardião (piscar) e purificação em etapas (as fases 2 a 4 já vencidas: a sequência é a última) ---- */
+  await ev(()=>{G.learn.k2=G.learn.k3=G.learn.k4=true;__vt.painel('camara');});
   await U.escrever('cortar_energia()\nabrir_valvula()\nalinhar_espelhos()\ndisparar_ressonador()');
   const r=await U.executar();t.ok(r.ok,'a ordem certa vence o desafio',r);
   const dn=await ev(()=>G.area.boss.danoAte>G.t);t.ok(dn,'vencer a fase aciona a animação de dano (piscar claro), diferente do ataque');

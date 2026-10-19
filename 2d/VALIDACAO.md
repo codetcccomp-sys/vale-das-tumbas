@@ -145,6 +145,19 @@ iguais, save sem campo novo (o estado das interações vale só para a visita). 
 sem teclado virtual real, sem som ouvido e sem iniciantes. "Menos interações físicas" foi lido como poucas interações leves
 e opcionais (três toques na ordem, uma escolha, até três bombeadas), sem novas caminhadas obrigatórias.
 
+### M — Câmara Final: as fases 2, 3 e 4 do Devorador
+A câmara tinha só a fase 1 (sequência), embora o texto falasse em quatro. Agora são quatro desafios (`k1` a `k4`), um por saber,
+e o guardião só é purificado depois dos quatro. Teste novo: verificações em `l1` (soluções e atalhos que falham), `b18`
+(as três fases na sala, golpes por fase, placas) e `b1` (o jogo inteiro passa pelas quatro fases).
+| Fase | Como o saber é posto à prova | Atalho que falha (testado) |
+|---|---|---|
+| 2 · Variáveis | `frequencia` (int) e `potencia` (float); a camada externa vibra em 7 e a interna em 9 | disparar duas vezes sem mudar a frequência; `"7"` em texto; potência vazia |
+| 3 · Decisões | sensor `furia`, cinco situações com as fronteiras 7 e 4 | condições na ordem errada; `>` no lugar de `>=` |
+| 4 · Repetições | quatro selos (`for`) e núcleo 3, 5 ou 1 (`while`), em 4 linhas | `for` fixo no núcleo; purificar antes dos selos; `while nucleo >= 0` |
+
+Limites: Chromium sem janela; o ritmo da luta (golpes durante as fases 2 a 4) e a clareza das placas precisam de teste com
+iniciantes.
+
 ## 1. O documento, item por item
 
 ### P1 — Relação entre o jogo e o Python

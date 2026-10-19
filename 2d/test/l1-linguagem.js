@@ -172,6 +172,9 @@ const SOL={
   t1:[cmd('tocha')],
   t2:[cmd('destravar'),cmd('erguer')],
   k1:[cmd('bcorte'),cmd('bvalvula'),cmd('bespelho'),cmd('bresso')],
+  k2:[set('potencia',lit(L('float',2.5))),set('frequencia',lit(L('int',7))),cmd('bpulso'),set('frequencia',{k:'op',op:'+',a:vr('frequencia'),b:lit(L('int',2))}),cmd('bpulso')],
+  k3:[se(vr('furia'),'>=',lit(L('int',7)),[cmd('bescudo')],[cmd('bluz')],[[vr('furia'),'>=',lit(L('int',4)),[cmd('bdesvio')]]])],
+  k4:[rep(4,[cmd('bselo')]),enq(vr('nucleo'),'>',lit(L('int',0)),[cmd('bpurif')])],
   s1:[cmd('fwd'),cmd('fwd'),cmd('right'),cmd('fwd'),cmd('act')],
   s3:[cmd('fwd'),cmd('fwd'),cmd('right'),cmd('fwd'),cmd('fwd'),cmd('act')],
   s2:[cmd('fwd'),cmd('fwd'),cmd('fwd'),cmd('right'),cmd('fwd'),cmd('fwd'),cmd('right'),cmd('fwd'),cmd('fwd'),cmd('act')],
@@ -216,6 +219,28 @@ const SOL={
   const r2=run([cmd('bespelho'),cmd('bresso')]);t.ok(E1(r2)==='ressoFalhou'&&/válvula/.test(r2.s.erro.msg)&&/espelhos/.test(r2.s.erro.msg)===false,'k1: ressonador sem a seiva drenada diz que falta a válvula',r2.s.erro&&r2.s.erro.msg);
   const r3=run([cmd('bcorte'),cmd('bvalvula'),cmd('bespelho')]);t.ok(!r3.ok&&r3.s.erro&&r3.s.erro.tipo==='semDisparo','k1: terminar sem disparar o ressonador não vence');
   const r4=run([cmd('bcorte'),cmd('bcorte'),cmd('bvalvula'),cmd('bvalvula'),cmd('bespelho'),cmd('bespelho'),cmd('bresso')]);t.ok(r4.ok,'k1: repetir um mecanismo já ligado é inofensivo (só avisa)');}
+/* Câmara Final, fases 2 a 4: cada uma põe um saber à prova e recusa os atalhos que parecem servir */
+{const run=(id,l)=>rodarTodas(DESAFIO[id],ids(l)),tipo=r=>r.ok?'ok':r.s.erro&&r.s.erro.tipo;
+  t.ok(desafiosDa('camara').map(d=>d.id).join()==='k1,k2,k3,k4'&&desafiosDa('camara').map(d=>d.mundo).join()==='arenaSeq,arenaVar,arenaCond,arenaRep','a Câmara Final tem quatro fases: sequência, variáveis, decisões e repetições');
+  const so7=run('k2',[set('potencia',lit(L('float',2.5))),set('frequencia',lit(L('int',7))),cmd('bpulso'),cmd('bpulso')])[0];
+  t.ok(tipo(so7)==='freqErrada'&&/interna vibra em 9/.test(so7.s.erro.msg),'k2: disparar duas vezes sem mudar a frequência falha na camada interna (o valor precisa mudar)',so7.s.erro&&so7.s.erro.msg);
+  const d9=run('k2',[set('potencia',lit(L('float',2.5))),set('frequencia',lit(L('int',7))),cmd('bpulso'),set('frequencia',lit(L('int',9))),cmd('bpulso')])[0];
+  t.ok(d9.ok,'k2: guardar 9 direto em frequencia também vale (o jogo confere o resultado)');
+  const txt=run('k2',[set('potencia',lit(L('float',2.5))),set('frequencia',lit(L('str','7'))),cmd('bpulso')])[0];
+  t.ok(!txt.ok&&/contêiner só aceita/.test(LANG.explicar(txt.s)||'')||(!txt.ok&&txt.s.erro),'k2: "7" (texto) é recusado pelo contrato de frequencia (int)',txt.s.erro);
+  const pot=run('k2',[set('frequencia',lit(L('int',7))),cmd('bpulso')])[0];
+  t.ok(tipo(pot)==='semValor','k2: disparar sem guardar potencia é NameError (variável vazia)',tipo(pot));
+  const inv=run('k3',[se(vr('furia'),'>=',lit(L('int',4)),[cmd('bdesvio')],[cmd('bluz')],[[vr('furia'),'>=',lit(L('int',7)),[cmd('bescudo')]]])]);
+  t.ok(!inv[0].ok&&inv[1].ok&&!inv[3].ok,'k3: com as condições na ordem errada, fúria 9 e 7 caem no desvio (só o primeiro caminho verdadeiro conta)',inv.map(tipo));
+  const mai=run('k3',[se(vr('furia'),'>',lit(L('int',7)),[cmd('bescudo')],[cmd('bluz')],[[vr('furia'),'>',lit(L('int',4)),[cmd('bdesvio')]]])]);
+  t.ok(mai[0].ok&&!mai[3].ok&&!mai[4].ok,'k3: usar > no lugar de >= erra as fronteiras (fúria 7 e 4)',mai.map(tipo));
+  const fixo=run('k4',[rep(4,[cmd('bselo')]),rep(3,[cmd('bpurif')])]);
+  t.ok(fixo[0].ok&&tipo(fixo[1])==='nucleoAceso'&&tipo(fixo[2])==='nucleoVazio','k4: um for fixo para purificar só serve para núcleo 3 (o while é necessário)',fixo.map(tipo));
+  const semSelo=run('k4',[enq(vr('nucleo'),'>',lit(L('int',0)),[cmd('bpurif')]),rep(4,[cmd('bselo')])])[0];
+  t.ok(tipo(semSelo)==='selosApagados','k4: purificar antes de acender os selos falha (a ordem ainda importa)',tipo(semSelo));
+  const cinco=run('k4',[rep(4,[cmd('bselo')]),enq(vr('nucleo'),'>=',lit(L('int',0)),[cmd('bpurif')])])[0];
+  t.ok(tipo(cinco)==='nucleoVazio','k4: while nucleo >= 0 passa do ponto e é explicado',tipo(cinco));
+  t.ok(LANG.ler('acender_selo()\nacender_selo()\nacender_selo()\nacender_selo()\nwhile nucleo > 0:\n    purificar_nucleo()',DESAFIO.k4).erro,'k4: o painel de 4 linhas não aceita copiar acender_selo() quatro vezes');}
 const semSol=DESAFIOS.filter(d=>d.etapa!=='demo'&&!SOL[d.id]).map(d=>d.id);t.ok(!semSol.length,'toda etapa jogável tem solução conferida',semSol);
 for(const id in SOL){
   const cfgD=DESAFIO[id],p=ids(SOL[id]);

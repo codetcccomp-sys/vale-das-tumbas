@@ -1,4 +1,4 @@
-// Câmara Final · o Devorador do Vale (fase 1): fica entre as quatro tumbas e a Cidade-Jardim e é uma prova adicional.
+// Câmara Final · o Devorador do Vale (quatro fases: sequência, variáveis, decisões, repetições): fica entre as quatro tumbas e a Cidade-Jardim e é uma prova adicional.
 // Confere o caminho (porta do vale → câmara → cidade), que o chefe acorda ao chegar perto, que cada golpe avisa antes e
 // só fere quem fica no círculo, que o painel aberto pausa os ataques, que a ordem errada falha com a explicação certa, que
 // a ordem certa purifica o guardião e abre o portão, e que o save (inclusive o antigo, de quem já terminou o jogo) funciona.
@@ -18,7 +18,9 @@ const t=suite('b18-camara');
   await ev(()=>{const V=__vt,p=V.porta('final');V.ir(p.x,p.y,'cima');usarPortaFinal();});await esperar();
   let e=await ev(()=>({a:__vt.G.area.id,c:__vt.G.curTomb,obj:objetivo()&&objetivo().t}));
   t.ok(e.a==='camara'&&e.c==='camara'&&/Câmara Final/.test(e.obj),'com os quatro saberes, a porta final do vale leva à Câmara Final (não direto à cidade)',e);
-  t.ok(await ev(()=>!bossFeito()&&desafiosDa('camara').length===1&&desafiosDa('camara')[0].id==='k1'),'a câmara tem a fase 1 (k1) e o guardião ainda não foi purificado');
+  t.ok(await ev(()=>!bossFeito()&&desafiosDa('camara').map(d=>d.id).join()==='k1,k2,k3,k4'),'a câmara tem as quatro fases (k1 a k4) e o guardião ainda não foi purificado');
+  const pl=await ev(()=>G.area.interact.map(i=>{try{return typeof i.label==='function'?i.label():i.label;}catch(e){return'';}}).filter(x=>/^Ler: Placa/.test(x||'')));
+  t.ok(['núcleo','sinais','selos','válvula','ressonador'].every(n=>pl.some(x=>x.indexOf(n)>=0)),'cada fase tem a sua placa legível na sala (válvula, ressonador, núcleo, sinais, selos)',pl);
   await ev(()=>{sairTumba(false);});await esperar();
   e=await ev(()=>({a:__vt.G.area.id,vale:__vt.G.area.id==='vale'}));
   t.ok(e.vale,'a escada da câmara volta ao vale',e);
@@ -48,7 +50,8 @@ const t=suite('b18-camara');
   await ev(()=>{G.invuln=0;G.hearts=3;G.area.boss.golpes=[{x:G.p.x+60,y:G.p.y,t:0,hit:false}];__vt.quadros(90);});
   b=await ev(()=>({h:G.hearts}));t.ok(b.h===3,'quem sai do círculo durante o aviso não é ferido',b);
   /* os golpes automáticos existem: sem fases concluídas, cada rodada solta 1 golpe (nas próximas fases serão 1 + fases) */
-  const n1=await ev(()=>{const B=G.area.boss;G.invuln=99;B.golpes=[];B.prox=0.01;__vt.quadros(2);const n=B.golpes.length;B.golpes=[];return n;});
+  /* o golpe só cai em lugar livre (nunca sobre mecanismos, placas ou outro golpe): conta o máximo em algumas rodadas */
+  const n1=await ev(()=>{const B=G.area.boss;G.invuln=99;let n=0;for(let k=0;k<8;k++){B.golpes=[];B.graca=0;B.prox=0.01;__vt.quadros(2);n=Math.max(n,B.golpes.length);}B.golpes=[];return n;});
   t.ok(n1===1,'sem fases concluídas, cada rodada de ataques solta 1 golpe, sempre com aviso (t começa em 0)',n1);
 
   /* ---- com o painel aberto o chefe não ataca ---- */
@@ -66,9 +69,26 @@ const t=suite('b18-camara');
   await U.escrever('cortar_energia()\nabrir_valvula()\nalinhar_espelhos()\ndisparar_ressonador()');
   r=await U.executar();
   t.ok(r.ok&&r.prog==='cortar_energia()\nabrir_valvula()\nalinhar_espelhos()\ndisparar_ressonador()','a ordem certa (energia, válvula, espelhos, ressonador) vence a fase',r);
-  const s1=await ev(()=>({k1:!!G.learn.k1,feito:bossFeito(),salvo:(__vt.lerSave()||{learn:{}}).learn.k1===true}));
+  let s1=await ev(()=>({k1:!!G.learn.k1,feito:bossFeito(),obj:objetivo().t}));
+  t.ok(s1.k1&&!s1.feito&&/fase 2 de 4 · variáveis/.test(s1.obj),'vencer a fase 1 não basta: o objetivo passa para a fase 2 (variáveis)',s1);
+  /* ---- fase 2: o pulso lê a variável na hora; o mesmo valor duas vezes não quebra a camada interna ---- */
+  await U.etapa(1);await U.escrever('potencia = 2.5\nfrequencia = 7\ndisparar_pulso()\ndisparar_pulso()');
+  r=await U.executar();t.ok(!r.ok&&r.erro==='freqErrada','fase 2: disparar duas vezes com frequencia 7 falha na camada interna',r);
+  await U.escrever('potencia = 2.5\nfrequencia = 7\ndisparar_pulso()\nfrequencia = frequencia + 2\ndisparar_pulso()');
+  r=await U.executar();t.ok(r.ok&&await ev(()=>!!G.learn.k2),'fase 2: mudar frequencia para 9 entre os pulsos vence',r);
+  /* ---- fase 3: a fúria aparece sobre o núcleo; o if/elif/else precisa acertar as cinco situações ---- */
+  await U.etapa(2);await U.escrever('if furia >= 7:\n    erguer_escudo()\nelif furia >= 4:\n    desviar()\nelse:\n    canalizar_luz()');
+  r=await U.executarTodas();t.ok(await ev(()=>!!G.learn.k3),'fase 3: as cinco situações com o mesmo programa',r);
+  /* ---- fase 4: os selos aparecem no chão; o while depende do núcleo de cada situação ---- */
+  await U.etapa(3);
+  let sl=await ev(()=>({f:faseCamara(),obj:objetivo().t}));t.ok(sl.f===3&&/fase 4 de 4 · repetições/.test(sl.obj),'fase 4 da vez: o objetivo fala dos selos e do núcleo',sl);
+  await U.escrever('for i in range(4):\n    acender_selo()\nfor i in range(3):\n    purificar_nucleo()');
+  r=await U.executarTodas();t.ok(await ev(()=>!G.learn.k4),'fase 4: um for fixo no núcleo não serve para todas as situações',r);
+  await U.escrever('for i in range(4):\n    acender_selo()\nwhile nucleo > 0:\n    purificar_nucleo()');
+  r=await U.executarTodas();
+  s1=await ev(()=>({k4:!!G.learn.k4,feito:bossFeito(),salvo:['k1','k2','k3','k4'].every(k=>(__vt.lerSave()||{learn:{}}).learn[k]===true)}));
   await ev(()=>{fecharPainel();});
-  t.ok(s1.k1&&s1.feito,'concluir a fase 1 purifica o guardião (bossFeito)',s1);
+  t.ok(s1.k4&&s1.feito&&s1.salvo,'vencidas as quatro fases, o guardião pode ser purificado (bossFeito) e as fases ficam no save',s1);
 
   /* ---- o portão estava fechado e abre; o guardião volta ao tamanho original ---- */
   await ev(()=>{__vt.quadros(330);toastClear();});
@@ -95,7 +115,14 @@ const t=suite('b18-camara');
   t.ok(/bio,camara,final/.test(rel),'o relatório de aprendizagem lista a Câmara Final entre a Tumba Viva e a cidade',rel);
   await ev(()=>{G.learn.k1=true;});
   const ex=await ev(()=>exemplosVistos().filter(x=>/Câmara Final/.test(x.de)).length);
-  t.ok(ex===1,'o exemplo da fase 1 vai para o diário com o nome do lugar',ex);
+  t.ok(ex===4,'os exemplos das quatro fases vão para o diário com o nome do lugar',ex);
+  /* ---- a cada fase vencida, mais golpes por rodada, no máximo 3 ---- */
+  const ng=await ev(()=>{const r=[];for(const n of[0,1,2,3]){['k1','k2','k3','k4'].forEach((k,i)=>{if(i<n)G.learn[k]=true;else delete G.learn[k];});
+    __vt.entrar('camara');__vt.ir(10*16,11*16,'cima');const B=G.area.boss;B.acordou=true;B.trans=null;B.fracoAte=0;G.invuln=99;
+    /* um golpe só cai onde há lugar livre (nunca sobre mecanismos, placas ou outro golpe): conta o máximo em várias rodadas */
+    let mx=0;for(let k=0;k<12;k++){B.graca=0;B.golpes=[];B.prox=0.001;__vt.quadros(2);mx=Math.max(mx,B.golpes.length);}r.push(mx);B.golpes=[];}
+    ['k1','k2','k3','k4'].forEach(k=>{G.learn[k]=true;});return r;});
+  t.ok(ng.join()==='1,2,3,3','golpes por rodada (máximo em 12 rodadas): 1 sem fases vencidas, 2 com uma, 3 com duas ou mais (nunca mais de 3)',ng);
 
   /* ---- morrer na câmara leva ao vale (como nas tumbas) ---- */
   await ev(()=>{delete G.learn.k1;});
