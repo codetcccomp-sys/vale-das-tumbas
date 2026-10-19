@@ -36,6 +36,8 @@ function areaVisivel(){
 /* ---------- câmera ---------- */
 function camSeguir(alvoX,alvoY,dt,A,imediato){
   const v=areaVisivel();
+  /* áreas com um chefe grande puxam a câmera para cima enquanto o jogador anda (A.camDy), para ele caber no quadro */
+  if(A&&A.camDy&&G.mode==='play')alvoY+=A.camDy();
   /* centro desejado do alvo na parte visível da tela */
   /* no toque, os botões VER, LUZ e AÇÃO ocupam a faixa de baixo: o centro fica entre o HUD e essa faixa */
   const base=R.vista||!document.body.classList.contains('touch')?0:Math.round(104*R.dpr/R.k);

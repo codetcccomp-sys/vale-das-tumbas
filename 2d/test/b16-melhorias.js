@@ -58,7 +58,7 @@ const t=suite('b16-melhorias');
     /* ---------- relatório de aprendizagem ---------- */
     r=await ev(()=>{abrirDiario('relatorio');return{info:$('dInfo').textContent,cards:[...document.querySelectorAll('#dLista .entry h3')].map(h=>h.textContent),btns:[...document.querySelectorAll('.relBar .btn')].map(b=>b.textContent)};});
     const reg=await ev(()=>JSON.parse(JSON.stringify(__vt.G.reg.b3||{})));
-    t.ok(/tentativas: \d+/.test(r.info)&&reg.t>=5&&reg.e>=3&&reg.p==='e'&&r.cards.length===6&&r.btns.length===3,'relatório no Diário: totais, os seis lugares e Baixar TXT/CSV e Copiar; b3 registra tentativas, erros e a previsão errada',{info:r.info.slice(0,90),reg,btns:r.btns});
+    t.ok(/tentativas: \d+/.test(r.info)&&reg.t>=5&&reg.e>=3&&reg.p==='e'&&r.cards.length===7&&r.btns.length===3,'relatório no Diário: totais, os sete lugares e Baixar TXT/CSV e Copiar; b3 registra tentativas, erros e a previsão errada',{info:r.info.slice(0,90),reg,btns:r.btns});
     const [dl]=await Promise.all([page.waitForEvent('download'),ev(()=>document.querySelectorAll('.relBar .btn')[1].click())]);
     const csv=fs.readFileSync(await dl.path(),'utf8');
     t.ok(/\.csv$/.test(dl.suggestedFilename())&&/^﻿?lugar;conceito;etapa_id/.test(csv)&&/"b3";"Prática guiada · while"/.test(csv),'Baixar CSV entrega o arquivo com cabeçalho e a linha de cada etapa',dl.suggestedFilename());

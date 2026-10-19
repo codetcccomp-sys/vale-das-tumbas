@@ -224,5 +224,5 @@ function usarPortaTumba(k){
 function usarPortaFinal(){
   const falta=RELIC_KEYS.filter(k=>!saberOk(k));
   if(falta.length){SFX.deny();toast('A porta tem quatro encaixes, um para cada saber. Falta'+(falta.length===1?' ':'m ')+falta.length+': '+falta.map(k=>SABERES[TOMBS[k].saber].nome).join(', ')+'.','warn');return;}
-  entrarTumba('final');
+  entrarTumba(bossFeito()?'final':'camara');
 }

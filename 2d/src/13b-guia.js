@@ -86,9 +86,9 @@ const GUIA=[
 ];
 /* grupos do índice: os assuntos da tumba atual aparecem primeiro e marcados */
 const GUIA_GRUPOS=[{id:'seq',t:'Sequência'},{id:'dados',t:'Dados'},{id:'dec',t:'Decisões'},{id:'rep',t:'Repetições'},{id:'ajuda',t:'Ajuda'}];
-const GRUPO_LUGAR={treino:'seq',steam:'seq',diesel:'dados',atom:'dec',bio:'rep'};
+const GRUPO_LUGAR={treino:'seq',steam:'seq',diesel:'dados',atom:'dec',bio:'rep',camara:'seq'};
 const GUIA_TOPICO={t1:'comandos',t2:'sequencia',s0:'sequencia',s1:'sequencia',s3:'sequencia',s2:'sequencia',d0:'variaveis',d1:'tipos',d2:'contratos',d3:'variaveis',d4:'variaveis',d5:'contratos',d6:'variaveis',
-  a0:'if',a1:'else',a2:'comparar',a3:'elif',a4:'elif',bd:'for',b0:'for',b1:'for',b2:'for',b3:'while',b4:'while',c1:'recuo'};
+  a0:'if',a1:'else',a2:'comparar',a3:'elif',a4:'elif',bd:'for',b0:'for',b1:'for',b2:'for',b3:'while',b4:'while',c1:'recuo',k1:'sequencia'};
 function topicoGuia(cfg){return(cfg&&GUIA_TOPICO[cfg.id])||'comandos';}
 const KW=/^(if|elif|else|for|in|range|while|not|and|or|True|False)$/;
 /* código colorido: palavras-chave, textos, números, funções e comentários */

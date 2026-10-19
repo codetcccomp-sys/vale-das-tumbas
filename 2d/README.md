@@ -110,7 +110,7 @@ ao pátio a qualquer momento (numa visita depois do treino, o portão já está 
 Primeiro comando → sequência e lógica de execução → variáveis e tipos → if, elif e else → for e while → tudo junto. Cada tumba
 só abre depois do saber da anterior, e o objetivo no alto da tela sempre mostra a próxima etapa. Em todas as etapas o ciclo é
 o mesmo: **programar → executar → observar → corrigir**. Não há múltipla escolha: o jogador escreve (ou monta por toques),
-completa, reorganiza ou corrige código, e o código mexe no cenário. São 26 etapas. Cada tumba tem os três momentos —
+completa, reorganiza ou corrige código, e o código mexe no cenário. São 27 etapas (a Câmara Final, descrita abaixo, tem a sua). Cada tumba tem os três momentos —
 **demonstração**, **prática com ajuda** e um **desafio independente** (aplicação, sem guia, numa situação nova) — e o jogo
 confere o resultado no mecanismo, não uma resposta única: soluções alternativas que cumprem as regras são aceitas.
 
@@ -210,6 +210,28 @@ para, o programa fica guardado e os controles voltam ao normal.
 Executar e Passo usam o mesmo interpretador (`LANG.passo`); só existe uma execução por vez; repetições têm limite de voltas e o
 programa inteiro tem limite de passos, então nada trava o jogo.
 
+## Câmara Final · o Devorador do Vale (prova adicional)
+Entre as quatro tumbas e a Cidade-Jardim fica uma câmara com um guardião: uma criatura pequena que, ao sentir o explorador,
+absorve a energia das relíquias e se transforma num monstro gigante de tentáculos (o **Devorador do Vale**). Ele não é vencido
+pela força, e sim pelo conhecimento: cada **fase** é um programa que põe um saber à prova, e no fim ele é **purificado** e volta
+ao tamanho original. A câmara é **adicional**: não substitui nenhuma etapa, e o desafio do Jardim continua depois dela. Quem já
+tinha concluído o Jardim antes desta câmara existir segue direto para a cidade.
+- **Caminho:** a porta final do vale (com os quatro saberes) leva à câmara; com o guardião purificado, o portão ao norte abre e
+  leva à Cidade-Jardim. A escada ao sul volta ao vale.
+- **Estados do chefe:** *adormecido* (pequeno) → *transformado* (gigante) → *enfraquecido* (logo depois de cada fase) →
+  *purificado*. A transformação começa quando o jogador chega perto do terminal; com o painel aberto o chefe não ataca.
+- **Golpes:** os tentáculos avisam antes (círculo vermelho no chão por mais de 1 s); só fere quem fica no círculo. A cada fase
+  concluída soltam-se mais golpes por rodada, e o intervalo diminui.
+- **Fase 1 · Sequência (`k1`, pronta):** quatro mecanismos (`cortar_energia()`, `abrir_valvula()`, `alinhar_espelhos()`,
+  `disparar_ressonador()`) com dependências: a válvula só gira sem o campo de energia e o ressonador só dispara com a válvula
+  aberta e os espelhos alinhados. Há mais de uma ordem certa (os espelhos podem vir antes) e cada erro diz o que faltou. As
+  regras estão nas duas placas da sala.
+- **Fases seguintes (previstas):** Variáveis (energia dos dispositivos e tipos), Condicionais (sinais antes de cada ataque e
+  defesas com `if/elif/else`) e Repetição (`for`/`while` para automatizar os mecanismos e desativar o núcleo). Cada uma entra
+  como um novo desafio da tumba `camara` em `03-learn.js` (`bossFeito()` exige todos).
+- **Sprites:** o chefe atual (`OBJS.bossProv` em `20b-camara.js`) é **provisório**, desenhado por código; a folha de sprites
+  final (capivara pequena, nuvem de bolhas, chefe com tentáculos) entra no lugar dele.
+
 ## Estrutura
 Os arquivos de `src/` são concatenados nesta ordem pelo `build.sh`:
 
@@ -236,6 +258,7 @@ Os arquivos de `src/` são concatenados nesta ordem pelo `build.sh`:
 | `14c-ambiente.js` | **ambientação** do vale: leito seco e ponte, acácias, braseiros, arcos e muros caídos, acampamento de caravana, pontos de interesse, poeira, vaga-lumes, brasas, folhas, névoa da manhã |
 | `15-tumbas.js` | peças comuns das tumbas: pontos de energia, saída, pedestal e a **regra única da recompensa** (`reliquiaLiberada`), terminal, portões, guardiões, placas de pista e marcas de luz |
 | `16-steam.js` … `20-city.js` | as quatro tumbas e a Cidade-Jardim (mapa, perigos, guardião, mecanismo do desafio); nos Motores, o pátio de abastecimento |
+| `20b-camara.js` | a **Câmara Final**: mapa, mecanismos da arena, o guardião (estados, golpes com aviso, purificação), o portão para a cidade e `bossFeito()` |
 | `21-segredos.js` | os 12 segredos e o mapa do diário |
 | `22-game.js` | estado, personagem (movimento e quadro de animação), HUD, avisos, diário, transições, menus, salvamento no navegador, laço principal |
 | `23-teste.js` | gancho de teste (`window.__vt`), só com `#vt` no endereço (`#vt-treino` mantém o treino no jogo novo) |
@@ -326,9 +349,10 @@ Precisam de `node` e do pacote `playwright` com o Chromium: `npm install` e `npx
 | `b13-tela.js` | navegador | tela limpa no celular: cápsula da mão no HUD (sem aviso), aviso da interação nova substitui o anterior (×2 na mesma), no máximo dois avisos compactos abaixo do HUD e acima do explorador, objetivo refeito só quando muda, encolhe e abre com um toque, marcador inteiro na tela e por baixo do HUD, texto da ação longe de VER/LUZ/AÇÃO, Guia com o exemplo inteiro e o conteúdo com a maior parte da altura (em pé, deitado e no computador), grupo abre o primeiro assunto |
 | `b14-mvp.js` | navegador | história antes do treino (pulável, no menu), "Você quis dizer…?", painel no celular (código à vista no modo Escrever com erro em 412 e 360 px, enunciado inteiro ou "ler o resto", duas colunas deitado), rótulos do cenário em dobro no celular e normais no computador, explorador fora dos botões na entrada das tumbas, porta selada que aponta a tumba da vez, bússola do objetivo, Guia com as mecânicas do jogo |
 | `b15-plano.js` | navegador | plano de melhorias: a versão pública aberta com `#vt`, `#vt-treino` e `#vt-treino-historia` não cria nenhum objeto interno e segue o caminho normal; previsão das práticas guiadas (pergunta antes de executar, resposta e explicação na hora, Executar seguinte confere sem perguntar de novo, Pular executa direto); o `if` sem `else` da paleta não resolve a comporta |
-| `l3-relatorio.js` | lógica (Node) | relatório de aprendizagem: partida nova sem números inventados, totais, etapa antiga "sem registro", pendentes, os seis lugares com o conceito, TXT e CSV com os mesmos números e sem dados pessoais |
+| `l3-relatorio.js` | lógica (Node) | relatório de aprendizagem: partida nova sem números inventados, totais, etapa antiga "sem registro", pendentes, os sete lugares com o conceito, TXT e CSV com os mesmos números e sem dados pessoais |
 | `b16-melhorias.js` | navegador | tarefa da etapa, previsão sobre o programa do jogador (b3) com o caminho da execução e a situação escolhida, sensor marcado "antes → depois" no Passo, situação ↻ depois de mudar o programa, botões de execução e Ctrl+Enter, Dica sugerida após três erros seguidos, funções do jogo × Python no painel e no Guia, relatório no Diário com TXT e CSV baixados e salvos no save, lembrete sem progresso |
 | `b17-exploracao.js` | navegador | editor em 360 × 640 em sete etapas (programa à vista ao abrir, Executar na tela, controles em duas fileiras, nenhum rótulo cortado, textos ≥ 11 px, sem rolagem para o lado); alavancas das Engrenagens (ordem errada volta sem dano, ordem certa para os pistões, manual legível, reinício por visita); painel de blindagem do Reator (radiação, regra, escolha errada explicada, escolha certa protege, caminho do senão); bomba de seiva da Viva (nível, parar cedo, vazar, clones calmos diante da canção errada); tabuleiro e canteiros em texto no painel; etiqueta dos Motores em painel |
+| `b18-camara.js` | navegador | Câmara Final: a porta do vale leva à câmara (e direto à cidade para quem já terminou), o chefe dorme até alguém chegar perto, golpes só ferem depois do aviso e só no círculo, painel aberto pausa os ataques, ordem errada falha explicando, ordem certa purifica e abre o portão, o Jardim continua pendente, save dentro da câmara, relatório, diário e derrota |
 | `b9-validacoes.js` | navegador | armazenamento bloqueado (aviso e jogo seguindo), sair para outro aplicativo e voltar (pausa e salva), teclado virtual simulado (painel, código e Executar acima dele), sem rolagem horizontal |
 | `b6-personagem.js` | navegador | quadros de todas as direções e animações, linha do chão e altura coerentes, espelho, colisão nos pés, passagem de 1 tile, porta da tumba, atrás/na frente do pilar, transições repouso → caminhada → repouso, interação e dano, folha exportada igual à do jogo |
 | `b7-ajuda.js` | navegador | Guia na tela inicial, no HUD, na tecla G, na pausa e no painel (os dez assuntos com exemplo); pular e revisitar o treino; câmera na tecla C (começa afastada); Lume no acampamento e na tumba com dicas em ordem que não entregam o programa; pontos de interesse no diário; Reiniciar depois de um erro; a área de erro diz a origem (Python, regra da máquina, o que o editor não tem) e leva ao assunto do Guia em um toque, sem perder o programa; Passo a passo que mostra o resultado na última instrução e marca o mecanismo afetado |

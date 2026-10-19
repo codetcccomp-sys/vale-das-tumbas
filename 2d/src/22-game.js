@@ -98,7 +98,7 @@ function objetivo(){
   const prox=ORDEM_TUMBAS.find(k=>!saberOk(k));
   if(G.area.id==='vale'){
     if(prox){const T=TOMBS[prox],S=SABERES[T.saber],n=ORDEM_TUMBAS.indexOf(prox)+1;return{t:'Etapa '+n+' de 5 · '+S.nome,s:T.name+' ('+({NE:'nordeste',O:'oeste',SO:'sudoeste',SE:'sudeste'}[T.label])+'), siga a trilha '+NOME_TRILHA[prox]+'.',alvo:{x:T.out.x*16+8,y:T.out.y*16-20,txt:T.name},cor:T.col};}
-    if(!G.done)return{t:'Etapa 5 de 5 · Tudo junto',s:'Leve os quatro saberes à Cidade-Jardim, ao norte.',alvo:{x:PIR.x,y:PIR.y-10,txt:'Cidade-Jardim'},cor:'#ffd24a'};
+    if(!G.done)return{t:'Etapa 5 de 5 · Tudo junto',s:'Leve os quatro saberes à porta ao norte: um guardião protege o caminho até a Cidade-Jardim.',alvo:{x:PIR.x,y:PIR.y-10,txt:'Cidade-Jardim'},cor:'#ffd24a'};
     return{t:'Vale restaurado',s:'Explore os segredos do vale: '+secCount()+'/12.'};
   }
   if(G.area.objetivo)return G.area.objetivo();
@@ -173,7 +173,7 @@ function meuPrograma(k){
   const l=desafiosDa(k).filter(d=>d.etapa!=='demo'&&G.solucoes&&G.solucoes[d.id]&&G.solucoes[d.id].length);if(!l.length)return null;
   const cfg=l.find(d=>d.etapa==='aplicacao')||l[l.length-1];return{cfg,cod:LANG.codigo(G.solucoes[cfg.id])};
 }
-function exemplosVistos(){const out=[];for(const d of DESAFIOS)if(G.learn[d.id]&&d.exemplo)out.push({titulo:d.exemplo.titulo,codigo:d.exemplo.codigo,de:TOMBS[d.tumba].name+' · '+d.titulo});return out;}
+function exemplosVistos(){const out=[];for(const d of DESAFIOS)if(G.learn[d.id]&&d.exemplo)out.push({titulo:d.exemplo.titulo,codigo:d.exemplo.codigo,de:nomeLugar(d.tumba)+' · '+d.titulo});return out;}
 
 /* ====================== personagem ====================== */
 function posicionar(x,y,dir){const p=G.p;p.x=x;p.y=y;p.vx=p.vy=0;p.dir=dir||p.dir;p.caindo=0;p.anim=0;}
@@ -259,12 +259,12 @@ function transicao(fn,msg){
 }
 function entrarTumba(k){
   G.valePos={x:G.p.x,y:G.p.y};
-  transicao(()=>{const A=areaTumba(k);G.curTomb=k;A.reiniciar&&A.reiniciar();trocarArea(A,A.spawn.x,A.spawn.y,A.spawn.dir);G.lantern=100;G.lanternOn=k!=='final';salvar(false);
-    if(k!=='final'&&G.diary.indexOf('lanterna')<0){addDiary('lanterna',true);setTimeout(()=>{if(G.mode==='play')toast('A lanterna está acesa. Perto das paredes, ela revela marcas de luz dos construtores (opcionais). LUZ ou T acende e apaga.');},1600);}},TXT.enterTomb);
+  transicao(()=>{const A=areaTumba(k);G.curTomb=k;A.reiniciar&&A.reiniciar();trocarArea(A,A.spawn.x,A.spawn.y,A.spawn.dir);G.lantern=100;G.lanternOn=k!=='final'&&k!=='camara';salvar(false);
+    if(k!=='final'&&k!=='camara'&&G.diary.indexOf('lanterna')<0){addDiary('lanterna',true);setTimeout(()=>{if(G.mode==='play')toast('A lanterna está acesa. Perto das paredes, ela revela marcas de luz dos construtores (opcionais). LUZ ou T acende e apaga.');},1600);}},TXT.enterTomb);
 }
 function sairTumba(derrota){
   const k=G.curTomb;
-  transicao(()=>{const T=TOMBS[k]||TOMBS.steam;G.curTomb=null;trocarArea(AREAS.vale,T.out.x*16+8,T.out.y*16+8,'baixo');G.lanternOn=false;
+  transicao(()=>{const T=TOMBS[k]||(k==='camara'?TOMBS.final:TOMBS.steam);G.curTomb=null;trocarArea(AREAS.vale,T.out.x*16+8,T.out.y*16+8,'baixo');G.lanternOn=false;
     /* a primeira saída depois do saber: a estação de atalho acordou e uma parte do vale voltou a funcionar */
     if(RELIC_KEYS.indexOf(k)>=0&&saberOk(k)&&G.abertas.indexOf('atalho_'+k)<0){G.abertas.push('atalho_'+k);
       setTimeout(()=>{if(G.mode==='play')toast('A estação de atalho ao lado da porta acordou com o saber: ela leva ao acampamento e às outras estações acordadas. '+VALE_REAGE[k],'good');},700);}
@@ -291,7 +291,7 @@ function salvar(mostrar){
   if(G.mode==='menu')return false;
   const naTumba=G.area&&G.area.id!=='vale';
   const st={relics:G.relics,learn:G.learn,progs:G.progs,diary:G.diary,insc:G.insc,sec:G.sec,abertas:G.abertas,done:G.done,time:G.time,migr:G.migr,
-    pos:naTumba?null:{x:G.p.x/16,y:G.p.y/16},tomb:naTumba?G.curTomb:null,treino:G.treino,dicas:G.dicas,poi:G.poi,guia:G.guia,solucoes:G.solucoes,pistas:G.pistas,fixadas:G.fixadas,marcas:G.marcas,reg:G.reg,regDesde:G.regDesde};
+    pos:naTumba?null:{x:G.p.x/16,y:G.p.y/16},tomb:naTumba?(G.curTomb==='camara'?'final':G.curTomb):null,treino:G.treino,dicas:G.dicas,poi:G.poi,guia:G.guia,solucoes:G.solucoes,pistas:G.pistas,fixadas:G.fixadas,marcas:G.marcas,reg:G.reg,regDesde:G.regDesde};
   const ok=lsSet(SAVE2D_KEY,JSON.stringify(SAVE2D.montar(st)));
   if(!ok&&!saveAvisou){saveAvisou=true;toast(TXT.saveFail,'warn');}else if(ok&&mostrar)toast(TXT.saved);
   G.salvoEm=G.t;return ok;
@@ -425,7 +425,7 @@ function passoJogo(dt,now){
     if(take('mapa')){abrirDiario('mapa');return;}
     if(take('guia')){abrirGuia();return;}
     if(take('vista'))comoAcao(alternarVista);
-    if(take('lanterna')&&A.id!=='vale'&&A.id!=='final')comoAcao(()=>{G.lanternOn=!G.lanternOn;SFX.click();toast(G.lanternOn?'Lanterna acesa: perto das paredes, ela revela marcas de luz.':'Lanterna apagada.');});
+    if(take('lanterna')&&A.id!=='vale'&&A.id!=='final'&&A.id!=='camara')comoAcao(()=>{G.lanternOn=!G.lanternOn;SFX.click();toast(G.lanternOn?'Lanterna acesa: perto das paredes, ela revela marcas de luz.':'Lanterna apagada.');});
     if(A.id==='vale'){G.time=(G.time+dt/DAY_LEN)%1;const n=noiteAgora();if(n>0.6&&!G.nightSeen){G.nightSeen=true;toast(TXT.nightHint);addDiary('night',true);}}
     if(G.invuln>0)G.invuln-=dt;
     if(G.danoT>0)G.danoT-=dt;

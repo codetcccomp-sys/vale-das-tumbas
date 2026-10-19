@@ -30,7 +30,11 @@ Object.assign(LANG.CMD,{
   destravar:{py:'destravar_portao',sim:'⊡',ajuda:'abre a trava do portão do pátio'},
   erguer:{py:'erguer_portao',sim:'⇑',ajuda:'ergue o portão do pátio (a trava precisa estar aberta)'},
   abastecer:{py:'abastecer_tanque',sim:'▼',ajuda:'a bomba lê energia e combustivel e enche o próximo tanque'},
-  acender:{py:'acender_jardim',sim:'☀',ajuda:'na fonte, informa quantos canteiros foram regados e acende a cidade'}
+  acender:{py:'acender_jardim',sim:'☀',ajuda:'na fonte, informa quantos canteiros foram regados e acende a cidade'},
+  bcorte:{py:'cortar_energia',sim:'⏻',ajuda:'desliga o campo de energia que prende os tentáculos do Devorador'},
+  bvalvula:{py:'abrir_valvula',sim:'◉',ajuda:'gira a válvula que drena a seiva dos tentáculos (o volante só gira sem energia)'},
+  bespelho:{py:'alinhar_espelhos',sim:'◇',ajuda:'vira os espelhos para a luz do ressonador atingir o núcleo'},
+  bresso:{py:'disparar_ressonador',sim:'☄',ajuda:'dispara o ressonador contra o núcleo (precisa de seiva drenada e espelhos alinhados)'}
 });
 /* nome e símbolo das linhas de estrutura (aparecem na paleta junto com as funções) */
 const BLOCO_INFO={
@@ -295,6 +299,32 @@ MUNDOS.patio={
   fim(w){
     if(w.aberto)return{ok:true,msg:'O portão do pátio está aberto.'};
     return{ok:false,erro:{tipo:'fechado',titulo:'O portão continua fechado.',msg:w.trava?'a trava continua fechada e o portão não foi erguido.':'a trava está aberta, mas falta erguer o portão.'}};
+  }
+};
+
+/* --- Câmara Final · Fase 1 (Sequência): quatro mecanismos da arena, com dependências entre eles ---
+   o campo de energia trava a válvula; o ressonador só dispara com a seiva drenada e os espelhos alinhados.
+   Há mais de uma ordem certa (os espelhos podem vir antes ou depois da energia e da válvula). */
+MUNDOS.arenaSeq={
+  init(sit){return{energia:true,valvula:false,espelhos:false,disparou:false,sit};},
+  cmd(w,c){
+    if(c==='bcorte'){if(!w.energia)return{msg:'cortar_energia(): o campo de energia já estava desligado.'};w.energia=false;return{anim:{energia:false},msg:'cortar_energia(): o campo de energia se apagou e os tentáculos afrouxaram.'};}
+    if(c==='bvalvula'){
+      if(w.energia)return{erro:{tipo:'valvulaPreso',titulo:'A válvula não girou.',msg:'o campo de energia ainda está ligado e trava o volante. Ele precisa ser cortado antes de abrir a válvula.'},anim:{falha:'valvula'}};
+      if(w.valvula)return{msg:'abrir_valvula(): a válvula já estava aberta.'};
+      w.valvula=true;return{anim:{valvula:true},msg:'abrir_valvula(): a seiva escorreu dos tentáculos.'};
+    }
+    if(c==='bespelho'){if(w.espelhos)return{msg:'alinhar_espelhos(): os espelhos já estavam alinhados.'};w.espelhos=true;return{anim:{espelhos:true},msg:'alinhar_espelhos(): os espelhos miram o núcleo.'};}
+    if(c==='bresso'){
+      const falta=[];if(!w.valvula)falta.push('a seiva ainda não foi drenada (falta abrir a válvula)');if(!w.espelhos)falta.push('os espelhos ainda não estão alinhados');
+      if(falta.length)return{erro:{tipo:'ressoFalhou',titulo:'O ressonador falhou.',msg:falta.join(' e ')+'. O ressonador só dispara com tudo pronto.'},anim:{falha:'ressonador'}};
+      w.disparou=true;return{fimOk:true,anim:{ressonador:true},msg:'disparar_ressonador(): o núcleo tremeu e o Devorador cambaleou!'};
+    }
+    return{erro:{tipo:'desconhecido'}};
+  },
+  fim(w){
+    if(w.disparou)return{ok:true};
+    return{ok:false,erro:{tipo:'semDisparo',titulo:'O Devorador não ficou vulnerável.',msg:'o programa terminou sem disparar o ressonador. Ele é a última peça: antes dele, a energia, a válvula e os espelhos precisam estar prontos.'}};
   }
 };
 
@@ -682,6 +712,17 @@ const DESAFIOS=[
     exemplo:{titulo:'Automação',codigo:'for i in range(4):\n    while umidade < 3:\n        irrigar()\n    avancar()'}},
 
   /* ---------- Cidade-Jardim: tudo junto ---------- */
+  /* ---------- Câmara Final: o Devorador do Vale (quatro fases; cada uma põe um saber à prova) ---------- */
+  {id:'k1',tumba:'camara',saber:'tudo',etapa:'aplicacao',titulo:'Devorador · 1ª fase: a sequência',mundo:'arenaSeq',maxLinhas:6,
+    tarefa:'Desestabilize o Devorador: ligue os mecanismos na ordem certa e termine com o ressonador.',
+    intro:['Os tentáculos do Devorador estão presos por um campo de energia. Quatro mecanismos da arena podem desestabilizá-lo: cortar_energia(), abrir_valvula(), alinhar_espelhos() e disparar_ressonador().',
+      'As placas da sala dizem como eles dependem uns dos outros. Pense na ordem antes de executar: a máquina executa uma linha de cada vez, de cima para baixo, e para na linha que não consegue cumprir.'],
+    blocos:['bcorte','bvalvula','bespelho','bresso'],situacoes:[{id:'a',nome:'arena do Devorador'}],
+    dicas:['Um programa é uma sequência: cada linha só acontece depois da de cima. Se um mecanismo depende de outro, o outro precisa vir antes.',
+      'A válvula só gira com a energia cortada, e o ressonador só dispara com a válvula aberta e os espelhos alinhados. Comece pelo que não depende de nada.',
+      'Programa: cortar_energia() · abrir_valvula() · alinhar_espelhos() · disparar_ressonador(). Os espelhos também podem vir primeiro; o ressonador é sempre o último.'],
+    sucesso:'O ressonador atingiu o núcleo! O Devorador cambaleou: a ordem certa das instruções o desestabilizou.',
+    exemplo:{titulo:'Sequência na arena',codigo:'cortar_energia()\nabrir_valvula()\nalinhar_espelhos()\ndisparar_ressonador()'}},
   {id:'c1',tumba:'final',saber:'tudo',etapa:'aplicacao',titulo:'Desafio final · acender o Jardim Central',mundo:'jardim',maxLinhas:12,repMax:8,
     tarefa:'Regue só os canteiros secos, conte quantos foram e acenda o jardim.',
     intro:['O robô jardineiro passa por cinco canteiros até a fonte: rega só os secos (os úmidos não podem ser regados de novo) e conta na variável regadas quantos regou; na fonte, acender_jardim() lê essa contagem.',

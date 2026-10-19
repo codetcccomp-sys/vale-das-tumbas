@@ -171,6 +171,7 @@ r=LANG.executar(cfg,M,{n:3},ids([set('x',null)]));t.ok(r.s.erro.tipo==='incomple
 const SOL={
   t1:[cmd('tocha')],
   t2:[cmd('destravar'),cmd('erguer')],
+  k1:[cmd('bcorte'),cmd('bvalvula'),cmd('bespelho'),cmd('bresso')],
   s1:[cmd('fwd'),cmd('fwd'),cmd('right'),cmd('fwd'),cmd('act')],
   s3:[cmd('fwd'),cmd('fwd'),cmd('right'),cmd('fwd'),cmd('fwd'),cmd('act')],
   s2:[cmd('fwd'),cmd('fwd'),cmd('fwd'),cmd('right'),cmd('fwd'),cmd('fwd'),cmd('right'),cmd('fwd'),cmd('fwd'),cmd('act')],
@@ -207,6 +208,14 @@ const SOL={
 /* cada tumba tem demonstração, prática guiada e um desafio independente (aplicação) */
 {const falta=['steam','diesel','atom','bio'].filter(k=>{const e=desafiosDa(k).map(d=>d.etapa);return!(e.indexOf('demo')>=0&&e.indexOf('guiada')>=0&&e.indexOf('aplicacao')>=0);});
   t.ok(!falta.length,'as quatro tumbas têm demonstração, prática guiada e aplicação independente',falta);}
+/* Câmara Final · fase 1 (sequência): a ordem importa, há mais de uma ordem certa, e cada erro diz o que faltou */
+{const run=l=>rodarTodas(DESAFIO.k1,ids(l))[0],E1=r=>r.ok?null:r.s.erro&&r.s.erro.tipo;
+  t.ok(run([cmd('bespelho'),cmd('bcorte'),cmd('bvalvula'),cmd('bresso')]).ok&&run([cmd('bcorte'),cmd('bespelho'),cmd('bvalvula'),cmd('bresso')]).ok,'k1: os espelhos podem vir antes ou no meio (mais de uma ordem certa)');
+  t.ok(E1(run([cmd('bvalvula'),cmd('bcorte'),cmd('bespelho'),cmd('bresso')]))==='valvulaPreso','k1: abrir a válvula com o campo ligado falha (a energia vem antes)');
+  const r=run([cmd('bcorte'),cmd('bvalvula'),cmd('bresso')]);t.ok(E1(r)==='ressoFalhou'&&/espelhos/.test(r.s.erro.msg)&&!/seiva ainda/.test(r.s.erro.msg),'k1: ressonador sem espelhos alinhados diz o que falta',r.s.erro&&r.s.erro.msg);
+  const r2=run([cmd('bespelho'),cmd('bresso')]);t.ok(E1(r2)==='ressoFalhou'&&/válvula/.test(r2.s.erro.msg)&&/espelhos/.test(r2.s.erro.msg)===false,'k1: ressonador sem a seiva drenada diz que falta a válvula',r2.s.erro&&r2.s.erro.msg);
+  const r3=run([cmd('bcorte'),cmd('bvalvula'),cmd('bespelho')]);t.ok(!r3.ok&&r3.s.erro&&r3.s.erro.tipo==='semDisparo','k1: terminar sem disparar o ressonador não vence');
+  const r4=run([cmd('bcorte'),cmd('bcorte'),cmd('bvalvula'),cmd('bvalvula'),cmd('bespelho'),cmd('bespelho'),cmd('bresso')]);t.ok(r4.ok,'k1: repetir um mecanismo já ligado é inofensivo (só avisa)');}
 const semSol=DESAFIOS.filter(d=>d.etapa!=='demo'&&!SOL[d.id]).map(d=>d.id);t.ok(!semSol.length,'toda etapa jogável tem solução conferida',semSol);
 for(const id in SOL){
   const cfgD=DESAFIO[id],p=ids(SOL[id]);

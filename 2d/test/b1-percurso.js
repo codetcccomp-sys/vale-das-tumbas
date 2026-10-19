@@ -175,7 +175,13 @@ const t=suite('b1-percurso');
   await ev(()=>fecharPainel());lb=await U.usarEm(14*16+8,4*16+12,'cima');e=await U.estado();t.ok(e.relics.bio&&e.saberes===4,'Semente da vida recolhida: quatro saberes',lb);
   await U.usarEm(15*16,36*16+8,'baixo');await U.transicao();await recarregar('Tumba Viva');
   /* ---------- Cidade-Jardim ---------- */
-  p=await ev(()=>__vt.porta('final'));await U.usarEm(p.x,p.y);await U.transicao();e=await U.estado();t.ok(e.area==='final','a porta da Cidade-Jardim abre com os quatro saberes');
+  p=await ev(()=>__vt.porta('final'));await U.usarEm(p.x,p.y);await U.transicao();e=await U.estado();t.ok(e.area==='camara','a porta final abre com os quatro saberes e leva à Câmara Final, antes da Cidade-Jardim');
+  /* ---------- Câmara Final: fase 1 (sequência) e purificação do guardião ---------- */
+  await U.usarEm(14*16+8,15*16+6,'cima');await ev(()=>__vt.velocidade(8));
+  w=await U.escrever('cortar_energia()\nabrir_valvula()\nalinhar_espelhos()\ndisparar_ressonador()');
+  r=await U.executarTodas();e=await U.estado();t.ok(w.aceito&&e.learn.k1,'Câmara Final, fase 1: a ordem certa dos quatro mecanismos desestabiliza o Devorador',[r.msg,r.prog]);
+  await ev(()=>fecharPainel());await page.waitForTimeout(3800);
+  lb=await U.usarEm(14*16,2*16+22,'cima');await U.transicao();e=await U.estado();t.ok(e.area==='final'&&!e.learn.c1,'guardião purificado: a passagem ao norte leva à Cidade-Jardim, com o desafio do Jardim ainda por fazer',lb);
   await U.usarEm(14*16+8,15*16+6,'cima');await ev(()=>__vt.velocidade(8));
   w=await U.escrever('regadas = 0\nfor i in range(5):\n    if solo == "seco":\n        irrigar()\n        regadas = regadas + 1\n    avancar()\nacender_jardim()');
   r=await U.executarTodas();e=await U.estado();t.ok(w.aceito&&e.learn.c1,'desafio final: sequência, variável, decisão e repetição nos dois jardins',[r.msg,r.prog]);

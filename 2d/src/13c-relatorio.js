@@ -3,7 +3,7 @@
    tentativas com erro, dicas pedidas, previsões e o dia da conclusão. Nada é inventado: o que não foi registrado
    (etapas concluídas antes desta versão) aparece como "sem registro". Tudo fica no aparelho; exportar é voluntário
    e o arquivo não leva nome, e-mail nem nenhum dado pessoal. */
-const RELATORIO_ORDEM=['treino','steam','diesel','atom','bio','final'];
+const RELATORIO_ORDEM=['treino','steam','diesel','atom','bio','camara','final'];
 const PREVISAO_NOME={c:'acertou',e:'errou',p:'pulou'};
 function relatorioDados(st){
   const learn=st.learn||{},reg=st.reg||{},dicas=st.dicas||{};
@@ -15,7 +15,7 @@ function relatorioDados(st){
         previsao:r.p?PREVISAO_NOME[r.p]:(d.previsao?'—':null),data:r.d||null,semRegistro:feita&&!temReg&&d.etapa!=='demo'};
     });
     const S=SABER_DE[k]?SABERES[SABER_DE[k]]:null;
-    return{k,nome:nomeLugar(k),conceito:S?S.nome:k==='treino'?'Primeiro comando e ordem':'Tudo junto: sequência, variável, decisão e repetição',
+    return{k,nome:nomeLugar(k),conceito:S?S.nome:k==='treino'?'Primeiro comando e ordem':k==='camara'?'Prova final: o Devorador do Vale (sequência, variáveis, decisões e repetições)':'Tudo junto: sequência, variável, decisão e repetição',
       resumo:S?S.resumo:null,etapas,feitas:etapas.filter(e=>e.feita).length,total:etapas.length,completo:etapas.every(e=>e.feita)};
   });
   const todas=lugares.reduce((a,l)=>a.concat(l.etapas),[]);

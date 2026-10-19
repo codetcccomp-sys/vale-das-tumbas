@@ -54,7 +54,7 @@ const relNome=(k,mai)=>{const r=RELIC_INFO[k],a=mai?r.art.toUpperCase():r.art;re
 const relDe=k=>(RELIC_INFO[k].art==='o'?'do ':'da ')+RELIC_INFO[k].name;
 const RELIC_KEYS=['steam','diesel','atom','bio'];
 /* lugares que têm desafios mas não são tumbas */
-const LUGARES={treino:'Pátio de Treino'};
+const LUGARES={treino:'Pátio de Treino',camara:'Câmara Final'};
 const nomeLugar=k=>TOMBS[k]?TOMBS[k].name:LUGARES[k]||k;
 const TREINO_PASSOS=9;
 const mai1=t=>t?t[0].toUpperCase()+t.slice(1):t;
