@@ -240,7 +240,6 @@ tinha concluído o Jardim antes desta câmara existir segue direto para a cidade
   como um novo desafio da tumba `camara` em `03-learn.js` (`bossFeito()` exige todos).
 - **Sprites:** quadros da folha de sprites do autor embutidos em `20c-bossarte.js` (fundo removido, 50%). A fonte é um JPG
   reduzido; com o `.aseprite` ou um PNG transparente os quadros podem ser trocados sem perda.
-- **Demonstração:** em prévias da Vercel (ou com `?demo` no endereço) o jogo novo já começa com as quatro tumbas concluídas.
 
 ## Estrutura
 Os arquivos de `src/` são concatenados nesta ordem pelo `build.sh`:

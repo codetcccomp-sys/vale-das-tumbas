@@ -314,7 +314,6 @@ function resetEstado(){
   G.treino={feito:false,passo:0,manivela:false};G.dicas={};G.poi={};G.guia=false;G.lumeFalou=false;G.solucoes={};G.pistas={};G.fixadas=[];G.marcas={};G.reg={};G.regDesde=null;
 }
 /* começa: novo jogo, continuar o save 2D ou migrar o save do 3D (sem mexer nele) */
-const MODO_DEMO=(()=>{try{const h=location.hostname;return /[?&]demo\b/.test(location.search)||(/\.vercel\.app$/.test(h)&&h!=='vale-das-tumbas-2d.vercel.app');}catch(e){return false;}})();
 function iniciarJogo(modo){
   auInit();resetEstado();
   let s=null,avisos=[];
@@ -324,9 +323,6 @@ function iniciarJogo(modo){
   if(s)aplicarSave(s);
   /* nos testes automáticos (#vt), um jogo novo pula o treino, a não ser que o endereço peça (#vt-treino) */
   if(!s&&window.__vtPularTreino)G.treino.feito=true;
-  /* versão de demonstração (prévias da Vercel ou ?demo no endereço): jogo novo já com as quatro tumbas concluídas, para ir direto à Câmara Final.
-     O site oficial (vale-das-tumbas-2d.vercel.app) e os testes automáticos não são afetados. */
-  if(!s&&MODO_DEMO){G.treino.feito=true;for(const k of RELIC_KEYS){for(const d of desafiosDa(k))G.learn[d.id]=true;G.relics[k]=true;addDiary(SABER_ENTRY[TOMBS[k].saber],true);addDiary(RELIC_INFO[k].diary,true);}avisos.push('Versão de demonstração: as quatro tumbas já vêm concluídas. A porta final do vale leva à Câmara Final.');}
   aplicarSegredos();
   const A=AREAS.vale;let x=A.spawn.x,y=A.spawn.y,dir='cima';
   if(s&&s.tomb){const T=TOMBS[s.tomb];x=T.out.x*16+8;y=T.out.y*16+8;dir='baixo';}
