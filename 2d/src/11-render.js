@@ -61,6 +61,7 @@ function chunk(A,cx,cy){
   const key=A.id+':'+cx+','+cy+':'+A.versao;
   let c=R.chunks.get(key);
   if(c){R.chunks.delete(key);R.chunks.set(key,c);return c;}
+  R.chunkNovo=true;
   c=cnv(CHPX,CHPX);const g=ctx2(c);
   for(let y=0;y<CH;y++)for(let x=0;x<CH;x++){const tx=cx*CH+x,ty=cy*CH+y;if(tx>=A.w||ty>=A.h)continue;desenharTile(g,A,tx,ty,x*TILE,y*TILE);}
   if(A.decalques)for(const d of A.decalques){const dx=d.x-cx*CHPX,dy=d.y-cy*CHPX;if(dx>-d.img.width&&dy>-d.img.height&&dx<CHPX&&dy<CHPX)g.drawImage(d.img,dx|0,dy|0);}
@@ -71,8 +72,15 @@ function chunk(A,cx,cy){
 function desenharChao(A){
   const g=R.lg,x0=Math.floor(-R.ox/CHPX),y0=Math.floor(-R.oy/CHPX),x1=Math.floor((-R.ox+R.W)/CHPX),y1=Math.floor((-R.oy+R.H)/CHPX);
   g.fillStyle=A.fundo||'#000';g.fillRect(0,0,R.W,R.H);
+  R.chunkNovo=false;
   for(let cy=Math.max(0,y0);cy<=y1;cy++)for(let cx=Math.max(0,x0);cx<=x1;cx++){
     if(cx*CH>=A.w||cy*CH>=A.h)continue;g.drawImage(chunk(A,cx,cy),cx*CHPX+R.ox,cy*CHPX+R.oy);
+  }
+  /* os pedaços em volta da tela são montados antes, um por quadro (só nos quadros em que nenhum foi montado): ao andar, o
+     pedaço que entra na tela já está pronto, em vez de dois ou três serem montados de uma vez num quadro só */
+  if(!R.chunkNovo)for(let cy=Math.max(0,y0-1);cy<=y1+1;cy++)for(let cx=Math.max(0,x0-1);cx<=x1+1;cx++){
+    if(cx*CH>=A.w||cy*CH>=A.h||(cx>=x0&&cx<=x1&&cy>=y0&&cy<=y1))continue;
+    if(!R.chunks.has(A.id+':'+cx+','+cy+':'+A.versao)){chunk(A,cx,cy);return;}
   }
 }
 /* água animada: brilhos que correm sobre os tiles de água visíveis */
@@ -122,18 +130,31 @@ function desenharLuz(escuro,tinta){
   g.globalCompositeOperation='destination-out';
   for(const L of LUZES){
     const x=Math.round(L.x+R.ox),y=Math.round(L.y+R.oy);if(x<-L.r-4||y<-L.r-4||x>R.W+L.r+4||y>R.H+L.r+4)continue;
-    /* quatro degraus suaves: a borda some aos poucos (sem um círculo marcado que esconda o resto) */
-    const deg=[[1,0.22],[0.84,0.45],[0.68,0.72],[0.52,1]];
-    for(const[rr,a]of deg){g.globalAlpha=a*L.f;P.circ(g,x,y,L.r*rr,'#000');}
+    const c=carimboLuz(L.r,L.f);g.drawImage(c.img,x-c.o,y-c.o);
   }
   g.globalAlpha=1;g.globalCompositeOperation='source-over';
   R.lg.drawImage(R.luz,0,0);
   /* brilho colorido por cima (aditivo) */
   R.lg.globalCompositeOperation='lighter';
-  for(const L of LUZES){if(!L.cor)continue;const x=Math.round(L.x+R.ox),y=Math.round(L.y+R.oy);R.lg.globalAlpha=0.16*L.f*Math.min(1,escuro*1.5);P.circ(R.lg,x,y,L.r*0.5,L.cor);}
+  for(const L of LUZES){if(!L.cor)continue;const x=Math.round(L.x+R.ox),y=Math.round(L.y+R.oy);R.lg.globalAlpha=0.16*L.f*Math.min(1,escuro*1.5);const c=carimboBrilho(L.r*0.5,L.cor);R.lg.drawImage(c.img,x-c.o,y-c.o);}
   R.lg.globalAlpha=1;R.lg.globalCompositeOperation='source-over';
   LUZES.length=0;
 }
+/* carimbos de luz: cada luz era desenhada linha a linha a cada quadro (centenas de fillRect por luz; a lanterna, mais de 500).
+   Agora o desenho de cada raio e força é feito uma vez e reaproveitado. Os quatro degraus suaves (a borda some aos poucos,
+   sem um círculo marcado que esconda o resto) se somam no carimbo com source-over, que dá a mesma transparência final que
+   recortar degrau por degrau. O raio é arredondado a 1/4 de pixel (as luzes que tremulam não criam carimbos sem fim). */
+const CARIMBOS=new Map(),DEGRAUS_LUZ=[[1,0.22],[0.84,0.45],[0.68,0.72],[0.52,1]];
+function carimbo(chave,r,pinta){
+  let c=CARIMBOS.get(chave);if(c)return c;
+  const o=Math.ceil(r)+2,img=cnv(o*2+1,o*2+1);pinta(ctx2(img),o);c={img,o};
+  if(CARIMBOS.size>400)CARIMBOS.clear();CARIMBOS.set(chave,c);return c;
+}
+function carimboLuz(r,f){
+  r=Math.round(r*4)/4;f=Math.round(f*100)/100;
+  return carimbo('l'+r+'|'+f,r,(g,o)=>{for(const[rr,a]of DEGRAUS_LUZ){g.globalAlpha=a*f;P.circ(g,o,o,r*rr,'#000');}g.globalAlpha=1;});
+}
+function carimboBrilho(r,cor){r=Math.round(r*4)/4;return carimbo('b'+r+'|'+cor,r,(g,o)=>P.circ(g,o,o,r,cor));}
 /* tinta do dia: manhã quente, meio-dia neutro, entardecer laranja, noite azul */
 function tintaDia(g,noite,tarde){
   if(tarde>0.01){g.globalCompositeOperation='multiply';g.fillStyle='rgba(255,170,110,'+(tarde*0.5)+')';g.fillRect(0,0,R.W,R.H);g.globalCompositeOperation='source-over';}

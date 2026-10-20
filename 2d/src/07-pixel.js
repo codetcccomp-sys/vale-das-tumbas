@@ -36,6 +36,15 @@ function contorno(c,cor,diag){
 /* recolore um sprite (usado para o piscar de dano e para silhuetas) */
 function silhueta(c,cor,alfa){const o=cnv(c.width,c.height),g=ctx2(o);g.drawImage(c,0,0);g.globalCompositeOperation='source-in';g.fillStyle=cor;g.globalAlpha=alfa===undefined?1:alfa;g.fillRect(0,0,o.width,o.height);return o;}
 
+/* padrão 2×2 em xadrez para P.ponti: paridade 0 pinta os pixels com x+y par; 1, os ímpares (um por contexto e cor) */
+const PADROES=new WeakMap();
+function padraoXadrez(g,c,par){
+  let m=PADROES.get(g);if(!m){m=new Map();PADROES.set(g,m);}
+  const k=c+'|'+par;let p=m.get(k);
+  if(!p){const t=cnv(2,2),q=ctx2(t);q.fillStyle=c;if(par===0){q.fillRect(0,0,1,1);q.fillRect(1,1,1,1);}else{q.fillRect(1,0,1,1);q.fillRect(0,1,1,1);}
+    p=g.createPattern(t,'repeat');if(m.size>200)m.clear();m.set(k,p);}
+  return p;
+}
 const P={
   r(g,x,y,w,h,c){g.fillStyle=c;g.fillRect(x|0,y|0,w|0,h|0);},
   p(g,x,y,c){g.fillStyle=c;g.fillRect(x|0,y|0,1,1);},
@@ -44,8 +53,13 @@ const P={
   elip(g,cx,cy,rx,ry,c){g.fillStyle=c;for(let y=Math.floor(cy-ry);y<=Math.ceil(cy+ry);y++){const dy=(y+0.5-cy)/ry;if(Math.abs(dy)>1)continue;const dx=rx*Math.sqrt(1-dy*dy);const x0=Math.round(cx-dx),x1=Math.round(cx+dx);if(x1>x0)g.fillRect(x0,y,x1-x0,1);}},
   anel(g,cx,cy,r,esp,c){g.fillStyle=c;for(let y=Math.floor(cy-r);y<=Math.ceil(cy+r);y++)for(let x=Math.floor(cx-r);x<=Math.ceil(cx+r);x++){const d=Math.hypot(x+0.5-cx,y+0.5-cy);if(d<=r&&d>r-esp)g.fillRect(x,y,1,1);}},
   linha(g,x0,y0,x1,y1,c){g.fillStyle=c;x0|=0;y0|=0;x1|=0;y1|=0;const dx=Math.abs(x1-x0),dy=-Math.abs(y1-y0),sx=x0<x1?1:-1,sy=y0<y1?1:-1;let e=dx+dy;for(let n=0;n<400;n++){g.fillRect(x0,y0,1,1);if(x0===x1&&y0===y1)break;const e2=2*e;if(e2>=dy){e+=dy;x0+=sx;}if(e2<=dx){e+=dx;y0+=sy;}}},
-  /* pontilhado em xadrez (meio-tom) */
-  ponti(g,x,y,w,h,c,fase){g.fillStyle=c;for(let j=0;j<h;j++)for(let i=0;i<w;i++)if(((i+j+(fase|0))&1)===0)g.fillRect(x+i,y+j,1,1);},
+  /* pontilhado em xadrez (meio-tom): um retângulo só, preenchido com um padrão 2×2 guardado (antes, um fillRect por pixel:
+     a névoa da Viva chegava a 20 mil por quadro). Mesmo resultado, pixel a pixel. */
+  ponti(g,x,y,w,h,c,fase){
+    if(w<=0||h<=0)return;
+    if(x!==(x|0)||y!==(y|0)||w!==(w|0)||h!==(h|0)){g.fillStyle=c;for(let j=0;j<h;j++)for(let i=0;i<w;i++)if(((i+j+(fase|0))&1)===0)g.fillRect(x+i,y+j,1,1);return;}
+    g.fillStyle=padraoXadrez(g,c,(((x+y+(fase|0))%2)+2)%2);g.fillRect(x,y,w,h);
+  },
   /* engrenagem vista de frente: dentes ao redor e furo no meio */
   engrenagem(g,cx,cy,R,dentes,cor,escura,furo){
     P.circ(g,cx,cy,R-1,cor);

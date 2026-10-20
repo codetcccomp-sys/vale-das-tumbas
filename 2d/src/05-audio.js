@@ -159,6 +159,8 @@ function tocarMusica(inTomb,night,mode){
   /* painel aberto: música mais baixa para a concentração */
   const abafa=mode==='painel'||mode==='guia'?0.45:1;if(abafa!==AU.abafa){AU.abafa=abafa;AU.mus.gain.setTargetAtTime(0.5*AU.volMus*abafa,now,0.4);}
   const colc=60/T.bpm/2;let guarda=0;
+  /* depois de uma travada longa, a música segue do agora, em vez de tocar de uma vez as notas que ficaram para trás */
+  if(AU.mProx<now-0.05)AU.mProx=now+0.05;
   while(AU.mProx<now+0.3&&guarda++<16){
     const t=AU.mProx,p=AU.mPasso,comp=Math.floor(p/8),pos=p%8,acorde=T.prog[comp%T.prog.length];
     const lv=k==='city'?(AU.cityLvl||0):1;

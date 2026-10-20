@@ -88,7 +88,7 @@ function atualizarHud(){
     if(go){const b=document.createElement('b');const bs=document.createElement('i');bs.className='bus';bs.title='Direção do objetivo';b.appendChild(bs);b.appendChild(document.createTextNode(go.t));const s=document.createElement('span');s.className='gs';s.textContent=go.s;el.appendChild(b);el.appendChild(s);el.classList.toggle('comdet',!!go.d);if(go.d){const d=document.createElement('span');d.className='gd';d.textContent=go.d;el.appendChild(d);}el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');}}
   else if(go&&!el.classList.contains('curto')&&telaCompacta()&&performance.now()-GOAL.t>GOAL.ms){el.classList.remove('aberto');el.classList.add('curto');R.hudTopo=0;}
   /* bússola: a seta no título do objetivo aponta do explorador para o alvo da etapa (some quando ele já está perto) */
-  const bs=el.querySelector('.bus');if(bs){const al=go&&go.alvo;if(al){const dx=al.x-G.p.x,dy=al.y-G.p.y;bs.hidden=Math.hypot(dx,dy)<40;bs.style.transform='rotate('+Math.atan2(dy,dx).toFixed(2)+'rad)';}else bs.hidden=true;}
+  const bs=el.querySelector('.bus');if(bs){const al=go&&go.alvo;if(al){const dx=al.x-G.p.x,dy=al.y-G.p.y;bs.hidden=Math.hypot(dx,dy)<40;estilo(bs,'transform','rotate('+Math.atan2(dy,dx).toFixed(2)+'rad)');}else bs.hidden=true;}
 }
 const GOAL={t:0,ms:9000};
 function alternarObjetivo(){const el=$('goal'),det=!!el.querySelector('.gd');
@@ -453,6 +453,11 @@ function passoJogo(dt,now){
 function atualizarGuardas(dt){const A=G.area;if(!A.ents)return;for(const e of A.ents)if(e.update)e.update(dt,G.mode==='play');}
 function desenharJogo(){
   const A=G.area;if(!A){R.g.fillStyle='#000';R.g.fillRect(0,0,R.cv.width,R.cv.height);return;}
+  /* com o Guia, o diário ou a pausa por cima, o mundo fica parado: desenha um quadro ao abrir (de novo se a tela mudar de
+     tamanho, e uma vez por segundo, caso o navegador tenha descartado a imagem) e não redesenha à toa por baixo da janela */
+  const parado=G.mode==='guia'||G.mode==='diario'||G.mode==='paused'?G.mode+'|'+R.cv.width+'x'+R.cv.height+'|'+A.id+'|'+Math.floor(performance.now()/1000):null;
+  if(parado&&R.quadroParado===parado)return;
+  R.quadroParado=parado;
   if(G.mode==='painel'&&PAINEL.foco){const f=focoCamPainel(A);camSeguir(f.x,f.y,1/60,A);}else camSeguir(G.p.x,G.p.y-12,1/60,A);
   camPixel();
   desenharChao(A);desenharAgua(A,G.t);
@@ -540,7 +545,7 @@ function atualizarMarcas(){
   const m=$('marcaAlvo'),n=$('nomeObj');
   if(G.mode!=='play'||!G.area){m.hidden=true;n.hidden=true;return;}
   /* a etiqueta não passa da borda da tela (o centro é preso a meia largura dela) */
-  const k=R.k/R.dpr,pos=(el,x,y)=>{const w=(el._w||0)/2+4;el.style.left=Math.round(clamp((x+R.ox)*k,w,Math.max(w,innerWidth-w)))+'px';el.style.top=Math.round((y+R.oy)*k)+'px';};
+  const k=R.k/R.dpr,pos=(el,x,y)=>{const w=(el._w||0)/2+4;estilo(el,'left',Math.round(clamp((x+R.ox)*k,w,Math.max(w,innerWidth-w)))+'px');estilo(el,'top',Math.round((y+R.oy)*k)+'px');};
   const ok=(x,y)=>x+R.ox>4&&x+R.ox<R.W-4&&y+R.oy>10&&y+R.oy<R.H-4;
   const it=alvoInter&&alvoInter.it,nome=it?nomeDe(it,alvoInter.lb):null;
   const go=objetivo(),a=go&&go.alvo&&go.alvo.txt?go.alvo:null;
@@ -581,6 +586,18 @@ function desenharAnelBussola(topo){
   triPx(g,gros(tip,0.3),gros(l,0.45),gros(r,0.45),'#0b0705');triPx(g,tip,l,r,b.cor);
   if(Math.floor(G.t*2.5)%2===0){const x=Math.round(ex+c*15)-1,y=Math.round(ey+s*11)-1;g.fillStyle='#0b0705';g.fillRect(x-1,y-1,4,4);g.fillStyle=b.cor;g.fillRect(x,y,2,2);}
 }
+/* as caixas do HUD, dos botões e dos avisos: medir a cada quadro obrigava o navegador a refazer o layout (a bússola chegava
+   a custar 2 a 5 ms por quadro num celular fraco). Medidas guardadas, refeitas a cada 1/4 s ou quando algo muda. */
+const OBS_BUSSOLA={chave:'',t:0,caixas:[]};
+function obstaculosBussola(){
+  const ch=innerWidth+'x'+innerHeight+'|'+document.body.className+'|'+(atualizarHud.gk||'')+'|'+$('goal').className+'|'+TOASTS.on.map(t=>t.text+t.count).join('|')+'|'+(atualizarHud.nk||''),now=performance.now();
+  if(ch===OBS_BUSSOLA.chave&&now-OBS_BUSSOLA.t<250)return OBS_BUSSOLA.caixas.slice();
+  const cx=[];for(const id of['hl','hr','bUse','bVer','bLan']){const e=$(id);if(e&&e.offsetParent){const q=e.getBoundingClientRect();if(q.width&&q.height)cx.push(q);}}
+  for(const e of $('msgs').children){const q=e.getBoundingClientRect();if(q.width&&q.height)cx.push(q);}
+  OBS_BUSSOLA.chave=ch;OBS_BUSSOLA.t=now;OBS_BUSSOLA.caixas=cx;return cx.slice();
+}
+/* escreve no estilo só quando o valor muda (reescrever igual a cada quadro também custa ao navegador) */
+function estilo(e,k,v){const m=e._est||(e._est={});if(m[k]!==v){m[k]=v;e.style[k]=v;}}
 function atualizarBordaAlvo(){
   const el=$('bordaAlvo');if(!el)return;const b=alvoBussola();
   if(!b){el.hidden=true;return;}
@@ -588,8 +605,7 @@ function atualizarBordaAlvo(){
   if(b.al.x+R.ox>4&&b.al.x+R.ox<R.W-4&&b.al.y+R.oy>10&&b.al.y+R.oy<R.H-4){el.hidden=true;return;}
   const k=R.k/R.dpr,tx=(b.al.x+R.ox)*k,ty=(b.al.y+R.oy)*k,m=26,esq=m,dir=innerWidth-m,topo=m,baixo=innerHeight-m;
   /* o que a seta e o rótulo não podem cobrir: o HUD, os botões de toque e os avisos (passageiros, mas por cima) */
-  const obs=[];for(const id of['hl','hr','bUse','bVer','bLan']){const e=$(id);if(e&&e.offsetParent){const q=e.getBoundingClientRect();if(q.width&&q.height)obs.push(q);}}
-  for(const e of $('msgs').children){const q=e.getBoundingClientRect();if(q.width&&q.height)obs.push(q);}
+  const obs=obstaculosBussola();
   const cobre=(x0,y0,x1,y1)=>{let a=0;for(const q of obs)a+=Math.max(0,Math.min(x1,q.right)-Math.max(x0,q.left))*Math.max(0,Math.min(y1,q.bottom)-Math.max(y0,q.top));return a;};
   /* do explorador até o alvo: a seta vai onde a linha cruza a borda da tela; se ali há HUD ou botão, recua pela linha;
      se a linha toda está coberta, procura na borda o ponto livre mais próximo da direção certa (até ~50°; a seta gira para o alvo) */
@@ -602,9 +618,9 @@ function atualizarBordaAlvo(){
     for(let q=esq;q<=dir;q+=8){testa(q,topo);testa(q,baixo);}for(let q=topo;q<=baixo;q+=8){testa(esq,q);testa(dir,q);}}
   if(!ok){el.hidden=true;return;}
   const aa=Math.atan2(ty-y,tx-x);
-  el.hidden=false;el.style.setProperty('--c',b.cor);
+  el.hidden=false;if(el._c!==b.cor){el._c=b.cor;el.style.setProperty('--c',b.cor);}
   const seta=el.firstChild,txt=el.lastChild;
-  seta.style.left=Math.round(x)+'px';seta.style.top=Math.round(y)+'px';seta.style.transform='rotate('+aa.toFixed(2)+'rad)';
+  estilo(seta,'left',Math.round(x)+'px');estilo(seta,'top',Math.round(y)+'px');estilo(seta,'transform','rotate('+aa.toFixed(2)+'rad)');
   const nome=b.al.txt||'Objetivo',dist='≈ '+Math.max(1,Math.round(b.d/TILE))+' m';
   if(txt.firstChild.textContent!==nome){txt.firstChild.textContent=nome;txt._w=0;}
   if(txt.lastChild.textContent!==dist)txt.lastChild.textContent=dist;
@@ -618,7 +634,7 @@ function atualizarBordaAlvo(){
   for(const q of cand){const cx=clamp(q[0],w+8,innerWidth-w-8),cy=clamp(q[1],h+8,innerHeight-h-8);
     const v=cobre(cx-w,cy-h,cx+w,cy+h)+4*Math.max(0,Math.min(cx+w,heroi.right)-Math.max(cx-w,heroi.left))*Math.max(0,Math.min(cy+h,heroi.bottom)-Math.max(cy-h,heroi.top));
     if(v<pior){pior=v;lx=cx;ly=cy;if(!v)break;}}
-  txt.hidden=pior>0;txt.style.left=Math.round(lx)+'px';txt.style.top=Math.round(ly)+'px';
+  txt.hidden=pior>0;estilo(txt,'left',Math.round(lx)+'px');estilo(txt,'top',Math.round(ly)+'px');
   el.dataset.ang=aa.toFixed(3);
 }
 

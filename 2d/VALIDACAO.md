@@ -169,6 +169,37 @@ para o alvo); sem espaço, espera. O rótulo escolhe um lado livre e não cobre 
 Limites: Chromium sem janela com aparelhos simulados; a leitura do anel com o explorador andando e a seta em tela real
 (brilho, dedo por cima) precisam de celular físico.
 
+### O — Desempenho: travamentos e lentidão
+Medido no Chromium sem janela (sem placa de vídeo), em 360 × 640 com densidade 3 e 1920 × 1080, com a CPU normal e
+desacelerada 4× e 6× (celular intermediário e básico). Quadros por segundo, antes → depois:
+| Cenário | CPU normal | CPU 4× | CPU 6× |
+|---|---|---|---|
+| Vale de dia | 60 → 60 | 26 → 46 | 16 → 26 |
+| Vale à noite | 60 → 60 | 20 → 35 | 14 → 25 |
+| Engrenagens, Motores, Reator | 58 → 60 | 14–16 → 33–35 | 9–11 → 21–24 |
+| Viva (névoa de esporos) | 40 → 60 | 7 → 32 | 6 → 19 |
+| Câmara Final, golpes | 60 → 60 | 17 → 37 | 10 → 25 |
+| Guia aberto | 60 → 60 | 18 → 60 | 10 → 58 |
+No computador (1920 × 1080), a Viva ia a 34 quadros por segundo; agora todas as áreas ficam em 60. Maior quadro andando no
+vale com a CPU 4×: 250 ms → 34 ms.
+- **Névoa da Viva:** era desenhada com cerca de 20 mil quadradinhos por quadro; agora é um retângulo com padrão. Mesma imagem.
+- **Luz das áreas escuras:** cada luz era desenhada linha a linha a cada quadro; agora cada raio e força é desenhado uma vez e
+  reaproveitado. Mesma transparência (diferença de arredondamento ≤ 1 em 255; o raio das luzes que tremulam vai em ¼ de pixel).
+- **Guia, diário e pausa:** o mundo por baixo não é mais redesenhado 60 vezes por segundo (uma vez ao abrir e uma por segundo).
+- **Bússola:** as medidas do HUD, dos botões e dos avisos são guardadas e refeitas a cada ¼ s ou quando algo muda; o estilo só
+  é reescrito quando o valor muda.
+- **Chão do vale:** os pedaços em volta da tela são montados antes, um por quadro, em vez de dois ou três de uma vez.
+- **Música:** depois de uma travada longa, a trilha segue do agora em vez de tocar de uma vez as notas atrasadas.
+Sem vazamento: em 12 ciclos de vale, tumbas, painel, Guia e diário, a memória do JavaScript ficou entre 4 e 5 MB, os nós da
+página em ~1.200 e os ouvintes estáveis. O interpretador recusa ou limita programas enormes (5 mil linhas, 200 mil caracteres,
+laço sem fim) em até 0,1 s. Comparação pixel a pixel antes/depois em 11 cenas: só diferenças de arredondamento. Teste novo:
+`b21-desempenho` (9 verificações).
+
+Continua como estava: a primeira abertura do painel (75 ms com a CPU normal; 8 ms nas seguintes) e a primeira entrada em
+cada área (35 a 122 ms), que acontece durante o escurecimento da transição. Em monitores muito densos (2560 × 1440 com zoom
+2×), a tela do jogo tem 5120 × 2880 pixels. Limites: sem celular físico nem placa de vídeo; os números absolutos mudam no
+aparelho real.
+
 ## 1. O documento, item por item
 
 ### P1 — Relação entre o jogo e o Python
@@ -277,4 +308,4 @@ Anote o aparelho, o navegador e o que falhou (com captura de tela).
 `2d/test/rodar.sh` (Node + Chromium sem janela): l1-linguagem, l2-save, b1-percurso, b2-painel, b3-save, b4-telas,
 b5-perigos, b6-personagem, b7-ajuda, b8-leitura, b9-validacoes, b10-recompensa, b11-terminal, b12-vale-som, b13-tela,
 b14-mvp, b15-plano, l3-relatorio, b16-melhorias, b17-exploracao, b18-camara, b19-boss-polimento e, nesta atualização,
-b20-bussola: **1000 verificações, todas passando**. O README lista o que cada um confere.
+b20-bussola e b21-desempenho: **1009 verificações, todas passando**. O README lista o que cada um confere.
