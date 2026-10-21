@@ -11,7 +11,7 @@ function renderInit(){
   if(window.visualViewport)visualViewport.addEventListener('resize',redimensionar);
   redimensionar();
 }
-/* câmera afastada (padrão, guardada nas preferências; VER / C alterna): um degrau a menos de ampliação mostra mais do
+/* câmera afastada (padrão, guardada nas preferências; a tecla C alterna): um degrau a menos de ampliação mostra mais do
    lugar, ainda com pixels inteiros. Só vale quando cada pixel do jogo continua com pelo menos 1,1 pixel da tela (texto e
    personagem legíveis). Com o painel aberto volta ao normal: a faixa da sala mostra o mecanismo com detalhe. */
 function kDe(dw,dh,longe){return Math.max(1,Math.round(Math.min(dw,dh)/250)-(longe?1:0));}
@@ -39,7 +39,7 @@ function camSeguir(alvoX,alvoY,dt,A,imediato){
   /* áreas com um chefe grande puxam a câmera para cima enquanto o jogador anda (A.camDy), para ele caber no quadro */
   if(A&&A.camDy&&G.mode==='play')alvoY+=A.camDy();
   /* centro desejado do alvo na parte visível da tela */
-  /* no toque, os botões VER, LUZ e AÇÃO ocupam a faixa de baixo: o centro fica entre o HUD e essa faixa */
+  /* no toque, os botões LUZ e AÇÃO ocupam a faixa de baixo: o centro fica entre o HUD e essa faixa */
   const base=R.vista||!document.body.classList.contains('touch')?0:Math.round(104*R.dpr/R.k);
   const hudC=R.vista?0:(R.hudTopo||0)*0.5-base*0.5;
   let cx=alvoX-(v.x+v.w/2),cy=alvoY-(v.y+v.h/2)-hudC;

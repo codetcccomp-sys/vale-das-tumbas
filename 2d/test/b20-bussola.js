@@ -15,7 +15,7 @@ const TELAS=[{n:'360×640 toque',v:{width:360,height:640},dpr:2,touch:true},{n:'
     const ler=(d)=>ev(d=>{
       const go=objetivo();if(d)__vt.ir(go.alvo.x+d[0],go.alvo.y+d[1],'baixo');__vt.quadros(3);
       const e=document.getElementById('bordaAlvo'),k=R.k/R.dpr,s=e.firstChild.getBoundingClientRect(),l=e.lastChild.getBoundingClientRect();
-      const caixas=[];for(const id of['hl','hr','bUse','bVer','bLan']){const x=document.getElementById(id);if(x&&x.offsetParent){const q=x.getBoundingClientRect();if(q.width&&q.height)caixas.push([id,q]);}}
+      const caixas=[];for(const id of['hl','hr','bUse','bLan']){const x=document.getElementById(id);if(x&&x.offsetParent){const q=x.getBoundingClientRect();if(q.width&&q.height)caixas.push([id,q]);}}
       for(const x of document.getElementById('msgs').children){const q=x.getBoundingClientRect();if(q.width)caixas.push(['aviso',q]);}
       const cruza=(a)=>caixas.filter(([,q])=>!(a.right<=q.left||a.left>=q.right||a.bottom<=q.top||a.top>=q.bottom)).map(c=>c[0]);
       const dentro=a=>a.left>=0&&a.top>=0&&a.right<=innerWidth&&a.bottom<=innerHeight;

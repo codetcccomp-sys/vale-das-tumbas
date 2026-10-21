@@ -51,7 +51,6 @@ const TREINO={marca:{x:12.5*16+8,y:12*16+8},term:{tx:8,ty:4},tocha:{tx:10,ty:2},
 const PASSOS_TREINO=[
   {id:'mover',nome:'Movimentação',txt:()=>IN.mode==='touch'?'Arraste no lado esquerdo da tela e ande até a marca brilhante.':'Ande até a marca brilhante (WASD ou setas).'},
   {id:'falar',nome:'Conversa',txt:()=>'Converse com o Lume: chegue perto e aperte '+(IN.mode==='touch'?'AÇÃO':IN.mode==='pad'?'A':'E')+'.'},
-  {id:'camera',nome:'Câmera',txt:()=>'Experimente a câmera: '+(IN.mode==='touch'?'VER':'C')+' aproxima e afasta. Escolha a que preferir; o jogo lembra.'},
   {id:'coletar',nome:'Coleta',txt:()=>'Pegue a manivela de latão perto da barraca.'},
   {id:'interagir',nome:'Interação',txt:()=>'Encaixe a manivela no terminal de pedra.'},
   {id:'guia',nome:'Guia',txt:()=>'Abra o Guia de Programação: '+(IN.mode==='touch'?'botão Guia, no alto.':'aperte G (ou o botão Guia).')+' Depois feche.'},
@@ -63,7 +62,7 @@ CONSTRUIR.treino=function(){
   const A=novaArea('treino',MAPA_TREINO[0].length,MAPA_TREINO.length,'vale');A.fundo='#6e5034';A.gastaLanterna=false;A.mostraJogador=true;
   carregarMapa(A,MAPA_TREINO,{P:'penhasco','.':'areia',T:'trilha',g:'grama'});
   A.spawn={x:12.5*16+8,y:16*16+8,dir:'cima'};A.escuro=0;
-  const T={viu:false,editor:false};A.treino=T;
+  const T={editor:false};A.treino=T;
   const por=(tx,ty,img,o)=>objeto(A,img,tx*16,ty*16,o);
   /* cenário: barraca, ruínas, pedras, vegetação e colunas */
   por(5,8,SPR.get('tenda','#d7c39a'),{col:[-16,-10,16,0]});por(3.5,9.5,SPR.get('caixaLote'),{col:[-6,-4,6,0]});por(4.6,10.9,SPR.get('fogueira',0),{col:[-6,-4,6,1]}).frames=[0,1,2].map(f=>SPR.get('fogueira',f));
@@ -84,19 +83,19 @@ CONSTRUIR.treino=function(){
   /* terminal de pedra: primeiro recebe a manivela, depois abre o editor */
   const tm=TREINO.term,foco={x:11*16,y:4*16};A.focoPainel=foco;
   const to=objeto(A,SPR.get('terminalTreino',false,0),tm.tx*16+8,tm.ty*16+14,{col:[-10,-6,10,0]});
-  to.desenho=(g,ob,t)=>blit(g,SPR.get('terminalTreino',G.treino.passo>4,Math.floor(t*2)%2),ob.x,ob.y,13,40);
+  to.desenho=(g,ob,t)=>blit(g,SPR.get('terminalTreino',G.treino.passo>3,Math.floor(t*2)%2),ob.x,ob.y,13,40);
   A.term={x:tm.tx*16+8,y:tm.ty*16-34,txt:'Terminal'};
-  interacao(A,{x:tm.tx*16+8,y:tm.ty*16+24,r:22,alto:44,nome:'Terminal de pedra',label:()=>{const p=G.treino.passo;if(p<=4)return G.treino.manivela?'Encaixar a manivela no terminal':'Terminal de pedra (falta a manivela)';if(p<6&&!G.guia)return'Terminal: abra o Guia antes';return'Usar o terminal (editor de programação)';},
+  interacao(A,{x:tm.tx*16+8,y:tm.ty*16+24,r:22,alto:44,nome:'Terminal de pedra',label:()=>{const p=G.treino.passo;if(p<=3)return G.treino.manivela?'Encaixar a manivela no terminal':'Terminal de pedra (falta a manivela)';if(p<5&&!G.guia)return'Terminal: abra o Guia antes';return'Usar o terminal (editor de programação)';},
     use:()=>{const p=G.treino.passo;
-      if(p<=4){if(!G.treino.manivela){SFX.deny();toast('O terminal tem um encaixe vazio. A manivela está perto da barraca.');return;}G.treino.passo=Math.max(G.treino.passo,5);SFX.lever();faiscas(tm.tx*16+16,tm.ty*16+4,8);toast('A manivela encaixou e o terminal acordou.','good');avancarTreino();salvar(false);return;}
-      if(p<6&&!G.guia){SFX.deny();toast('Antes de programar, abra o Guia de Programação: '+(IN.mode==='touch'?'botão Guia, no alto.':'aperte G.'));return;}
+      if(p<=3){if(!G.treino.manivela){SFX.deny();toast('O terminal tem um encaixe vazio. A manivela está perto da barraca.');return;}G.treino.passo=Math.max(G.treino.passo,4);SFX.lever();faiscas(tm.tx*16+16,tm.ty*16+4,8);toast('A manivela encaixou e o terminal acordou.','good');avancarTreino();salvar(false);return;}
+      if(p<5&&!G.guia){SFX.deny();toast('Antes de programar, abra o Guia de Programação: '+(IN.mode==='touch'?'botão Guia, no alto.':'aperte G.'));return;}
       abrirPainel('treino',A,foco);}});
   /* tocha do portão: acende com o código (durante a execução, mostra o estado do programa) */
   const tc=TREINO.tocha;const toc=objeto(A,SPR.get('tocha',false,0),tc.tx*16+8,tc.ty*16+14,{col:[-4,-3,4,0]});
   const tochaAcesa=()=>{const vis=PAINEL.aberto&&PAINEL.area===A?painelVis():null;return vis&&vis.cfg.mundo==='tochas'?vis.ws.acesas>0:!!G.learn.t1;};
   toc.desenho=(g,ob,t)=>blit(g,SPR.get('tocha',tochaAcesa(),Math.floor(t*8)%3),ob.x,ob.y,6,30);
   A.luzes=t=>{if(tochaAcesa())luz(tc.tx*16+8,tc.ty*16-12,40+Math.sin(t*9)*2,1,'#ff9a3a');
-    luz(tm.tx*16+8,tm.ty*16-22,14+Math.sin(t*4)*3,0.9,G.treino.passo>4?'#7eff8a':'#ffd24a');};
+    luz(tm.tx*16+8,tm.ty*16-22,14+Math.sin(t*4)*3,0.9,G.treino.passo>3?'#7eff8a':'#ffd24a');};
   /* portão de madeira com trava: abre com o desafio da ordem (t2); durante a execução, mostra o que o código faz.
      Numa visita depois do treino, já está aberto. */
   const visPatio=()=>{const v=PAINEL.aberto&&PAINEL.area===A?painelVis():null;return v&&v.cfg.mundo==='patio'?v.ws:null;};
@@ -114,22 +113,21 @@ CONSTRUIR.treino=function(){
   A.desenharChao=(g,t)=>{if(G.treino.passo>0)return;const x=Math.round(TREINO.marca.x+R.ox),y=Math.round(TREINO.marca.y+R.oy),k=Math.floor(t*4)%2;
     g.globalAlpha=0.55+0.25*Math.sin(t*4);P.anel(g,x,y,8+k,2,'#ffd24a');P.anel(g,x,y,4,1,'#fff6c0');g.globalAlpha=1;};
   A.focoEvento=ev=>ev.cmd==='tocha'?{x:tc.tx*16+8,y:tc.ty*16-18}:ev.cmd==='destravar'||ev.cmd==='erguer'?{x:13*16,y:1*16-6}:null;
-  A.aoVista=()=>{if(!T.viu){T.viu=true;avancarTreino();}};
   A.aoGuia=()=>avancarTreino();
   A.aoAbrirPainel=()=>{T.editor=true;avancarTreino();};
   A.aoConcluir=cfg=>{avancarTreino();R.treme=0.4;setTimeout(()=>toast(cfg.id==='t1'?'A tocha acendeu! Agora o portão: no painel, toque na etapa 2.':'O portão do pátio se abriu! Atravesse-o para chegar ao vale.','good'),600);};
   A.objetivo=()=>{const p=G.treino.passo;if(p>=PASSOS_TREINO.length)return{t:'Treino concluído',s:saida()?'Atravesse o portão, ao norte, para chegar ao vale.':'Volte ao terminal e abra o portão (etapa 2).',alvo:saida()?{x:13*16,y:1*16-6,txt:'Saída para o vale'}:Object.assign({},A.term,{txt:'Programe aqui'})};
     const tm2=t=>Object.assign({},A.term,{txt:t});
-    const alvo=[{x:TREINO.marca.x,y:TREINO.marca.y-14,txt:'Ande até aqui'},{x:TREINO.lume.tx*16+8,y:TREINO.lume.ty*16-22,txt:'Lume'},null,
+    const alvo=[{x:TREINO.marca.x,y:TREINO.marca.y-14,txt:'Ande até aqui'},{x:TREINO.lume.tx*16+8,y:TREINO.lume.ty*16-22,txt:'Lume'},
       G.treino.manivela?null:{x:TREINO.manivela.x,y:TREINO.manivela.y-14,txt:'Manivela'},tm2('Encaixe a manivela'),null,tm2('Abra o editor'),tm2('Programe aqui'),tm2('Programe aqui')][p];
     return{t:'Treino '+(p+1)+' de '+PASSOS_TREINO.length+' · '+PASSOS_TREINO[p].nome,s:PASSOS_TREINO[p].txt(),alvo};};
-  A.reiniciar=()=>{T.viu=false;T.editor=false;};
+  A.reiniciar=()=>{T.editor=false;};
   return A;
 };
 /* avança o treino enquanto o passo da vez já estiver feito (dá para fazer algo antes da hora) */
 function avancarTreino(){
   const A=AREAS.treino;if(!A||G.area!==A)return;const T=A.treino;
-  const feito=[()=>Math.hypot(G.p.x-TREINO.marca.x,G.p.y-TREINO.marca.y)<14,()=>!!G.lumeFalou,()=>T.viu,()=>G.treino.manivela,()=>G.treino.passo>4,()=>G.guia,()=>T.editor,()=>!!G.learn.t1,()=>!!G.learn.t2];
+  const feito=[()=>Math.hypot(G.p.x-TREINO.marca.x,G.p.y-TREINO.marca.y)<14,()=>!!G.lumeFalou,()=>G.treino.manivela,()=>G.treino.passo>3,()=>G.guia,()=>T.editor,()=>!!G.learn.t1,()=>!!G.learn.t2];
   let mudou=false;
   while(G.treino.passo<PASSOS_TREINO.length&&feito[G.treino.passo]()){const P0=PASSOS_TREINO[G.treino.passo];G.treino.passo++;mudou=true;toast('✔ '+P0.nome,'good');}
   if(mudou){SFX.sensor();salvar(false);}

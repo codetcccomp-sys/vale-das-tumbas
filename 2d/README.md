@@ -16,7 +16,8 @@ foram atendidas, e traz os roteiros de teste em celular real e com estudantes in
   gancho de teste; `build/teste/vale-das-tumbas-2d.html` é a dos **testes automáticos**, com o gancho `#vt` que lê o estado e
   teletransporta o explorador. O próprio `build.sh` falha se o gancho aparecer na versão pública.
 - **Controles:** no celular, joystick à esquerda (empurrado até o fim, corre) e o botão AÇÃO à direita; LUZ acende e apaga a
-  lanterna nas tumbas, VER aproxima ou afasta a câmera e **Guia**, no alto, abre o Guia de Programação. No teclado, WASD ou
+  lanterna nas tumbas e **Guia**, no alto, abre o Guia de Programação (no toque não há botão de câmera: ela fica afastada,
+  o máximo que a tela mostra com tudo legível). No teclado, WASD ou
   setas, Shift corre, E / Espaço / Enter interage, C aproxima ou afasta a câmera, G Guia, T lanterna, J diário, Esc pausa.
   Controle de videogame: analógico anda, A interage, Y lanterna, X diário, Select Guia, Start pausa.
 - O jogo salva sozinho no navegador. A câmera começa **afastada** (mostra mais do lugar) sempre que a tela comporta com pixels
@@ -33,7 +34,7 @@ mostra a história de novo.
 
 ## Começo: o Pátio de Treino
 Um jogo novo começa num pátio curto, antes da primeira tumba, que ensina jogando (sem blocos de texto): o objetivo no alto
-mostra um passo por vez (9 passos) — andar até a marca brilhante, conversar com o Lume, experimentar a câmera, pegar a manivela,
+mostra um passo por vez (8 passos) — andar até a marca brilhante, conversar com o Lume, pegar a manivela,
 encaixá-la no terminal, abrir o Guia, abrir o editor, executar o primeiro comando, `acender_tocha()`, e por fim **a ordem
 importa**: o programa do portão já vem escrito na ordem errada (`erguer_portao()` antes de `destravar_portao()`); o jogador
 faz uma **previsão**, executa, vê o portão travado, lê a explicação e corrige a ordem. A tocha acende, o cadeado abre e o
@@ -90,7 +91,7 @@ ao pátio a qualquer momento (numa visita depois do treino, o portão já está 
   desenhos dos construtores que só aparecem com a luz bem perto da parede (duas por tumba, opcionais), que contam como eles
   pensavam o saber da tumba e ficam no diário. As salas ficaram mais claras e a borda das luzes é suave, para não esconder
   o que precisa ser lido; com o painel aberto, a sala clareia mais.
-- **Avisos e HUD sem poluir a tela** — o aviso de uma interação nova (AÇÃO, VER, LUZ) substitui o da anterior; repetir a mesma
+- **Avisos e HUD sem poluir a tela** — o aviso de uma interação nova (AÇÃO, LUZ, câmera) substitui o da anterior; repetir a mesma
   conta ×2. No celular, no máximo dois avisos, compactos, logo abaixo do HUD. O que o explorador leva na mão (a cápsula do
   pátio dos Motores) fica no HUD. O objetivo pisca só quando muda; no celular, depois de 9 s encolhe para o título e uma
   linha, e um toque abre de novo.
@@ -103,7 +104,7 @@ ao pátio a qualquer momento (numa visita depois do treino, o portão já está 
   seta some. Nada é desenhado embaixo do explorador.
 - **Rótulos do cenário legíveis** — quando a letra de pixel (5 px) ficaria com menos de 9 px na tela (celular com a câmera
   afastada), os rótulos do mundo ("aceita str · pede ABRIR", valores das cápsulas, sensores) saem em dobro, empilhados sem
-  se cobrir. No toque, a câmera reserva a faixa dos botões VER, LUZ e AÇÃO, então o explorador não fica atrás deles.
+  se cobrir. No toque, a câmera reserva a faixa dos botões LUZ e AÇÃO, então o explorador não fica atrás deles.
 - **Você quis dizer…?** — num nome errado (`acender_toxa()`, `quantidad`, `Energia`), o erro sugere o nome da sala mais
   parecido.
 - **Alvo da etapa e nome dos objetos** — o próximo objeto a usar tem um marcador com símbolo, texto curto e cor (◆ Programe
@@ -304,7 +305,7 @@ código; o cenário estático fica em cache no chão em pedaços, e um quadro do
 ### Pixels nítidos
 O mundo é desenhado num canvas pequeno (cerca de 250 pixels de jogo no lado menor da tela; com a câmera afastada, um degrau
 a menos de ampliação) e ampliado por um fator **inteiro** para o canvas do tamanho real da tela, sem suavização. A câmera
-afastada só vale quando cada pixel do jogo ainda tem pelo menos 1,1 pixel da tela; senão, VER avisa que a tela já mostra o
+afastada só vale quando cada pixel do jogo ainda tem pelo menos 1,1 pixel da tela; senão, a tecla C avisa que a tela já mostra o
 máximo legível. A câmera anda em subpixels, mas o desenho usa a posição arredondada:
 nada treme nem deforma. Tiles de 16×16, personagem em células de 40×46 (cerca de 32 px de altura, a bengala com 37 px),
 contorno escuro de 1 px em tudo.
@@ -363,7 +364,7 @@ Precisam de `node` e do pacote `playwright` com o Chromium: `npm install` e `npx
 | `b1-percurso.js` | navegador | o jogo inteiro como um jogador: treino (andar, Lume, câmera, manivela, Guia, editor, primeiro comando, previsão e correção da ordem do portão), tumbas fora de ordem seladas, cada tumba com seus perigos (nos Motores, o pátio de abastecimento com as cápsulas de valor) e todas as 26 etapas — montadas por toques, escritas no modo Escrever e corrigidas a partir da área de erro —, a bomba dos Motores, a demonstração da Viva, máquinas e tochas reagindo ao código, **recarregar a página depois de cada tumba** (etapas, relíquias e programas voltam), o diário com o programa do jogador, Cidade-Jardim, final, recarregar e continuar |
 | `b2-painel.js` | navegador | Executar e Passo a passo dão os mesmos passos, mundo e variáveis (inclusive com erro); uma execução por vez; Parar; Reiniciar; Limpar com confirmação; dicas do Lume em três níveis e recapitulação; Guia aberto do painel e de volta; limite de linhas; while sem parada explicado; exploração pausada; fechar no meio |
 | `b3-save.js` | navegador | migração real a partir do save 3D no `localStorage`, save 3D intacto, relíquia que desperta, save dentro de tumba, save 2D estragado, posição dentro de obstáculo, save ilegível |
-| `b4-telas.js` | navegador | 10 tamanhos de tela (em pé, deitado, tablet, computador): escala inteira (com a câmera afastada quando cabe), HUD (com Guia) e avisos sem sobreposição, botão VER livre, botões grandes, textos legíveis, painel inteiro alcançável, editor amplo com o mecanismo na faixa da sala, Ver a sala com a sala maior, área de erro inteira acima dos botões fixos |
+| `b4-telas.js` | navegador | 10 tamanhos de tela (em pé, deitado, tablet, computador): escala inteira (com a câmera afastada quando cabe), HUD (com Guia) e avisos sem sobreposição, sem botão VER, botões grandes, textos legíveis, painel inteiro alcançável, editor amplo com o mecanismo na faixa da sala, Ver a sala com a sala maior, área de erro inteira acima dos botões fixos |
 | `b5-perigos.js` | navegador | pistões, placas com e sem olho, Autômato, pátio dos Motores (bomba sem energia, "2.5" e "abrir" recusados com explicação, guarda-corpo e ponte que trava, travessia com a ponte baixada), canal, radiação, bomba, canção errada, derrota, oásis, inscrições, segredos e mapa |
 | `b8-leitura.js` | navegador | alvo da etapa com símbolo e texto, nome do objeto ao alcance, obstáculo e explorador encobertos em contorno, terminal com silhueta própria, caminho livre da manivela ao terminal, pontos do treino alcançáveis a pé, todas as caixas de colisão dentro do desenho (todas as áreas) |
 | `b10-recompensa.js` | navegador | a relíquia de cada uma das 4 tumbas não sai antes das etapas, encostando no portão (27 posições) com teclado, toque e controle; a regra central recusa; depois das etapas, coleta uma vez, sem repetir o diário, e continua salva depois de recarregar |

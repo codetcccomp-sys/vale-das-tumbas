@@ -66,7 +66,7 @@ body:not(.intomb) #lantern,body.semLanterna #lantern{display:none}
 #prompt kbd{font:800 13px var(--mono);background:var(--brass);color:#24160d;padding:1px 6px;margin-right:6px}
 body.touch #prompt{left:auto;right:calc(var(--sr) + 4px);transform:none;bottom:calc(var(--sb) + 112px);max-width:min(64vw,300px);white-space:normal;text-align:right}
 body.touch #prompt kbd{display:none}
-/* nas tumbas o botão VER fica acima do LUZ: o texto da ação sobe para não ficar por baixo dele */
+/* nas tumbas o texto da ação fica um pouco mais alto, acima do botão LUZ */
 @media (min-height:521px){body.touch.intomb #prompt{bottom:calc(var(--sb) + 140px)}}
 @media (max-height:520px){body.touch #prompt{bottom:calc(var(--sb) + 10px);right:calc(var(--sr) + 172px);max-width:min(38vw,260px)}}
 /* alvo da etapa (símbolo, texto curto e cor) e nome do objeto ao alcance */
@@ -314,8 +314,6 @@ pre.gcod{margin:0;padding:10px;background:#0f0a07;color:#f0e4c4;font:700 15px/1.
 .dTopo{display:flex;align-items:center;gap:8px}.dTopo canvas{width:48px;height:48px;background:#24160d;border:2px solid #0b0705}.dTopo b{font:800 17px var(--f);color:var(--gold)}
 #dTexto{margin:0;font:600 16px/1.5 var(--f);color:#fff2cc;user-select:text;-webkit-user-select:text}
 #dOpcoes{display:flex;flex-direction:column;gap:5px}#dOpcoes .btn{text-align:left;min-height:44px}
-#bVer{right:calc(var(--sr) + 100px);bottom:calc(var(--sb) + 78px);width:62px;height:52px}
-body:not(.intomb) #bVer{bottom:calc(var(--sb) + 8px)}
 #fade{position:absolute;inset:0;z-index:7;background:#000;opacity:0;pointer-events:none;transition:opacity .35s}
 #fade.on{opacity:1}
 #fim{background:rgba(6,14,8,.94)}#fim p{text-align:center;font-family:Georgia,serif;font-size:17px}
@@ -344,7 +342,6 @@ body.modal #toqueUi{display:none}
     <div id="joy" hidden><i></i></div>
     <button class="tbtn" id="bUse" data-acao="usar" aria-label="Interagir">AÇÃO</button>
     <button class="tbtn" id="bLan" data-acao="lanterna" aria-label="Lanterna">LUZ</button>
-    <button class="tbtn" id="bVer" data-acao="vista" aria-label="Aproximar ou afastar a câmera">VER</button>
     <div id="zoneHint" hidden>Toque e arraste deste lado para andar. Use o botão AÇÃO para interagir.</div>
   </div>
 

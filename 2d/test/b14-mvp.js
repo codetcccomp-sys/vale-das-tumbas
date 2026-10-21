@@ -21,7 +21,7 @@ const cruza=(a,b)=>a&&b&&a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a
   r=await ev(()=>({modo:__vt.G.mode,area:__vt.G.area.id,vis:!document.getElementById('historia').hidden}));
   t.ok(r.modo==='play'&&r.area==='treino'&&!r.vis,'Começar fecha a história e começa o treino',r);
   /* ---------- "Você quis dizer…?" ---------- */
-  await ev(()=>{__vt.G.treino.manivela=true;__vt.G.treino.passo=5;__vt.painel('treino');document.getElementById('pModo').click();});
+  await ev(()=>{__vt.G.treino.manivela=true;__vt.G.treino.passo=4;__vt.painel('treino');document.getElementById('pModo').click();});
   await page.fill('#pTxt','acender_toxa()');await ev(()=>document.getElementById('pModo').click());await page.waitForTimeout(150);
   r=await ev(()=>{const R=id=>document.getElementById(id).getBoundingClientRect();return{tit:document.querySelector('#pErro .tit').textContent,txt:R('pTxt'),pal:R('pPaleta'),rod:R('pRodape'),erro:R('pErro'),painel:R('painel')};});
   t.ok(/Você quis dizer acender_tocha\(\)\?/.test(r.tit),'nome errado: o erro sugere o nome certo ("Você quis dizer acender_tocha()?")',r.tit);
@@ -57,9 +57,9 @@ const cruza=(a,b)=>a&&b&&a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a
   try{
   await ev(()=>document.getElementById('btnNew').click());await page.waitForTimeout(200);
   let r=await ev(()=>{const cruza=(a,b)=>a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a.bottom;const o=[];for(const k of['steam','diesel','atom','bio','final']){__vt.entrar(k);__vt.quadros(30);const s=__vt.R.k/__vt.R.dpr,p=__vt.G.p,x=(p.x+__vt.R.ox)*s,y=(p.y+__vt.R.oy)*s,h={left:x-10,right:x+10,top:y-40,bottom:y};
-    o.push({k,cobre:['bVer','bLan','bUse'].some(id=>cruza(h,document.getElementById(id).getBoundingClientRect()))});}return o;});
-  t.ok(r.every(x=>!x.cobre),'celular pequeno: na entrada das cinco áreas o explorador fica fora dos botões VER, LUZ e AÇÃO',r);
-  await ev(()=>{__vt.entrar('treino');__vt.G.treino.manivela=true;__vt.G.treino.passo=5;__vt.painel('treino');document.getElementById('pModo').click();});
+    o.push({k,cobre:['bLan','bUse'].some(id=>cruza(h,document.getElementById(id).getBoundingClientRect()))});}return o;});
+  t.ok(r.every(x=>!x.cobre),'celular pequeno: na entrada das cinco áreas o explorador fica fora dos botões LUZ e AÇÃO',r);
+  await ev(()=>{__vt.entrar('treino');__vt.G.treino.manivela=true;__vt.G.treino.passo=4;__vt.painel('treino');document.getElementById('pModo').click();});
   await page.fill('#pTxt','acender_toxa()');await ev(()=>document.getElementById('pModo').click());await page.waitForTimeout(150);
   r=await ev(()=>{const R=id=>document.getElementById(id).getBoundingClientRect();return{txt:R('pTxt'),rod:R('pRodape'),p:R('painel')};});
   t.ok(r.txt.height>=80&&r.txt.bottom<=r.rod.top+1&&r.txt.top>=r.p.top,'celular pequeno: com o erro aberto, o código fica à vista acima da paleta',r);
@@ -72,7 +72,7 @@ const cruza=(a,b)=>a&&b&&a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a
   let r=await ev(()=>{__vt.G.learn={t1:1,t2:1,s0:1,s1:1,s3:1,s2:1,d0:1};__vt.entrar('diesel');__vt.painel('diesel');escolherDesafio(__vt.DESAFIO.d1);
     const R=id=>document.getElementById(id).getBoundingClientRect(),P=document.getElementById('painel');return{info:R('pInfo'),prog:R('pProg'),rod:R('pRodape'),rola:P.scrollHeight>P.clientHeight+2};});
   t.ok(r.info.right<=r.prog.left&&r.prog.height>=80&&r.prog.bottom<=r.rod.top+1&&!r.rola,'deitado: o desafio fica à esquerda e o programa à direita, com 4 linhas ou mais à vista, sem rolar o painel',r);
-  await ev(()=>{fecharPainel();__vt.entrar('treino');__vt.G.treino.manivela=true;__vt.G.treino.passo=5;__vt.painel('treino');document.getElementById('pModo').click();});
+  await ev(()=>{fecharPainel();__vt.entrar('treino');__vt.G.treino.manivela=true;__vt.G.treino.passo=4;__vt.painel('treino');document.getElementById('pModo').click();});
   await page.fill('#pTxt','acender_toxa()');await ev(()=>document.getElementById('pModo').click());await page.waitForTimeout(150);
   r=await ev(()=>{const R=id=>document.getElementById(id).getBoundingClientRect();return{txt:R('pTxt'),erro:R('pErro'),c:R('pCorpo'),i:R('pInfo')};});
   t.ok(r.txt.height>=60&&r.txt.top>=r.c.top-1&&r.txt.bottom<=r.c.bottom+1&&r.erro.top>=r.i.top-1&&r.erro.bottom<=r.i.bottom+1,'deitado, Escrever com erro: o erro à esquerda e o código à direita, ambos à vista',r);

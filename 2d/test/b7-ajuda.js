@@ -27,7 +27,7 @@ const t=suite('b7-ajuda');
   t.ok(!s.guia&&s.ini,'fechar o Guia volta à tela inicial',s);
   /* ---------- treino: objetivo em passos e pular ---------- */
   await ev(()=>document.getElementById('btnNew').click());await page.waitForTimeout(150);
-  let e=await U.estado();const obj=await ev(()=>objetivo());t.ok(e.area==='treino'&&/Treino 1 de 9/.test(obj.t)&&obj.alvo&&obj.alvo.txt,'o treino mostra o passo da vez no objetivo',obj);
+  let e=await U.estado();const obj=await ev(()=>objetivo());t.ok(e.area==='treino'&&/Treino 1 de 8/.test(obj.t)&&obj.alvo&&obj.alvo.txt,'o treino mostra o passo da vez no objetivo',obj);
   await ev(()=>__vt.usarEm(TREINO.lume.tx*16+8,TREINO.lume.ty*16+20,'cima'));await U.opcao('Já sei jogar');await U.confirmar();await U.transicao();
   e=await U.estado();let tr=await ev(()=>__vt.G.treino);t.ok(e.area==='vale'&&tr.feito&&!e.learn.t1,'"Já sei jogar" pula o treino e leva ao vale',[e.area,tr]);
   /* ---------- Guia pela tecla G e vista ampla pela tecla C ---------- */

@@ -15,7 +15,7 @@ function saberesCount(){return RELIC_KEYS.filter(saberOk).length;}
 function relicEstado(k){return!G.relics[k]?0:saberOk(k)?2:1;}
 
 /* ====================== avisos (mesmo sistema do 3D: sem repetição, com prioridade e tempo de leitura) ====================== */
-/* acao: número da ação do jogador (AÇÃO, VER, LUZ) que gerou o aviso; o aviso de uma ação nova tira os das anteriores */
+/* acao: número da ação do jogador (AÇÃO, LUZ, câmera) que gerou o aviso; o aviso de uma ação nova tira os das anteriores */
 const TOASTS={on:[],queue:[],last:new Map(),acao:0,naAcao:false};
 function toastMs(text,kind){if(kind==='dano')return 1900;if(kind==='curto')return 3200;return Math.min(9500,Math.max(kind==='warn'?5200:4300,text.length*62));}
 const telaCompacta=()=>innerWidth<=620||innerHeight<=520;
@@ -50,7 +50,7 @@ function toastPump(now){
   }
 }
 function toastTick(now){for(const t of TOASTS.on.slice())if(now>=t.until)toastOut(t,now);if(TOASTS.queue.length)toastPump(now);if(TOASTS.last.size>40)for(const[k,v]of TOASTS.last)if(now-v>10000)TOASTS.last.delete(k);}
-/* uma ação do jogador (AÇÃO, VER, LUZ): os avisos que ela gerar substituem os das ações anteriores e aparecem na hora */
+/* uma ação do jogador (AÇÃO, LUZ, câmera): os avisos que ela gerar substituem os das ações anteriores e aparecem na hora */
 function comoAcao(f){TOASTS.acao++;TOASTS.naAcao=true;try{f();}finally{TOASTS.naAcao=false;}}
 function toastClear(){for(const t of TOASTS.on.slice())toastOut(t,performance.now(),true);TOASTS.queue.length=0;TOASTS.last.clear();}
 
@@ -342,7 +342,7 @@ function mostrarTela(id){for(const s of document.querySelectorAll('.tela'))s.hid
 function esconderTelas(){for(const s of document.querySelectorAll('.tela'))s.hidden=true;document.body.classList.remove('modal');}
 function focoPrimeiro(id){const b=document.querySelector('#'+id+' .btn:not([hidden])');if(b)try{b.focus({preventScroll:true});}catch(e){}}
 function ctlHtml(){
-  const rows=IN.mode==='touch'?[['Joystick (lado esquerdo)','andar; empurre até o fim para correr'],['AÇÃO','interagir'],['VER','aproximar ou afastar a câmera'],['LUZ','lanterna nas tumbas'],['Guia','Guia de Programação'],['Diário · II','diário e pausa']]
+  const rows=IN.mode==='touch'?[['Joystick (lado esquerdo)','andar; empurre até o fim para correr'],['AÇÃO','interagir'],['LUZ','lanterna nas tumbas'],['Guia','Guia de Programação'],['Diário · II','diário e pausa']]
     :[['WASD ou setas','andar'],['Shift','correr'],['E, Espaço ou Enter','interagir'],['C','aproximar ou afastar a câmera'],['G','Guia de Programação'],['T','lanterna'],['J','diário'],['Esc','pausa']];
   return rows.map(r=>'<b>'+r[0]+'</b><span>'+r[1]+'</span>').join('');
 }
@@ -564,7 +564,7 @@ const OBS_BUSSOLA={chave:'',t:0,caixas:[]};
 function obstaculosBussola(){
   const ch=innerWidth+'x'+innerHeight+'|'+document.body.className+'|'+(atualizarHud.gk||'')+'|'+$('goal').className+'|'+TOASTS.on.map(t=>t.text+t.count).join('|')+'|'+(atualizarHud.nk||''),now=performance.now();
   if(ch===OBS_BUSSOLA.chave&&now-OBS_BUSSOLA.t<250)return OBS_BUSSOLA.caixas.slice();
-  const cx=[];for(const id of['hl','hr','bUse','bVer','bLan']){const e=$(id);if(e&&e.offsetParent){const q=e.getBoundingClientRect();if(q.width&&q.height)cx.push(q);}}
+  const cx=[];for(const id of['hl','hr','bUse','bLan']){const e=$(id);if(e&&e.offsetParent){const q=e.getBoundingClientRect();if(q.width&&q.height)cx.push(q);}}
   for(const e of $('msgs').children){const q=e.getBoundingClientRect();if(q.width&&q.height)cx.push(q);}
   OBS_BUSSOLA.chave=ch;OBS_BUSSOLA.t=now;OBS_BUSSOLA.caixas=cx;return cx.slice();
 }
@@ -612,7 +612,7 @@ function atualizarBordaAlvo(){
 
 /* ====================== início ====================== */
 function boot(){
-  try{const c=cfgLer();if(typeof c.sound==='boolean')AU.on=c.sound;R.longe=c.longe!==false;auVolumes(typeof c.mus==='number'?c.mus:null,typeof c.efx==='number'?c.efx:null);}catch(e){}
+  try{const c=cfgLer();if(typeof c.sound==='boolean')AU.on=c.sound;R.longe=c.longe!==false||semTeclaCamera();auVolumes(typeof c.mus==='number'?c.mus:null,typeof c.efx==='number'?c.efx:null);}catch(e){}
   renderInit();joyInit();EXP=montarHeroi();hudInit();ligarBotoes();painelInit();
   AREAS.vale=construirVale();
   desenharLogo();

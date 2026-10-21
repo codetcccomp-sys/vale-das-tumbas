@@ -18,7 +18,7 @@ const t=suite('b17-exploracao');
     const medidas=[];
     for(const [k,id] of [['treino','t1'],['steam','s2'],['diesel','d1'],['atom','a3'],['atom','a5'],['bio','b4'],['final','c1']]){
       const m=await ev(([k,id])=>{const L=__vt.G.learn;for(const d of DESAFIOS){if(d.id===id)break;L[d.id]=true;}
-        if(k==='treino'){__vt.entrar('treino');__vt.G.treino.manivela=true;__vt.G.treino.passo=5;__vt.painel('treino');}else{__vt.entrar(k);__vt.painel(k);}
+        if(k==='treino'){__vt.entrar('treino');__vt.G.treino.manivela=true;__vt.G.treino.passo=4;__vt.painel('treino');}else{__vt.entrar(k);__vt.painel(k);}
         escolherDesafio(DESAFIO[id]);document.getElementById('painel').scrollTop=0;
         const R=e=>e.getBoundingClientRect(),$$=s=>[...document.querySelectorAll(s)];
         const prog=R(document.getElementById('pProg')),rod=R(document.getElementById('pRodape')),run=R(document.getElementById('pRun'));

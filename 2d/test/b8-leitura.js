@@ -17,7 +17,7 @@ const t=suite('b8-leitura');
   t.ok(/◆/.test(css.antes)&&css.bg!=='rgba(0, 0, 0, 0)','o alvo usa símbolo, texto e cor (não só cor)',css);
   await ev(()=>{__vt.ir(TREINO.marca.x,TREINO.marca.y+2,'cima');__vt.quadros(3);});
   m=await marcas();t.ok(m.m==='Lume','depois da marca, o alvo passa para o Lume',m);
-  await ev(()=>{__vt.G.treino.passo=3;__vt.ir(TREINO.manivela.x,TREINO.manivela.y+12,'cima');__vt.quadros(3);});
+  await ev(()=>{__vt.G.treino.passo=2;__vt.ir(TREINO.manivela.x,TREINO.manivela.y+12,'cima');__vt.quadros(3);});
   m=await marcas();t.ok(m.n==='Manivela de latão'&&m.nAlvo&&m.m===null,'ao alcance, o nome do objeto aparece em cima dele (destacado por ser o alvo)',m);
   await ev(()=>{__vt.ir(10.5*16,15.5*16+16,'cima');__vt.quadros(3);});
   m=await marcas();t.ok(m.n==='Placa do pátio'&&!m.nAlvo,'objeto que não é o alvo: só o nome, sem destaque',m);

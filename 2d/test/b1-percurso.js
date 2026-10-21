@@ -23,12 +23,13 @@ const t=suite('b1-percurso');
   t.ok(/Lume/.test(lb)&&d.modo==='dialogo'&&d.ops.length>=2,'conversa com o Lume (NPC de orientação)',[lb,d.ops]);
   await U.opcao('Como');d=await ev(()=>document.getElementById('dTexto').textContent);t.ok(d.length>20,'o Lume explica os controles',d.slice(0,90));
   await U.opcao('Até logo');e=await U.estado();t.ok(e.mode==='play','fechar a conversa volta ao jogo');
-  const k0=await ev(()=>__vt.R.k);await ev(()=>document.getElementById('bVer').click());await ev(()=>__vt.quadros(2));
+  const k0=await ev(()=>__vt.R.k);t.ok(await ev(()=>!document.getElementById('bVer')),'não há botão VER na tela');
+  await page.keyboard.press('KeyC');await ev(()=>__vt.quadros(2));
   /* nesta tela (412 px, densidade 2) a câmera afastada deixaria o pixel do jogo com 1 pixel da tela: o jogo mantém a normal e avisa */
   let k1=await ev(()=>({k:__vt.R.k,pode:longePossivel(__vt.R.cv.width,__vt.R.cv.height,__vt.R.dpr),av:[...document.querySelectorAll('#msgs .toast span')].map(x=>x.textContent).join(' ')}));
-  t.ok(k1.pode?k1.k!==k0:(k1.k===k0&&/máximo/.test(k1.av)),'botão VER aproxima ou afasta a câmera (ou avisa que a tela já mostra o máximo legível)',[k0,k1]);
-  await ev(()=>document.getElementById('bVer').click());await ev(()=>__vt.quadros(2));
-  k1=await ev(()=>({k:__vt.R.k}));t.ok(k1.k===k0,'VER de novo volta ao enquadramento de antes',k1);
+  t.ok(k1.pode?k1.k!==k0:(k1.k===k0&&/máximo/.test(k1.av)),'a tecla C aproxima ou afasta a câmera (ou avisa que a tela já mostra o máximo legível)',[k0,k1]);
+  await page.keyboard.press('KeyC');await ev(()=>__vt.quadros(2));
+  k1=await ev(()=>({k:__vt.R.k}));t.ok(k1.k===k0,'C de novo volta ao enquadramento de antes',k1);
   lb=await ev(()=>__vt.usarEm(TREINO.manivela.x,TREINO.manivela.y+10,'cima'));tr=await ev(()=>__vt.G.treino);t.ok(tr.manivela,'recolhe a manivela (coleta de objeto)',lb);
   lb=await ev(()=>__vt.usarEm(TREINO.term.tx*16+8,TREINO.term.ty*16+30,'cima'));await page.waitForTimeout(100);
   e=await U.painel();t.ok(!e.aberto,'o terminal pede o Guia antes de abrir o editor',lb);

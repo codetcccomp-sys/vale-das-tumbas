@@ -12,7 +12,7 @@
    - solucoes guarda o último programa que resolveu cada etapa (o diário mostra o programa do jogador).
    - pistas guarda as placas com ! já lidas; fixadas, as pistas que o jogador fixou no alto do painel (no máximo 3);
      marcas, as marcas de luz encontradas com a lanterna. */
-const SAVE2D_KEY='vale_das_tumbas_2d',CFG2D_KEY='vale_das_tumbas_2d_cfg',SAVE3D_KEY='vale_das_tumbas_save',SAVE2D_VER=1,SAVE2D_REV=4;
+const SAVE2D_KEY='vale_das_tumbas_2d',CFG2D_KEY='vale_das_tumbas_2d_cfg',SAVE3D_KEY='vale_das_tumbas_save',SAVE2D_VER=1,SAVE2D_REV=5;
 for(const k in SABERES)ENTRIES[SABER_ENTRY[k]]={t:'Saber: '+SABERES[k].nome,s:SABERES[k].resumo,cod:SABERES[k].exemplo};
 for(const k in PISTAS)ENTRIES['pista_'+k]={t:'Pista: '+PISTAS[k].nome,s:PISTAS[k].texto};
 for(const k in MARCAS)ENTRIES['marca_'+k]={t:'Marca de luz: '+MARCAS[k].t,s:MARCAS[k].s};
@@ -61,7 +61,8 @@ const SAVE2D=(function(){
     /* treino: quem já jogava antes desta versão não precisa refazer */
     if(antigo)s.treino.feito=true;
     else if(d.treino!==undefined){if(obj(d.treino)){s.treino.feito=d.treino.feito===true;s.treino.manivela=d.treino.manivela===true;
-      if(num(d.treino.passo))s.treino.passo=clamp(Math.round(d.treino.passo),0,TREINO_PASSOS);else if(d.treino.passo!==undefined)bad();}else bad();}
+      /* revisão 5: o passo "Câmera" (botão VER) saiu do treino; quem já tinha passado dele volta um número */
+      if(num(d.treino.passo)){let p=Math.round(d.treino.passo);if((num(d.rev)?d.rev:1)<5&&p>=3)p--;s.treino.passo=clamp(p,0,TREINO_PASSOS);}else if(d.treino.passo!==undefined)bad();}else bad();}
     if(obj(d.dicas)){for(const k in d.dicas){const n=d.dicas[k];if(DESAFIO[k]&&Number.isInteger(n)&&n>=0&&n<=3)s.dicas[k]=n;else bad();}}else if(d.dicas!==undefined)bad();
     s.poi=pick(d.poi,POI_IDS,true);
     if(d.guia!==undefined&&typeof d.guia!=='boolean')bad();s.guia=d.guia===true;

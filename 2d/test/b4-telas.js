@@ -15,7 +15,7 @@ const inter=(a,b)=>a&&b&&a.w>0&&b.w>0&&a.x<b.x+b.w-1&&b.x<a.x+a.w-1&&a.y<b.y+b.h
     const m=await ev(()=>{
       const r=id=>{const e=document.getElementById(id);if(!e||e.hidden||e.offsetParent===null)return null;const b=e.getBoundingClientRect();return{x:b.x,y:b.y,w:b.width,h:b.height};};
       const es=__vt.escala();
-      return{es,iw:innerWidth,ih:innerHeight,hl:r('hl'),hr:r('hr'),prompt:r('prompt'),use:r('bUse'),ver:r('bVer'),zona:r('zoneHint'),guia:r('btnGuia'),msgs:[...document.querySelectorAll('#msgs .toast')].map(e=>{const b=e.getBoundingClientRect();return{x:b.x,y:b.y,w:b.width,h:b.height};}),
+      return{es,iw:innerWidth,ih:innerHeight,hl:r('hl'),hr:r('hr'),prompt:r('prompt'),use:r('bUse'),semVer:!document.getElementById('bVer'),zona:r('zoneHint'),guia:r('btnGuia'),msgs:[...document.querySelectorAll('#msgs .toast')].map(e=>{const b=e.getBoundingClientRect();return{x:b.x,y:b.y,w:b.width,h:b.height};}),
         fontes:[...document.querySelectorAll('#hud *')].filter(e=>e.offsetParent!==null&&e.childNodes.length&&[...e.childNodes].some(n=>n.nodeType===3&&n.textContent.trim())).map(e=>parseFloat(getComputedStyle(e).fontSize))};
     });
     const k=m.es.k;
@@ -25,8 +25,8 @@ const inter=(a,b)=>a&&b&&a.w>0&&b.w>0&&a.x<b.x+b.w-1&&b.x<a.x+a.w-1&&a.y<b.y+b.h
     if(toque){t.ok(m.use&&m.use.w>=60&&m.use.h>=60,nome+': botão de ação grande',m.use);
       t.ok(!m.prompt||!inter(m.prompt,m.use),nome+': aviso de interação não cobre o botão',[m.prompt,m.use]);
       t.ok(m.msgs.every(b=>!inter(b,m.use)&&!inter(b,m.prompt)),nome+': avisos não cobrem os botões nem a interação',m.msgs);
-      t.ok(m.ver&&m.ver.w>=44&&!inter(m.ver,m.use)&&!inter(m.ver,m.prompt)&&m.msgs.every(b=>!inter(b,m.ver)),nome+': botão VER (vista ampla) livre, sem cobrir ação nem avisos',[m.ver,m.prompt]);}
-    if(toque)t.ok(!m.zona||(!inter(m.zona,m.ver)&&!inter(m.zona,m.use)&&!inter(m.zona,m.prompt)),nome+': dica do lado de andar não cobre VER, AÇÃO nem o aviso de interação',[m.zona,m.ver,m.prompt]);
+      t.ok(m.semVer,nome+': sem botão VER (a câmera fica afastada no toque)');}
+    if(toque)t.ok(!m.zona||(!inter(m.zona,m.use)&&!inter(m.zona,m.prompt)),nome+': dica do lado de andar não cobre AÇÃO nem o aviso de interação',[m.zona,m.prompt]);
     t.ok(m.guia&&m.guia.h>=40&&m.guia.x+m.guia.w<=w+1,nome+': botão Guia no alto, inteiro na tela',m.guia);
     t.ok(m.msgs.every(b=>!inter(b,m.hl)&&!inter(b,m.hr)),nome+': avisos não cobrem a vida, o objetivo nem os botões do alto',[m.msgs,m.hl]);
     t.ok(Math.min(...m.fontes)>=11,nome+': textos do HUD com pelo menos 11 px',Math.min(...m.fontes));

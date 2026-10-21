@@ -4,7 +4,7 @@
      do que acontece e onde aquilo aparece no jogo. "Seus exemplos" junta o código das etapas já concluídas.
    - Lume: um pequeno autômato-guia de latão. Conversar com ele explica controles, interação, o editor de programação e
      como ler um desafio. As dicas vêm aos poucos (conceito → caminho → quase a solução); dá para voltar e pedir de novo.
-   - Câmera: C (ou o botão VER) aproxima ou afasta a câmera um degrau; começa afastada e a escolha fica guardada. */
+   - Câmera: no teclado, C aproxima ou afasta a câmera um degrau; começa afastada e a escolha fica guardada. */
 Object.assign(OBJS,{
   lume(f){const c=cnv(16,22),g=ctx2(c);
     P.linha(g,8,1,8,4,'#8a6a3a');P.circ(g,8,1,1.5,f%2?'#fff2a0':'#ffd24a');
@@ -223,7 +223,7 @@ function falar(texto,opcoes,nome,retrato){
 function fecharFala(){$('dialogo').hidden=true;G.mode=DLG.volta&&DLG.volta!=='dialogo'?DLG.volta:'play';if(G.mode==='play'||G.mode==='painel')document.body.classList.remove('modal');limparEntrada();}
 /* textos do Lume (curtos; os controles seguem o aparelho que está sendo usado) */
 function textoControles(){
-  if(IN.mode==='touch')return'Toque e arraste no lado esquerdo da tela para andar; arrastando até o fim, você corre. O botão AÇÃO, à direita, interage. VER aproxima ou afasta a câmera, Guia abre o Guia de Programação.';
+  if(IN.mode==='touch')return'Toque e arraste no lado esquerdo da tela para andar; arrastando até o fim, você corre. O botão AÇÃO, à direita, interage. Guia abre o Guia de Programação.';
   if(IN.mode==='pad')return'O analógico anda (até o fim corre). A interage, X abre o diário, Select abre o Guia e Start pausa.';
   return'Ande com WASD ou as setas; segure Shift para correr. E (ou Espaço) interage, C aproxima ou afasta a câmera, G abre o Guia de Programação, J o diário e Esc pausa.';
 }
@@ -231,7 +231,7 @@ const LUME_TXT={
   interagir:()=>'Quando você chega perto de algo útil, aparece um aviso embaixo da tela e uma seta amarela em cima do objeto. Aí é só apertar '+(IN.mode==='touch'?'AÇÃO':IN.mode==='pad'?'A':'E')+' para usar: ler, pegar, abrir, ligar.',
   programar:()=>'Nos terminais fica o editor. Toque nas linhas da paleta para escrever o programa, ou em ✎ Escrever para digitar código Python. ▶ Executar roda tudo; ⏭ Passo roda uma instrução por vez. Se algo der errado, a área de erro mostra a linha, diz se o problema é do Python ou de uma regra da máquina, e o que fazer. O editor aceita um pedaço do Python: o Guia mostra qual.',
   desafio:()=>'Leia a mensagem do painel e olhe o mecanismo da sala: ele mostra o que o código faz. As caixas mostram as variáveis. As situações (A, B…) são testes: o mesmo programa precisa funcionar em todas. Programe, execute, observe e corrija. Placas com ! guardam pistas: depois de lidas, elas ficam no diário e no terminal, em Comandos e variáveis.',
-  camera:()=>'Aperte '+(IN.mode==='touch'?'VER':'C')+' para aproximar ou afastar a câmera. O jogo começa com a câmera afastada (quando a tela comporta) e lembra a sua escolha.'
+  camera:()=>IN.mode==='touch'?'O jogo escolhe sozinho a distância da câmera que mostra mais do lugar com tudo legível nesta tela.':'Aperte C para aproximar ou afastar a câmera. O jogo começa com a câmera afastada (quando a tela comporta) e lembra a sua escolha.'
 };
 /* a etapa sobre a qual o Lume dá dicas: a do painel aberto, ou a próxima por fazer no lugar onde ele está */
 function etapaDoLume(lugar){
@@ -273,6 +273,9 @@ function criarLume(A,tx,ty,lugar,extra){
 }
 
 /* ---------- câmera: afastada ou aproximada ---------- */
+/* no celular e no tablet não há botão de câmera: fica sempre afastada (o máximo que a tela mostra com pixels legíveis),
+   mesmo que uma escolha antiga tenha guardado a aproximada */
+function semTeclaCamera(){try{return!!(window.matchMedia&&matchMedia('(pointer: coarse)').matches&&!matchMedia('(any-pointer: fine)').matches);}catch(e){return false;}}
 function alternarVista(){
   const dpr=R.dpr,dw=R.cv.width,dh=R.cv.height;
   if(!R.longeAtivo&&!longePossivel(dw,dh,dpr)){R.longe=false;toast('Esta tela já mostra o máximo que dá com pixels nítidos e legíveis.');if(G.area&&G.area.aoVista)G.area.aoVista(false);return;}

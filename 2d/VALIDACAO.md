@@ -169,6 +169,13 @@ Houve também um anel com uma ponta embaixo do explorador; depois de ver no jogo
 
 Limites: Chromium sem janela com aparelhos simulados; a seta em tela real (brilho, dedo por cima) precisa de celular físico.
 
+### P — Sem o botão VER
+O botão **VER** (aproximar ou afastar a câmera) saiu da tela de toque, a pedido do autor. No celular e no tablet a câmera
+fica sempre afastada (o máximo que a tela mostra com pixels legíveis), mesmo que uma escolha antiga tenha guardado a
+aproximada. No teclado, a tecla **C** continua. O passo "Câmera" do Pátio de Treino saiu junto (o treino tem 8 passos); a
+revisão 5 do save ajusta o passo de quem estava no meio do treino. Testes ajustados em `b1`, `b4`, `b7`, `b8`, `b13`, `b14`,
+`b16`, `b17`, `b20` e `l2` (1002 verificações).
+
 ### O — Desempenho: travamentos e lentidão
 Medido no Chromium sem janela (sem placa de vídeo), em 360 × 640 com densidade 3 e 1920 × 1080, com a CPU normal e
 desacelerada 4× e 6× (celular intermediário e básico). Quadros por segundo, antes → depois:
@@ -215,7 +222,7 @@ aparelho real.
 ### P1 — Aprendizagem além da imitação
 | Pedido | Situação |
 |---|---|
-| Treino curto como familiarização | **Mantido**, com um passo a mais (9 passos). |
+| Treino curto como familiarização | **Mantido**: 8 passos (o passo da câmera saiu junto com o botão VER). |
 | Máquina de duas ações em ordem, com previsão, execução e correção | **Feito.** No pátio, o portão tem trava: o programa vem como `erguer_portao()` / `destravar_portao()`. O jogador prevê, executa, vê o portão travado e corrige a ordem. |
 | Demonstração, prática com ajuda e desafio diferente em cada tumba | **Conferido e completado.** Engrenagens e Reator já tinham os três momentos. Nos Motores faltava o desafio independente: entrou a **bomba de combustível** (dois tanques, 2,5 L e 4,0 L, sem galão de 4,0: guardar, usar e alterar `energia` e `combustivel`). Na Viva faltava a demonstração: entrou **repetir sem copiar** (4 linhas × `for`). Há teste automático que confere os três momentos nas quatro tumbas. |
 | Desafio final com objetivo e condições, sem a sequência pronta | **Já existia** (aplicações e Cidade-Jardim começam sem código e sem guia). |
@@ -278,7 +285,7 @@ aparelho real.
 Faça num Android (Chrome) e num iPhone (Safari), em pé e deitado, com som ligado.
 1. Abrir https://vale-das-tumbas-2d.vercel.app, tocar em **Novo jogo**: o pátio aparece, o objetivo e o marcador "◆ Ande até aqui" estão legíveis.
 2. Arrastar o joystick e, ao mesmo tempo, tocar em **AÇÃO** perto do Lume: o explorador anda e a conversa abre (toque simultâneo).
-3. Conferir se a câmera começa afastada e se o personagem e os textos continuam legíveis; tocar em **VER** e de novo: aproxima e afasta.
+3. Conferir se a câmera começa afastada e se o personagem e os textos continuam legíveis; não há botão VER (a câmera fica afastada no toque).
 4. Encaixar a manivela, abrir o **Guia**, abrir o editor: os botões têm pelo menos 40 px e nenhum fica cortado; não há rolagem para o lado.
 5. Tocar em **✎ Escrever**: o teclado abre; o campo de código, a área de erro e **▶ Executar** continuam visíveis acima dele.
 6. Escrever `acender_toxa()` e executar: o erro aparece com a linha e a origem ("Erro de Python"); "📖 Ver no Guia" abre e volta sem perder o texto.
@@ -308,4 +315,4 @@ Anote o aparelho, o navegador e o que falhou (com captura de tela).
 `2d/test/rodar.sh` (Node + Chromium sem janela): l1-linguagem, l2-save, b1-percurso, b2-painel, b3-save, b4-telas,
 b5-perigos, b6-personagem, b7-ajuda, b8-leitura, b9-validacoes, b10-recompensa, b11-terminal, b12-vale-som, b13-tela,
 b14-mvp, b15-plano, l3-relatorio, b16-melhorias, b17-exploracao, b18-camara, b19-boss-polimento e, nesta atualização,
-b20-bussola e b21-desempenho: **1000 verificações, todas passando**. O README lista o que cada um confere.
+b20-bussola e b21-desempenho: **1002 verificações, todas passando**. O README lista o que cada um confere.

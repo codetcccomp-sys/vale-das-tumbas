@@ -1,7 +1,7 @@
 // Tela limpa no celular: interagir com vários itens não empilha avisos (o aviso de uma interação nova substitui o da
 // anterior; no máximo dois por vez, compactos, logo abaixo do HUD e longe do explorador); a cápsula da mão fica no HUD;
 // o objetivo encolhe depois de alguns segundos e abre com um toque (e não é refeito a cada quadro); marcas do mundo
-// ficam dentro da tela e por baixo do HUD; o texto da ação não fica por baixo do botão VER; no Guia, o exemplo de
+// ficam dentro da tela e por baixo do HUD; o texto da ação não fica por baixo dos botões LUZ e AÇÃO; no Guia, o exemplo de
 // código aparece inteiro e o conteúdo fica com a maior parte da altura.
 const {open}=require('./lib');const {suite}=require('./assert');const {ui}=require('./ui');
 const t=suite('b13-tela');
@@ -51,10 +51,10 @@ const cruza=(a,b)=>a&&b&&a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a
     return{vis:!m.hidden,txt:m.textContent,l:b.left,rr:b.right,w:innerWidth,antes:hud.indexOf(m)<hud.indexOf(document.getElementById('hl'))&&hud.indexOf(m)<hud.indexOf(document.getElementById('msgs'))};});
   t.ok(r.vis&&r.l>=0&&r.rr<=r.w,'o marcador do alvo ("'+r.txt+'") fica inteiro dentro da tela',r);
   t.ok(r.antes,'marcas do mundo ficam por baixo do HUD e dos avisos',r);
-  /* ---------- texto da ação x botão VER ---------- */
+  /* ---------- texto da ação x botões LUZ e AÇÃO ---------- */
   r=await ev(()=>{const c=__vt.G.area.patio.caps.c_f25;__vt.ir(c.x,c.y+20,'cima');__vt.quadros(2);const p=document.getElementById('prompt');
-    return{vis:!p.hidden,txt:p.textContent,p:p.getBoundingClientRect().toJSON(),ver:document.getElementById('bVer').getBoundingClientRect().toJSON(),luz:document.getElementById('bLan').getBoundingClientRect().toJSON(),usar:document.getElementById('bUse').getBoundingClientRect().toJSON()};});
-  t.ok(r.vis&&!cruza(r.p,r.ver)&&!cruza(r.p,r.luz)&&!cruza(r.p,r.usar),'na tumba, o texto da ação ("'+r.txt+'") não fica por baixo dos botões VER, LUZ e AÇÃO',r);
+    return{vis:!p.hidden,txt:p.textContent,p:p.getBoundingClientRect().toJSON(),luz:document.getElementById('bLan').getBoundingClientRect().toJSON(),usar:document.getElementById('bUse').getBoundingClientRect().toJSON()};});
+  t.ok(r.vis&&!cruza(r.p,r.luz)&&!cruza(r.p,r.usar),'na tumba, o texto da ação ("'+r.txt+'") não fica por baixo dos botões LUZ e AÇÃO',r);
   /* ---------- Guia no celular ---------- */
   r=await ev(()=>{abrirGuia('variaveis');const C=document.getElementById('gConteudo'),cx=document.querySelector('#guia .caixa').getBoundingClientRect();
     const pres=[...C.querySelectorAll('pre')].map(p=>({h:p.clientHeight,s:p.scrollHeight}));const ch=[...document.querySelectorAll('.gtop')];

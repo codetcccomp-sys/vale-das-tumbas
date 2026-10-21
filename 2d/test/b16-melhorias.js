@@ -66,7 +66,7 @@ const t=suite('b16-melhorias');
     const txt=fs.readFileSync(await dt.path(),'utf8');
     t.ok(/RELATÓRIO DE APRENDIZAGEM/.test(txt)&&/Viva/.test(txt)&&/Prática guiada · while/.test(txt),'Baixar TXT entrega o relatório legível',txt.split('\n')[0]);
     const salvo=await ev(()=>{salvar(false);const s=__vt.lerSave();return{t:s.reg.b3&&s.reg.b3.t,desde:s.regDesde,rev:s.rev};});
-    t.ok(salvo.t>=5&&/^\d{4}-\d\d-\d\d$/.test(salvo.desde)&&salvo.rev===4,'o registro fica no save (revisão 4), só no aparelho',salvo);
+    t.ok(salvo.t>=5&&/^\d{4}-\d\d-\d\d$/.test(salvo.desde)&&salvo.rev===5,'o registro fica no save (revisão 5), só no aparelho',salvo);
     await ev(()=>fecharDiario());
     /* ---------- sem progresso: um lembrete gentil, sem resolver nada ---------- */
     await ev(()=>{__vt.entrar('atom');__vt.G.learn.a5=false;document.querySelectorAll('.toast').forEach(x=>x.remove());});

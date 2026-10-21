@@ -56,7 +56,7 @@ const RELIC_KEYS=['steam','diesel','atom','bio'];
 /* lugares que têm desafios mas não são tumbas */
 const LUGARES={treino:'Pátio de Treino',camara:'Câmara Final'};
 const nomeLugar=k=>TOMBS[k]?TOMBS[k].name:LUGARES[k]||k;
-const TREINO_PASSOS=9;
+const TREINO_PASSOS=8;
 const mai1=t=>t?t[0].toUpperCase()+t.slice(1):t;
 
 /* inscrições noturnas (as mesmas do 3D) e segredos do vale (4 fragmentos, 5 baús, 3 inscrições de dia) */
