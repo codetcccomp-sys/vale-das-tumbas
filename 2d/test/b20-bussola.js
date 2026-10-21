@@ -1,5 +1,5 @@
-// Bússola: anel nos pés do explorador (aponta o objetivo, some perto dele) e seta na borda da tela (só com o alvo fora da tela,
-// com nome e distância, sem cobrir HUD, avisos nem botões de toque; some com o painel aberto). Celular em pé, deitado e computador.
+// Bússola: seta na borda da tela (só com o alvo fora da tela, com nome e distância, sem cobrir HUD, avisos nem botões de toque;
+// some com o painel aberto). Sem marca embaixo do explorador. Celular em pé, deitado e computador.
 const {open}=require('./lib');const {suite}=require('./assert');
 const t=suite('b20-bussola');
 const TELAS=[{n:'360×640 toque',v:{width:360,height:640},dpr:2,touch:true},{n:'640×360 toque',v:{width:640,height:360},dpr:2,touch:true},{n:'1280×800',v:{width:1280,height:800},dpr:1}];
@@ -25,7 +25,7 @@ const TELAS=[{n:'360×640 toque',v:{width:360,height:640},dpr:2,touch:true},{n:'
       const naTela=go.alvo.x+R.ox>4&&go.alvo.x+R.ox<R.W-4&&go.alvo.y+R.oy>10&&go.alvo.y+R.oy<R.H-4;
       return{vis:!e.hidden,naTela,dist:Math.hypot(go.alvo.x-G.p.x,go.alvo.y-G.p.y),nome:e.lastChild.firstChild.textContent,m:e.lastChild.lastChild.textContent,alvo:go.alvo.txt,
         sDentro:dentro(s),lDentro:dentro(l),sCruza:cruza(s),lCruza:e.lastChild.hidden?[]:cruza(l),lVis:!e.lastChild.hidden,difPos:dif(pos,dir),difAng:dif(+e.dataset.ang,daSeta),rot:e.firstChild.style.transform,
-        anel:R.bussolaAnel,angMundo:Math.atan2(go.alvo.y-G.p.y,go.alvo.x-G.p.x),cor:getComputedStyle(e).getPropertyValue('--c').trim(),corGo:go.cor||'#ffd24a',
+        cor:getComputedStyle(e).getPropertyValue('--c').trim(),corGo:go.cor||'#ffd24a',
         rotPessoa:(()=>{const l2=e.lastChild.getBoundingClientRect(),hk=10*k;return!(l2.right<=hx-hk||l2.left>=hx+hk||l2.bottom<=hy-hk||l2.top>=hy+hk);})()};},d);
 
     /* com avisos na tela: a seta nunca fica por baixo deles (recua, vai para outro ponto da borda ou espera) */
@@ -43,23 +43,16 @@ const TELAS=[{n:'360×640 toque',v:{width:360,height:640},dpr:2,touch:true},{n:'
     let r=await ler([400,-400]);
     t.ok(r.nome===r.alvo&&/^≈ \d+ m$/.test(r.m)&&+r.m.match(/\d+/)[0]===Math.max(1,Math.round(r.dist/16)),T.n+': o rótulo da seta traz o nome do alvo e a distância em metros (1 m = 1 bloco)',{nome:r.nome,m:r.m,dist:r.dist});
     t.ok(r.cor.toLowerCase()===r.corGo.toLowerCase(),T.n+': a seta usa a cor do objetivo (a mesma da trilha)',{cor:r.cor,go:r.corGo});
-    t.ok(r.anel&&Math.abs(Math.atan2(Math.sin(r.anel.ang-r.angMundo),Math.cos(r.anel.ang-r.angMundo)))<0.01,T.n+': o anel nos pés aponta para o alvo',{anel:r.anel,ang:r.angMundo});
 
-    /* perto (alvo na tela, mas a mais de 40 px): a seta da borda some, o anel continua */
+    /* alvo na tela: a seta da borda some (o marcador ◆ assume) */
     r=await ler([0,60]);
-    t.ok(r.naTela&&!r.vis&&r.anel,T.n+': alvo na tela: a seta da borda some (o marcador ◆ assume) e o anel continua',{naTela:r.naTela,vis:r.vis,anel:!!r.anel});
-    /* em cima do alvo: o anel também some */
-    r=await ler([0,20]);
-    t.ok(!r.vis&&!r.anel,T.n+': a menos de 40 px do alvo, o anel some também',{vis:r.vis,anel:r.anel,dist:r.dist});
+    t.ok(r.naTela&&!r.vis,T.n+': alvo na tela: a seta da borda some (o marcador ◆ assume)',{naTela:r.naTela,vis:r.vis});
 
     /* painel aberto: nada de bússola */
-    await ler([400,-400]);
-    const p=await ev(()=>{G.treino.feito=true;__vt.entrar('steam');__vt.quadros(5);const a=!!R.bussolaAnel;__vt.painel('steam');__vt.quadros(3);
-      return{antes:a,modo:G.mode,vis:!document.getElementById('bordaAlvo').hidden,anel:R.bussolaAnel};});
-    t.ok(p.antes&&p.modo==='painel'&&!p.vis&&!p.anel,T.n+': com o painel de programação aberto, o anel e a seta somem',p);
+    const antes=(await ler([400,-400])).vis;
+    const p=await ev(()=>{__vt.painel('steam');__vt.quadros(3);return{modo:G.mode,vis:!document.getElementById('bordaAlvo').hidden};});
+    t.ok(antes&&p.modo==='painel'&&!p.vis,T.n+': com o painel de programação aberto, a seta some',{antes,...p});
     await ev(()=>{fecharPainel();__vt.quadros(3);});
-    const q=await ev(()=>({anel:!!R.bussolaAnel}));
-    t.ok(q.anel,T.n+': ao fechar o painel, o anel volta (dentro da tumba ele aponta o Computador Ancestral)',q);
     t.done(logs);
     }catch(e){console.log('  FALHA  '+e.message);process.exitCode=1;}
     clearTimeout(vigia);await browser.close();

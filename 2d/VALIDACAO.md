@@ -158,16 +158,16 @@ e o guardião só é purificado depois dos quatro. Teste novo: verificações em
 Limites: Chromium sem janela; o ritmo da luta (golpes durante as fases 2 a 4) e a clareza das placas precisam de teste com
 iniciantes.
 
-### N — Bússola: anel nos pés e seta na borda
-A seta antiga ficava pequena, longe de onde o olho está. Agora são duas peças: um **anel no chão** em volta dos pés do
-explorador, com a ponta na cor do objetivo apontando o alvo (some a menos de 40 px dele, onde o marcador ◆ assume), e uma
-**seta na borda** da tela, só com o alvo fora dela, com o nome e a distância ("≈ 35 m"). A seta fica na linha do explorador ao
-alvo; se ali há HUD, aviso ou botão de toque, recua pela linha ou vai ao ponto livre da borda mais próximo (até 50°, girando
-para o alvo); sem espaço, espera. O rótulo escolhe um lado livre e não cobre o explorador. Teste novo: `b20-bussola`
-(30 verificações em 360 × 640, 640 × 360 e 1280 × 800).
+### N — Bússola: seta na borda
+A seta antiga ficava pequena, longe de onde o olho está. Agora há uma **seta na borda** da tela, só com o alvo fora dela, na
+cor do objetivo, com o nome e a distância ("≈ 35 m"); com o alvo na tela, o marcador ◆ assume. A seta fica na linha do
+explorador ao alvo; se ali há HUD, aviso ou botão de toque, recua pela linha ou vai ao ponto livre da borda mais próximo
+(até 50°, girando para o alvo); sem espaço, espera. O rótulo escolhe um lado livre e não cobre o explorador. Teste novo:
+`b20-bussola` (21 verificações em 360 × 640, 640 × 360 e 1280 × 800).
 
-Limites: Chromium sem janela com aparelhos simulados; a leitura do anel com o explorador andando e a seta em tela real
-(brilho, dedo por cima) precisam de celular físico.
+Houve também um anel com uma ponta embaixo do explorador; depois de ver no jogo, o autor achou desnecessário e ele saiu.
+
+Limites: Chromium sem janela com aparelhos simulados; a seta em tela real (brilho, dedo por cima) precisa de celular físico.
 
 ### O — Desempenho: travamentos e lentidão
 Medido no Chromium sem janela (sem placa de vídeo), em 360 × 640 com densidade 3 e 1920 × 1080, com a CPU normal e
@@ -308,4 +308,4 @@ Anote o aparelho, o navegador e o que falhou (com captura de tela).
 `2d/test/rodar.sh` (Node + Chromium sem janela): l1-linguagem, l2-save, b1-percurso, b2-painel, b3-save, b4-telas,
 b5-perigos, b6-personagem, b7-ajuda, b8-leitura, b9-validacoes, b10-recompensa, b11-terminal, b12-vale-som, b13-tela,
 b14-mvp, b15-plano, l3-relatorio, b16-melhorias, b17-exploracao, b18-camara, b19-boss-polimento e, nesta atualização,
-b20-bussola e b21-desempenho: **1009 verificações, todas passando**. O README lista o que cada um confere.
+b20-bussola e b21-desempenho: **1000 verificações, todas passando**. O README lista o que cada um confere.

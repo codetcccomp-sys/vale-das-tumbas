@@ -462,7 +462,6 @@ function desenharJogo(){
   camPixel();
   desenharChao(A);desenharAgua(A,G.t);
   if(A.desenharChao)A.desenharChao(R.lg,G.t);
-  desenharAnelBussola();
   for(const o of A.objs){
     if(!o.on||!naTela(o.x,o.y-o.ay/2,Math.max(o.img.width,o.img.height)))continue;
     enfileirar(o.y+(o.camada||0),g=>{
@@ -476,7 +475,6 @@ function desenharJogo(){
   if(A.ents)for(const e of A.ents)if(e.desenhar)e.desenhar();
   if(A.id==='vale'||A.mostraJogador!==false)desenharJogador();
   desenharFila();
-  desenharAnelBussola(true);
   desenharEncobertos(A);
   desenharParticulas();
   if(A.desenharTopo)A.desenharTopo(R.lg,G.t);
@@ -554,37 +552,11 @@ function atualizarMarcas(){
   if(a&&!mesmo&&ok(a.x,a.y)){m.hidden=false;if(m.textContent!==a.txt||!m._w){m.textContent=a.txt;m._w=m.offsetWidth;}pos(m,a.x,a.y+Math.round(Math.sin(G.t*4)*1.5));}else m.hidden=true;
 }
 /* ====================== bússola ======================
-   Duas peças que se completam: o anel no chão, em volta dos pés do explorador, com a ponta na cor do objetivo apontando para
-   ele (o olho já está na personagem; some perto do alvo, onde o marcador ◆ assume); e a seta na borda da tela, só quando o
-   alvo está fora dela, com o nome e a distância (DOM: texto nítido, sem cobrir o HUD, os avisos nem os botões de toque). */
-const BUSSOLA={perto:40};
+   A seta na borda da tela, só quando o alvo está fora dela, com o nome e a distância (DOM: texto nítido, sem cobrir o HUD,
+   os avisos nem os botões de toque). Com o alvo na tela, o marcador ◆ mostra onde ele está. */
 function alvoBussola(){
   if(G.mode!=='play'||!G.area)return null;const go=objetivo();if(!go||!go.alvo)return null;
   const dx=go.alvo.x-G.p.x,dy=go.alvo.y-G.p.y;return{go,al:go.alvo,dx,dy,d:Math.hypot(dx,dy),ang:Math.atan2(dy,dx),cor:go.cor||'#ffd24a'};
-}
-/* um triângulo em pixels inteiros (sem borrar a pixel art) */
-function triPx(g,a,b,c,cor){
-  const x0=Math.floor(Math.min(a[0],b[0],c[0])),x1=Math.ceil(Math.max(a[0],b[0],c[0])),y0=Math.floor(Math.min(a[1],b[1],c[1])),y1=Math.ceil(Math.max(a[1],b[1],c[1]));
-  const s=(p,q,r)=>(p[0]-r[0])*(q[1]-r[1])-(q[0]-r[0])*(p[1]-r[1]);g.fillStyle=cor;
-  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const p=[x+0.5,y+0.5],d1=s(p,a,b),d2=s(p,b,c),d3=s(p,c,a);if(!((d1<0||d2<0||d3<0)&&(d1>0||d2>0||d3>0)))g.fillRect(x,y,1,1);}
-}
-/* em duas passadas: o anel vai no chão (antes dos objetos, os pés ficam por cima dele); a ponta vai por cima de tudo,
-   senão, com o alvo ao norte, ela ficaria escondida atrás do corpo do explorador */
-const ANEL={rx:18,ry:7};
-function desenharAnelBussola(topo){
-  const b=alvoBussola();if(!topo)R.bussolaAnel=null;if(!b||b.d<BUSSOLA.perto||G.p.caindo>0)return;
-  const g=R.lg,cx=Math.round(G.p.x+R.ox),cy=Math.round(G.p.y+R.oy)+1,rx=ANEL.rx,ry=ANEL.ry,c=Math.cos(b.ang),s=Math.sin(b.ang);
-  if(!topo){
-    /* anel tracejado, com sombra de 1 px para aparecer na areia clara e no piso escuro */
-    for(let i=0;i<40;i+=2){const t=i/40*TAU,x=Math.round(cx+Math.cos(t)*rx),y=Math.round(cy+Math.sin(t)*ry);
-      g.fillStyle='rgba(11,7,5,0.45)';g.fillRect(x,y+1,2,1);g.fillStyle='rgba(255,242,184,0.85)';g.fillRect(x,y,2,1);}
-    R.bussolaAnel={ang:b.ang,cor:b.cor,rx,ry};return;
-  }
-  /* a ponta: um triângulo na borda do anel, na direção do alvo, com contorno escuro; e um ponto que pisca mais à frente */
-  const ex=cx+c*rx,ey=cy+s*ry,px=-s,py=c,tip=[ex+c*10,ey+s*8],l=[ex+px*5.5,ey+py*3.5],r=[ex-px*5.5,ey-py*3.5];
-  const gros=(p,k)=>[p[0]+(p[0]-ex)*k,p[1]+(p[1]-ey)*k];
-  triPx(g,gros(tip,0.3),gros(l,0.45),gros(r,0.45),'#0b0705');triPx(g,tip,l,r,b.cor);
-  if(Math.floor(G.t*2.5)%2===0){const x=Math.round(ex+c*15)-1,y=Math.round(ey+s*11)-1;g.fillStyle='#0b0705';g.fillRect(x-1,y-1,4,4);g.fillStyle=b.cor;g.fillRect(x,y,2,2);}
 }
 /* as caixas do HUD, dos botões e dos avisos: medir a cada quadro obrigava o navegador a refazer o layout (a bússola chegava
    a custar 2 a 5 ms por quadro num celular fraco). Medidas guardadas, refeitas a cada 1/4 s ou quando algo muda. */
