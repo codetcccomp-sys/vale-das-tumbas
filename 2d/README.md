@@ -290,7 +290,9 @@ Os arquivos de `src/` são concatenados nesta ordem pelo `build.sh`:
 `recursos/` tem folhas PNG de todos os sprites e tiles, exportadas do código (`node test/ferramentas/exportar-sprites.js`),
 entre elas a folha do personagem (`heroi.png`, `heroi_4x.png`), a configuração das animações (`heroi.json`) e a folha do
 Lume, das tochas, do treino, da ambientação do vale e das máquinas que reagem ao código (`ambiente_e_ajuda.png`), e
-`capturas/` tem imagens representativas (`node test/ferramentas/capturas.js`). Com `#vt-treino` no endereço, os testes fazem o
+`capturas/` tem imagens representativas (`node test/ferramentas/capturas.js`). Um vídeo da gameplay completa, com legendas
+(história, treino, as quatro tumbas com todas as etapas, Câmara Final, Cidade-Jardim, final e diário; cerca de 10 min, 1280 × 720,
+sem som), sai com `node test/ferramentas/gravar-video.js` em `test/shots/video/` (o `.mp4` precisa do ffmpeg). Com `#vt-treino` no endereço, os testes fazem o
 treino; com `#vt`, um jogo novo vai direto ao vale.
 
 ### Ambientação e desempenho
