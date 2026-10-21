@@ -58,7 +58,7 @@ body:not(.jogando) #hud,body:not(.jogando) #toqueUi{display:none}
 .hlinha{display:flex;flex-wrap:wrap;gap:6px;align-items:stretch}body:not(.intomb) .hlinha{display:none}
 #lantern{display:flex;align-items:center;gap:7px;font:700 12px var(--f)}#lantern #ltxt{color:#ffd76a}#lantern.off{opacity:.6}#lantern.off #ltxt{color:var(--paper2)}
 body:not(.intomb) #lantern,body.semLanterna #lantern{display:none}
-#mao{gap:7px;font:700 12px var(--f)}#mao b{font:800 13px var(--mono);color:#ffe9a0}
+#mao{gap:7px;font:700 12px var(--f)}#mao b{font:800 13px var(--mono);color:#ffe9a0}#mao.flash{animation:gflash 1s ease-out}
 #hr{position:absolute;right:var(--sr);top:var(--st);display:flex;gap:6px;pointer-events:auto}
 #hr .btn{min-height:44px;min-width:46px;padding:6px 10px;font-size:14px;position:relative}
 #btnDiary.new::after{content:'';position:absolute;right:3px;top:3px;width:9px;height:9px;background:var(--gold);border:2px solid #0b0705}

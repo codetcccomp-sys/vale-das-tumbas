@@ -119,9 +119,8 @@ CONSTRUIR.diesel=function(){
       use:()=>{const c=pat.caps[id];if(pat.carrega){const m=pat.caps[pat.carrega];m.x=c.x;m.y=c.y;}pat.carrega=id;SFX.frag();}});
     Object.defineProperty(it,'x',{get:()=>pat.caps[id].x});Object.defineProperty(it,'y',{get:()=>pat.caps[id].y+4});
   }
-  /* a cápsula da mão aparece no HUD (e sobre a cabeça do explorador), sem aviso a cada troca */
-  const corTipo={int:'#6fd3ff',float:'#5dff7a',str:'#e9dcbc',bool:'#ffb43a'};
-  A.naMao=()=>pat.carrega?{t:rot(pat.caps[pat.carrega].val),cor:corTipo[pat.caps[pat.carrega].val.t]}:null;
+  /* a cápsula da mão aparece no HUD (com o valor e o tipo) e na mão livre do explorador, sem aviso a cada troca */
+  A.naMao=()=>pat.carrega?{t:rot(pat.caps[pat.carrega].val),cor:CAPS_COR[pat.caps[pat.carrega].val.t],tipo:pat.caps[pat.carrega].val.t}:null;
   /* as máquinas: ler a etiqueta, ou pôr a cápsula da mão (recusa com explicação quando o tipo ou o valor não servem) */
   for(const k in MQ){const m=MQ[k],x=m.tx*16+8,y=m.ty*16+14;
     const spr=k==='disjuntor'?'disjuntor':k==='bomba'?'bombaHidro':'painelSenha';
@@ -160,12 +159,11 @@ CONSTRUIR.diesel=function(){
   for(let x=3;x<27;x++){if(x===14||x===15)continue;objeto(A,SPR.get('guarda'),x*16+8,20*16+2,{});objeto(A,SPR.get('guarda'),x*16+8,22*16+2,{});}
   objeto(A,SPR.get('ponteDiesel',0),15*16,20*16+2,{camada:-30}).desenho=(g,ob)=>{const b=ponte.b>0.6;blit(g,SPR.get('ponteDiesel',b?1:0),ob.x,b?22*16:20*16+2,16,b?36:8);};
   A.ponte=ponte;
-  /* cápsulas: no chão (com o valor escrito), na mão do explorador e dentro das máquinas */
+  /* cápsulas: no chão (com o valor escrito) e dentro das máquinas; a da mão faz parte dos quadros do explorador */
   const desenharCapsulas=()=>{
     for(const id in pat.caps){const c=pat.caps[id];if(id===pat.carrega)continue;
       const mq=c.em?MQ[c.em]:null,x=mq?mq.tx*16+8:c.x,y=mq?mq.ty*16+(c.em==='porta'?6:2):c.y;if(!naTela(x,y,30))continue;
       enfileirar(y+(mq?1:0),g=>{if(!mq)sombra(g,x,y+1,4,1.5);blit(g,SPR.get('capsulaValor',c.val.t),x,y,5,13);if(!mq)etiqueta(g,x,y-22,LANG.fmt(c.val),{int:'#6fd3ff',float:'#5dff7a',str:'#e9dcbc',bool:'#ffb43a'}[c.val.t]);});}
-    if(pat.carrega){const c=pat.caps[pat.carrega],p=G.p;enfileirar(p.y+1,g=>{blit(g,SPR.get('capsulaValor',c.val.t),p.x+7,p.y-30,5,13);etiqueta(g,p.x+7,p.y-52,LANG.fmt(c.val),'#ffe9a0');});}
   };
   /* Oficina: contêineres, separadora, monta-cargas, bancada e o console */
   objeto(A,SPR.get('separadora',0),8*16,12*16+8,{col:[-24,-14,24,0]}).desenho=(g,ob,t)=>blit(g,SPR.get('separadora',PAINEL.run&&PAINEL.area===A?Math.floor(t*6)%2:0),ob.x,ob.y,26,40);

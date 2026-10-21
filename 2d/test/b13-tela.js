@@ -19,6 +19,14 @@ const cruza=(a,b)=>a&&b&&a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a
   t.ok(r.mao==='Na mão"True" (str)'&&r.avisos===0,'pegar a cápsula não gera aviso: o HUD mostra o que está na mão',r);
   r=await ev(()=>{const pat=__vt.G.area.patio,c=pat.caps.c_true;__vt.usarEm(c.x,c.y+20,'cima');__vt.quadros(2);return document.getElementById('mao').textContent;});
   t.ok(r==='Na mãoTrue (bool)','trocar de cápsula atualiza o HUD',r);
+  /* ---------- a cápsula fica na mão livre do explorador (com a cor do tipo), não flutuando sobre a cabeça ---------- */
+  r=await ev(()=>{const p=__vt.G.p,cv=document.createElement('canvas'),cg=cv.getContext('2d',{willReadFrequently:true}),cor=im=>{cv.width=im.width;cv.height=im.height;cg.drawImage(im,0,0);const d=cg.getImageData(0,0,im.width,im.height).data;let n=0,topo=99;
+      for(let i=0;i<d.length;i+=4)if(d[i]===0xff&&d[i+1]===0xb4&&d[i+2]===0x3a&&d[i+3]===255){n++;topo=Math.min(topo,Math.floor(i/4/im.width));}return{n,topo};};
+    const o={flash:document.getElementById('mao').classList.contains('flash')};p.usar=0;
+    for(const d of['baixo','cima','esquerda','direita']){p.dir=d;p.vel=0;const a=cor(frameJogador());p.vel=60;const b=cor(frameJogador());o[d]=[a,b];}
+    const pat=__vt.G.area.patio,guarda=pat.carrega;pat.carrega=null;p.vel=0;p.dir='baixo';o.sem=cor(frameJogador());pat.carrega=guarda;return o;});
+  t.ok(['baixo','cima','esquerda','direita'].every(d=>r[d].every(x=>x.n>=6&&x.topo>=30))&&r.sem.n===0&&r.flash,
+    'levando a cápsula, o explorador a segura na mão livre (faixa do tipo na altura do quadril, parado e andando, nas 4 direções); o HUD pisca ao trocar',r);
   /* ---------- avisos: a interação nova substitui a anterior ---------- */
   r=await ev(()=>{const MQ=PATIO_DIESEL.maquinas,u=k=>__vt.usarEm(MQ[k].tx*16+8,MQ[k].ty*16+34,'cima');
     const pat=__vt.G.area.patio,c=pat.caps.c_strue;__vt.usarEm(c.x,c.y+20,'cima');

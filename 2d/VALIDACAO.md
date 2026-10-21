@@ -74,7 +74,7 @@ comparação em `capturas/F-celular-antes-depois.png`.
 | Caixa do objetivo grande | Além de ocupar 4 linhas, ela era **refeita a cada quadro** (defeito): a animação de destaque recomeçava sem parar, por isso a moldura amarela grossa ficava sempre acesa. | O objetivo só é refeito (e pisca uma vez) quando o texto muda. No celular, depois de 9 s ele **encolhe para o título e uma linha** (com ▸); tocar nele abre o texto inteiro de novo. |
 | Marcadores sobre o HUD e cortados | O "◆ Disjuntor" ficava por cima dos avisos e saía da borda da tela. | Marcas do mundo ficam por baixo do HUD e dos avisos e nunca passam da borda. O texto da ação nas tumbas subiu para não ficar por baixo do botão **VER**. |
 | Caixa de texto do Guia pequena | **Defeito de layout**: o quadro **Exemplo** encolhia dentro da área que rola e mostrava só uma faixa (o código ficava cortado). Os assuntos do grupo ocupavam até 5 fileiras de botões. | Nenhum bloco do conteúdo encolhe mais (o exemplo aparece inteiro, no celular, deitado e no computador). No celular, os assuntos ficam **numa fileira que rola para o lado** (o aberto fica à vista) e o cabeçalho é mais baixo: o conteúdo passou de 59% para **77% da caixa**. Tocar num grupo já abre o primeiro assunto dele. |
-| Testado | `b13-tela` (22 verificações): HUD da cápsula, substituição dos avisos, limite e posição, objetivo (não refeito, encolhe, abre), marcador dentro da tela e por baixo do HUD, texto da ação × VER/LUZ/AÇÃO, Guia em pé, deitado e no computador. Não testado num celular de verdade. |
+| Testado | `b13-tela` (23 verificações): HUD da cápsula, cápsula na mão do explorador, substituição dos avisos, limite e posição, objetivo (não refeito, encolhe, abre), marcador dentro da tela e por baixo do HUD, texto da ação × VER/LUZ/AÇÃO, Guia em pé, deitado e no computador. Não testado num celular de verdade. |
 
 ### I — Documentos de 18/10/2026: "Registro de melhorias – MVP 0.1" e "Plano de melhorias" (técnico)
 Cada item foi conferido no jogo antes. O que já existia está marcado; o que faltava foi feito agora e testado em `b14-mvp`.
@@ -168,6 +168,13 @@ explorador ao alvo; se ali há HUD, aviso ou botão de toque, recua pela linha o
 Houve também um anel com uma ponta embaixo do explorador; depois de ver no jogo, o autor achou desnecessário e ele saiu.
 
 Limites: Chromium sem janela com aparelhos simulados; a seta em tela real (brilho, dedo por cima) precisa de celular físico.
+
+### Q — A cápsula vai na mão, não sobre a cabeça
+No pátio dos Motores, a cápsula carregada flutuava acima da cabeça do explorador com o valor escrito em cima, e esse
+texto se misturava com as etiquetas das cápsulas no chão e das máquinas. Agora o explorador **segura a cápsula na mão
+livre**, em pé ao lado do quadril (a outra mão continua na bengala), parado e andando, nas quatro direções. A faixa
+colorida mostra o tipo (int azul, float verde, str papel, bool âmbar), e o valor fica só no HUD (**Na mão 2.5 (float)**),
+que pisca quando a cápsula muda. Testado em `b13-tela` (1003 verificações no total).
 
 ### P — Sem o botão VER
 O botão **VER** (aproximar ou afastar a câmera) saiu da tela de toque, a pedido do autor. No celular e no tablet a câmera
@@ -315,4 +322,4 @@ Anote o aparelho, o navegador e o que falhou (com captura de tela).
 `2d/test/rodar.sh` (Node + Chromium sem janela): l1-linguagem, l2-save, b1-percurso, b2-painel, b3-save, b4-telas,
 b5-perigos, b6-personagem, b7-ajuda, b8-leitura, b9-validacoes, b10-recompensa, b11-terminal, b12-vale-som, b13-tela,
 b14-mvp, b15-plano, l3-relatorio, b16-melhorias, b17-exploracao, b18-camara, b19-boss-polimento e, nesta atualização,
-b20-bussola e b21-desempenho: **1002 verificações, todas passando**. O README lista o que cada um confere.
+b20-bussola e b21-desempenho: **1003 verificações, todas passando**. O README lista o que cada um confere.

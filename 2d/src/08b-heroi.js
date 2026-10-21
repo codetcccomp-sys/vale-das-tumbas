@@ -7,13 +7,15 @@
    pés (12×6 px), então a bengala não aumenta a área de colisão.
    As partes são montadas em camadas por quadro: botas, braço de trás, tronco, cabeça, bengala e braço da frente; os
    braços são traçados do ombro até a mão, então a mão acompanha a bengala quando ela sobe e anda com o passo. */
+const CAPS_COR={int:'#6fd3ff',float:'#5dff7a',str:'#e9dcbc',bool:'#ffb43a'};
 const HEROI_PAL={
   o:'#140c0a',H:'#b4a682',h:'#82775c',L:'#d8cca4',b:'#6c7898',G:'#2c2422',g:'#b4c44c',l:'#eef49c',
   S:'#eab45c',s:'#b47e3a',K:'#f8d48c',D:'#dccc7c',d:'#a89a56',E:'#f2e8aa',p:'#767a70',Y:'#ecc62e',y:'#b0921e',
   U:'#4048b8',u:'#262c80',R:'#d65a2c',r:'#902e16',T:'#5e3c20',Z:'#cc3a2c',W:'#f4ece0',O:'#b4a23a',q:'#7a6a22',
   B:'#9a6420',n:'#563612',N:'#c08a36',Q:'#6e4618',
   C:'#363250',c:'#24212f',X:'#5c5880',P:'#2c2840',A:'#4c7e5c',a:'#2e5040',e:'#7cae86',M:'#28272e',m:'#5c6068',
-  J:'#de9c3c',j:'#a8702a',k:'#f4c068',F:'#4c4870',f:'#6a669a'
+  J:'#de9c3c',j:'#a8702a',k:'#f4c068',F:'#4c4870',f:'#6a669a',
+  v:'#3a3f48',x:'#c4ccd6',t:'#8a929e',i:'#33373f','1':CAPS_COR.int,'2':CAPS_COR.float,'3':CAPS_COR.str,'4':CAPS_COR.bool
 };
 const HEROI={W:40,H:46,ax:20,ay:44};
 /* bengala de lado (o mecanismo aponta para o corpo) e de frente (o mecanismo fica estreito, à frente da haste) */
@@ -45,6 +47,8 @@ const BOTA_LADO=['.nBBB..','.nBBB..','NBBBB..','NBBBBBB','nnnnnnn'];
 const BOTA_FRENTE=['.nBBn','.nBBB','NBBBB','BBBBB','nnnnn'];
 const MAO=['oKSo','SSSS','sSSs','.ss.'];
 const MAO_LIVRE=['.SS.','SKSS','SSSs','.ss.'];
+/* cápsula do pátio dos Motores na mão livre: corpo de metal e a faixa (?) com a cor do tipo, trocada em heroiQuadro */
+const CAPS_MAO=['.vvvv.','xxtttt','??????','??????','??????','xttttt','xttttt','xttttt','xttttt','.iiii.'];
 
 function heroiMapa(g,linhas,ox,oy,troca){
   for(let y=0;y<linhas.length;y++){const l=linhas[y];for(let x=0;x<l.length;x++){let ch=l[x];if(ch==='.'||ch===' ')continue;if(troca&&troca[ch])ch=troca[ch];const c=HEROI_PAL[ch];if(!c)continue;g.fillStyle=c;g.fillRect((ox|0)+x,(oy|0)+y,1,1);}}
@@ -60,6 +64,8 @@ function heroiBraco(g,pts){
 function heroiQuadro(vista,q){
   const c=cnv(HEROI.W,HEROI.H),g=ctx2(c),dy=q.dy||0,bx=q.bx||0,by=q.by||0,dx=q.dx||0;
   const troca=q.brilho?{g:'l'}:null,aperta=q.aperta||0;
+  /* levando a cápsula: a faixa ganha a cor do tipo */
+  const caps=q.leva?{'?':String(1+['int','float','str','bool'].indexOf(q.leva))}:null;
   if(vista==='lado'){
     /* botas: a de trás (mais escura) primeiro */
     const b=q.botas||[[0,0],[0,0]];
@@ -68,6 +74,8 @@ function heroiQuadro(vista,q){
     /* braço de trás (mão na cintura, ou erguido no dano) */
     if(q.livre==='quadril')heroiBraco(g,[[15+dx,29+dy],[11+dx,32+dy],[13+dx,35+dy]]),heroiMapa(g,MAO_LIVRE,11+dx,34+dy);
     else if(q.livre==='dano')heroiBraco(g,[[15+dx,29+dy],[11+dx,27+dy],[9+dx,24+dy]]),heroiMapa(g,MAO_LIVRE,7+dx,22+dy);
+    /* levando: a mão livre segura a cápsula em pé, atrás do quadril, sem cobrir a roupa nem a bengala */
+    if(q.leva)heroiBraco(g,[[15+dx,29+dy],[11+dx,32+dy],[10+dx,35+dy]]),heroiMapa(g,CAPS_MAO,7+dx,30+dy,caps),heroiMapa(g,MAO_LIVRE,8+dx,35+dy);
     heroiMapa(g,TRONCO_LADO,12+dx,27+dy);
     heroiMapa(g,q.esq?CAB_LADO_ESQ:CAB_LADO,12+dx+(q.inclina||0),14+dy+(q.dano?-1:0),troca);
     if(q.dano){g.fillStyle=HEROI_PAL.o;g.fillRect(24+dx,23+dy,2,2);}
@@ -101,6 +109,8 @@ function heroiQuadro(vista,q){
     /* de frente, alcançar é estender a mão para baixo, à frente da roupa (na direção da câmera) */
     if(frente&&L==='meio')heroiBraco(g,[oL,[oL[0]+1,32+dy],[oL[0]-2,34+dy]]),heroiMapa(g,MAO_LIVRE,oL[0]-4,33+dy);
     if(frente&&L==='estica')heroiBraco(g,[oL,[oL[0]+1,33+dy],[oL[0]-3,36+dy+aperta]]),heroiMapa(g,MAO_LIVRE,oL[0]-5,35+dy+aperta);
+    /* levando: o braço livre desce e a mão segura a cápsula em pé, ao lado do quadril (fora da roupa, para a faixa do tipo ficar visível) */
+    if(caps){const cx=frente?oL[0]+1:oL[0]-7;heroiBraco(g,[oL,[oL[0]+sx*3,32+dy],[cx+3,35+dy]]);heroiMapa(g,CAPS_MAO,cx,30+dy,caps);heroiMapa(g,MAO_LIVRE,cx+1,35+dy);}
     /* dano: o braço livre é jogado para fora e para cima */
     if(L==='dano')heroiBraco(g,[oL,[oL[0]+sx*4,27+dy],[oL[0]+sx*6,23+dy]]),heroiMapa(g,MAO_LIVRE,oL[0]+sx*6-2,21+dy);
   }
@@ -144,6 +154,15 @@ function montarHeroi(){
   /* a esquerda é o perfil espelhado, mas com a cabeça do lado esquerdo (olho livre; o tapa-olho fica do outro lado) */
   S.esquerda={};for(const an in HEROI_ANIM.lado)S.esquerda[an]=HEROI_ANIM.lado[an].map(q=>espelhar(heroiQuadro('lado',Object.assign({},q,{esq:1}))));
   return S;
+}
+/* quadros levando a cápsula (parado e andar), montados na primeira vez que cada tipo vai para a mão */
+const HEROI_LEVA={};
+function heroiLeva(tipo){
+  if(HEROI_LEVA[tipo])return HEROI_LEVA[tipo];
+  const S={},vistas={baixo:'frente',cima:'costas',direita:'lado'},q2=(q,esq)=>Object.assign({},q,{livre:null,leva:tipo},esq?{esq:1}:null);
+  for(const dir in vistas){const A=HEROI_ANIM[vistas[dir]];S[dir]={parado:A.parado.map(q=>heroiQuadro(vistas[dir],q2(q))),andar:A.andar.map(q=>heroiQuadro(vistas[dir],q2(q)))};}
+  S.esquerda={};for(const an of['parado','andar'])S.esquerda[an]=HEROI_ANIM.lado[an].map(q=>espelhar(heroiQuadro('lado',q2(q,1))));
+  return HEROI_LEVA[tipo]=S;
 }
 /* configuração das animações (também vai para o JSON junto com a folha de sprites) */
 const HEROI_CONFIG={celula:{largura:HEROI.W,altura:HEROI.H},ancora:{x:HEROI.ax,y:HEROI.ay,descricao:'centro da base dos pés'},

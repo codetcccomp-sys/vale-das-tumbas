@@ -78,9 +78,9 @@ function atualizarHud(){
     $('relicTxt').textContent=saberesCount()+'/4 saberes';
   }
   if(G.area&&G.area.id!=='vale'){$('lantern').classList.toggle('off',!G.lanternOn);$('ltxt').textContent=G.lanternOn?'acesa':'apagada';}
-  /* o que o explorador leva na mão (cápsula do pátio dos Motores): fica no HUD em vez de virar aviso */
+  /* o que o explorador leva na mão (cápsula do pátio dos Motores): fica no HUD em vez de virar aviso, e pisca quando muda */
   const nm=G.area&&G.area.naMao?G.area.naMao():null,nk=nm?nm.t:'';
-  if(nk!==atualizarHud.nk){atualizarHud.nk=nk;const e=$('mao');e.hidden=!nm;e.textContent='';if(nm){const s=document.createElement('span');s.textContent='Na mão';const b=document.createElement('b');b.textContent=nm.t;b.style.color=nm.cor||'';e.appendChild(s);e.appendChild(b);}}
+  if(nk!==atualizarHud.nk){atualizarHud.nk=nk;const e=$('mao');e.hidden=!nm;e.textContent='';if(nm){const s=document.createElement('span');s.textContent='Na mão';const b=document.createElement('b');b.textContent=nm.t;b.style.color=nm.cor||'';e.appendChild(s);e.appendChild(b);e.classList.remove('flash');void e.offsetWidth;e.classList.add('flash');}}
   /* objetivo: refeito (e pisca) só quando o texto muda; nas telas pequenas encolhe para o título e uma linha depois de
      alguns segundos, e tocar nele abre de novo */
   const go=objetivo(),gk=go?go.t+'\n'+go.s+(go.d?'\n'+go.d:''):'',el=$('goal');
@@ -216,8 +216,10 @@ function frameJogador(){
   const p=G.p,S=EXP[p.dir],A=HEROI_CONFIG.animacoes;
   if(G.danoT>0)return S.dano[Math.floor(G.t*A.dano.fps)%S.dano.length];
   if(p.usar>0)return S.usar[Math.min(S.usar.length-1,Math.floor((1-p.usar/A.usar.duracao)*S.usar.length))];
-  if(p.vel>10)return S.andar[Math.floor(p.anim)%S.andar.length];
-  return S.parado[Math.floor(G.t*A.parado.fps)%S.parado.length];
+  /* com a cápsula na mão, parado e andando usam os quadros em que o braço livre a segura */
+  const nm=G.area&&G.area.naMao?G.area.naMao():null,L=nm&&nm.tipo?heroiLeva(nm.tipo)[p.dir]:S;
+  if(p.vel>10)return L.andar[Math.floor(p.anim)%L.andar.length];
+  return L.parado[Math.floor(G.t*A.parado.fps)%L.parado.length];
 }
 function desenharJogador(){
   const p=G.p;
