@@ -1,0 +1,665 @@
+/* ====================== painel de programação ======================
+   O mesmo painel em todas as tumbas, liberando recursos aos poucos: funções da sala e linhas de estrutura
+   (variável = valor, if, elif, else, for, while), variáveis e sensores, situações de teste, as dicas do Lume, o Guia
+   de Programação e uma área que explica cada erro.
+   - Por toques: tocar numa linha da paleta escreve no cursor (▸); tocar numa linha do programa seleciona e abre o
+     editor dela (↑ ↓ remover, valores, condição, número de voltas, + elif, else). Nada precisa ser arrastado.
+   - ✎ Escrever: o mesmo programa num campo de texto, para digitar código Python de verdade. Ao executar (ou em
+     Pronto), o texto é lido; se houver erro, a área de erro diz a linha e o que fazer.
+   - Executar e Passo a passo chamam o mesmo LANG.passo(); só existe uma execução por vez (PAINEL.run).
+   - Enquanto o painel está aberto, a exploração fica pausada e a câmera mostra o mecanismo da sala, que reage ao
+     código. Ao fechar, a execução para, o programa fica guardado e os controles voltam ao normal.
+   - Editor amplo (padrão): o painel ocupa a maior parte da tela e a sala vira uma faixa compacta, centrada no mecanismo
+     (durante a execução, no que a instrução da vez mexe). "Ver a sala" faz o contrário. A escolha fica guardada.
+   - Comandos e variáveis: referência recolhível nos dois modos (funções, variáveis com tipo e valor, sensores, valores,
+     estruturas e as pistas lidas na sala). No modo Escrever, tocar num item escreve no cursor; a paleta também continua. */
+const PAINEL={aberto:false,tumba:null,cfg:null,prog:[],cur:{pai:null,ramo:null,i:0},sel:null,sit:0,run:null,vel:1,passou:{},falhou:{},
+  demoVisto:{},foco:null,area:null,msg:'',msgTipo:'',ultimoEv:null,parado:null,texto:false,erroTexto:null,previsao:{},amplo:true,guiaSalvo:null};
+const VEL=[1,2,0.5];
+function painelInit(){
+  $('pFechar').onclick=()=>fecharPainel();
+  $('pRun').onclick=()=>painelExecutar();$('pStep').onclick=()=>painelPassoBtn();$('pStop').onclick=()=>painelParar(true);
+  $('pReset').onclick=()=>painelReiniciar();$('pClear').onclick=()=>painelLimpar();$('pDica').onclick=()=>painelDica();
+  $('pMsgMais').onclick=()=>{PAINEL.msgAberta=!$('pMsg').classList.contains('aberto');ajustarMsg();if(!PAINEL.msgAberta)$('pMsg').scrollIntoView({block:'nearest'});};$('pGuia').onclick=()=>abrirGuia(topicoGuia(PAINEL.cfg));$('pModo').onclick=()=>painelModoTexto(!PAINEL.texto);
+  $('pLayout').onclick=()=>alternarLayoutPainel();
+  /* aberta ou fechada, a referência lembra a escolha (uma para cada modo) */
+  $('pRefBox').addEventListener('toggle',()=>{if(PAINEL.refAuto)return;cfgGravar(PAINEL.texto?{refTexto:$('pRefBox').open}:{refBlocos:$('pRefBox').open});});
+  {const c=cfgLer();PAINEL.amplo=c.painelAmplo!==false;}
+  $('pVel').onclick=()=>{const i=(VEL.indexOf(PAINEL.vel)+1)%VEL.length;PAINEL.vel=VEL[i];$('pVel').textContent=(PAINEL.vel===0.5?'½':PAINEL.vel)+'×';};
+  $('pProg').addEventListener('click',e=>{const li=e.target.closest('.ln');if(!li){if(!PAINEL.run)painelCursor({pai:null,ramo:null,i:PAINEL.prog.length});return;}painelTocarLinha(li);});
+  /* no campo de texto, Tab escreve 4 espaços (o recuo do Python) */
+  /* atalhos do painel no teclado físico (também dentro do campo de texto) */
+  addEventListener('keydown',e=>{
+    if(!PAINEL.aberto)return;
+    const ctl=e.ctrlKey||e.metaKey;let b=null;
+    if(ctl&&e.key==='Enter')b=e.shiftKey?'pStep':'pRun';else if(ctl&&e.key==='.')b='pStop';else if(e.altKey&&(e.key==='r'||e.key==='R'))b='pReset';
+    if(!b)return;e.preventDefault();e.stopPropagation();const el=$(b);if(el&&!el.disabled&&!el.hidden)el.click();
+  },true);
+  $('pTxt').addEventListener('keydown',e=>{if(e.key==='Tab'){e.preventDefault();const a=e.target,i=a.selectionStart;a.value=a.value.slice(0,i)+'    '+a.value.slice(a.selectionEnd);a.selectionStart=a.selectionEnd=i+4;}});
+  $('pTxt').addEventListener('input',()=>{PAINEL.erroTexto=null;mostrarErro(null);});
+  addEventListener('resize',()=>{if(PAINEL.aberto)atualizarVista();});
+}
+const mundoAtual=()=>MUNDOS[PAINEL.cfg.mundo];
+const sitAtual=()=>PAINEL.cfg.situacoes[PAINEL.sit]||PAINEL.cfg.situacoes[0]||{};
+function desafioDisponivel(cfg){const l=desafiosDa(cfg.tumba),i=l.indexOf(cfg);return i===0||!!G.learn[l[i-1].id];}
+const rodandoAgora=()=>!!PAINEL.run&&!PAINEL.run.s.fim;
+
+/* ---------- abrir e fechar ---------- */
+function abrirPainel(tumba,area,foco){
+  if(G.mode!=='play')return;
+  PAINEL.aberto=true;PAINEL.tumba=tumba;PAINEL.area=area;PAINEL.foco=foco;
+  G.mode='painel';limparEntrada();document.body.classList.add('painel');$('painel').hidden=false;$('prompt').hidden=true;
+  aplicarLayoutPainel();
+  const l=desafiosDa(tumba);const cfg=l.find(d=>!G.learn[d.id])||l[l.length-1];
+  escolherDesafio(cfg,true);redimensionar();atualizarVista();if(foco&&area)camSeguir(foco.x,foco.y,0,area,true);SFX.lever();
+  if(area&&area.aoAbrirPainel)area.aoAbrirPainel();
+}
+function fecharPainel(silencio){
+  if(!PAINEL.aberto)return;
+  if(PAINEL.texto)lerTexto(true);
+  painelParar(false);guardarPrograma();
+  PAINEL.aberto=false;PAINEL.texto=false;$('painel').hidden=true;document.body.classList.remove('painel','pAmplo');R.vista=null;PAINEL.foco=null;
+  redimensionar();if(G.area)camSeguir(G.p.x,G.p.y-12,0,G.area,true);
+  if(G.mode==='painel')G.mode='play';limparEntrada();
+  if(!silencio)salvar(false);
+}
+function atualizarVista(){
+  const r=$('painel').getBoundingClientRect();
+  if(r.top>40)R.vista={x:0,y:0,w:innerWidth*R.dpr,h:r.top*R.dpr};else R.vista={x:0,y:0,w:r.left*R.dpr,h:innerHeight*R.dpr};
+}
+/* editor amplo × ver a sala */
+function aplicarLayoutPainel(){
+  document.body.classList.toggle('pAmplo',PAINEL.amplo);const b=$('pLayout');
+  b.textContent=PAINEL.amplo?'🔍 Ver a sala':'⤢ Editor amplo';
+  b.title=PAINEL.amplo?'Diminui o painel e mostra mais da sala':'O editor ocupa a maior parte da tela; a sala fica numa faixa compacta, no mecanismo';
+}
+function alternarLayoutPainel(){PAINEL.amplo=!PAINEL.amplo;cfgGravar({painelAmplo:PAINEL.amplo});aplicarLayoutPainel();atualizarVista();if(PAINEL.area)camSeguir(PAINEL.foco.x,PAINEL.foco.y,0,PAINEL.area,true);SFX.click();}
+/* para onde a câmera olha com o painel aberto: o mecanismo da sala; na faixa compacta, acompanha o que a instrução mexe */
+function focoCamPainel(A){
+  const f=PAINEL.foco;if(!PAINEL.amplo||!A.focoEvento)return f;
+  const r=PAINEL.run,ev=r?r.ev:PAINEL.parado?PAINEL.parado.ev:null;if(!ev)return f;
+  const v=painelVis(),p=v&&A.focoEvento(ev,v.ws,v.cfg);return p?{x:(p.x+f.x)/2,y:(p.y+f.y)/2}:f;
+}
+function guardarPrograma(){const c=PAINEL.cfg;if(c&&c.etapa!=='demo')G.progs[c.id]=LANG.clonar(PAINEL.prog);}
+function escolherDesafio(cfg,primeiro){
+  painelParar(false);if(PAINEL.texto)lerTexto(true);guardarPrograma();
+  $('pPrev').hidden=true;
+  PAINEL.cfg=cfg;PAINEL.sit=0;PAINEL.sel=null;PAINEL.parado=null;PAINEL.ultimoEv=null;PAINEL.erroTexto=null;PAINEL.texto=false;
+  if(cfg.etapa==='demo'){PAINEL.prog=LANG.clonar(cfg.demo[0].prog);PAINEL.demoIdx=0;}
+  else{const p=G.progs[cfg.id];PAINEL.prog=p?LANG.limpar(p,cfg).prog:programaInicial(cfg);}
+  PAINEL.cur={pai:null,ramo:null,i:PAINEL.prog.length};
+  if(!PAINEL.passou[cfg.id])PAINEL.passou[cfg.id]={};if(!PAINEL.falhou[cfg.id])PAINEL.falhou[cfg.id]={};
+  if(PAINEL.area&&PAINEL.area.aoEscolher)PAINEL.area.aoEscolher(cfg);
+  abrirRef(false);mostrarErro(null);mensagemInicial();renderPainel();
+}
+function mensagemInicial(){
+  const c=PAINEL.cfg;let t=c.intro.join(' ');
+  if(G.learn[c.id]&&c.etapa!=='demo')t='Etapa concluída. Você pode testar de novo ou voltar às outras. '+t;
+  const g=c.etapa==='guiada'?guiaDe(c,PAINEL.prog):null;
+  if(g&&!G.learn[c.id])t=t+' → '+g.texto;
+  painelMsg(t,'');
+}
+/* a tarefa (o que fazer) fica numa linha própria, separada do contexto (enunciado) e das explicações e respostas */
+function renderTarefa(){
+  const c=PAINEL.cfg,T=$('pTarefa');if(!c||!T)return;const feita=!!G.learn[c.id]&&c.etapa!=='demo';
+  T.textContent='';T.className=feita?'feita':'';if(!c.tarefa)return;
+  const r=document.createElement('span');r.className='rot';r.textContent=feita?'✔ TAREFA CONCLUÍDA':'🎯 TAREFA';T.appendChild(r);T.appendChild(document.createTextNode(c.tarefa));
+}
+function painelMsg(t,tipo){PAINEL.msg=t;PAINEL.msgTipo=tipo||'';const m=$('pMsg');m.textContent=t;m.className=tipo||'';m.scrollTop=0;PAINEL.msgAberta=false;ajustarMsg();}
+/* enunciado longo: abre inteiro quando cabe no painel sem esconder o programa; senão fica recolhido, com "ler o resto" */
+function ajustarMsg(){
+  const m=$('pMsg'),b=$('pMsgMais');if(!m||!PAINEL.aberto){if(b)b.hidden=true;return;}
+  m.classList.remove('longo','aberto');
+  if(m.scrollHeight<=m.clientHeight+2){b.hidden=true;return;}
+  m.classList.add('longo','aberto');const P=$('painel');
+  /* recolhe quando não cabe, ou quando o programa já tem 3 linhas ou mais (aí o código precisa do espaço) */
+  if(!PAINEL.msgAberta&&(P.scrollHeight>P.clientHeight+2||(PAINEL.prog&&PAINEL.prog.length>=3))&&getComputedStyle($('pInfo')).display==='contents')m.classList.remove('aberto');
+  const ab=m.classList.contains('aberto');b.hidden=getComputedStyle($('pInfo')).display!=='contents'||(ab&&!PAINEL.msgAberta);
+  b.textContent=ab?'▴ recolher':'▾ ler o resto';
+}
+/* área de erro: o que deu errado (com o nome do erro em Python) e o que fazer, em linguagem simples */
+/* área de erro: de onde vem o problema (Python, regra da máquina, objetivo…), a linha, o que deu errado e o que fazer;
+   o botão abre o Guia no assunto do erro, sem perder o programa */
+function mostrarErro(x){
+  const box=$('pErro');$('painel').classList.toggle('erroTexto',!!x&&PAINEL.texto);if(!x){box.hidden=true;return;}
+  const cat=x.cat||'python';box.className='cat-'+cat;
+  box.hidden=false;box.querySelector('.onde').textContent=(x.linha?'Linha '+x.linha+' · ':'')+(LANG.CAT[cat]||'Erro');
+  box.querySelector('.tit').textContent=x.titulo;box.querySelector('.txt').textContent=x.texto;
+  box.querySelector('.dica').textContent=(PAINEL.cfg&&PAINEL.cfg.dicas?'Se precisar, peça uma 💡 Dica ao Lume.':'');
+  const top=x.guia||topicoGuia(PAINEL.cfg),T=GUIA.find(g=>g.id===top),gb=box.querySelector('.gbtn');
+  gb.hidden=!T;if(T){gb.textContent='📖 Ver no Guia: '+T.t;gb.onclick=()=>abrirGuia(top);}
+  /* no modo Escrever, o código é o que se corrige: a referência recolhe (se não couber) e o campo fica à vista com o erro */
+  if(PAINEL.texto){const P=$('painel'),C=$('pCorpo'),sobra=el=>el.scrollHeight>el.clientHeight+2;
+    if((sobra(P)||sobra(C))&&$('pRefBox').open){PAINEL.refAuto=true;$('pRefBox').open=false;setTimeout(()=>{PAINEL.refAuto=false;},0);}
+    ajustarMsg();aVista($('pTxt'));if(box.getBoundingClientRect().top<P.getBoundingClientRect().top)aVista(box);
+    /* deitado (duas colunas), cada coluna rola sozinha: o campo de código fica à vista na dele */
+    if(getComputedStyle($('pInfo')).display!=='contents'){$('pTxt').scrollIntoView({block:'nearest'});box.scrollIntoView({block:'nearest'});}}
+  else if(getComputedStyle($('pInfo')).display!=='contents')box.scrollIntoView({block:'nearest'});else aVista(box);
+}
+/* rola o painel até o elemento ficar visível acima da barra fixa de linhas e controles (telas baixas) */
+function aVista(el){
+  /* celular deitado: o painel vira duas colunas e quem rola é a coluna da esquerda */
+  if(getComputedStyle($('painel')).display==='grid'){try{el.scrollIntoView({block:'nearest'});}catch(e){}return;}
+  const P=$('painel'),r=el.getBoundingClientRect(),p=P.getBoundingClientRect(),f=$('pRodape').getBoundingClientRect();
+  const escondido=r.bottom+6-f.top;
+  if(escondido>0)P.scrollTop+=Math.min(escondido,r.top-p.top-4);else if(r.top<p.top)P.scrollTop-=p.top-r.top+4;
+}
+
+/* ---------- desenho do painel ---------- */
+function renderPainel(){
+  renderTarefa();
+  const c=PAINEL.cfg,rodando=rodandoAgora();
+  $('pTitulo').textContent=c.titulo;$('pEtapa').textContent=nomeLugar(c.tumba)+' · '+ETAPA_NOME[c.etapa];
+  /* etapas da tumba */
+  const E=$('pEtapas');E.textContent='';
+  desafiosDa(c.tumba).forEach((d,i)=>{const b=document.createElement('button');b.className='etp'+(G.learn[d.id]?' ok':'')+(d===c?' atual':'');
+    b.textContent=(G.learn[d.id]?'✔ ':desafioDisponivel(d)?'▶ ':'🔒 ')+(i+1)+' '+ETAPA_NOME[d.etapa];b.disabled=!desafioDisponivel(d)||rodando;
+    b.onclick=()=>{if(d!==PAINEL.cfg)escolherDesafio(d);};E.appendChild(b);});
+  /* a aba da etapa atual fica à vista rolando só a fileira das etapas (sem mexer na rolagem do painel) */
+  const at=E.querySelector('.atual');if(at){const a=E.getBoundingClientRect(),b=at.getBoundingClientRect();if(b.left<a.left)E.scrollLeft-=a.left-b.left;else if(b.right>a.right)E.scrollLeft+=b.right-a.right;}
+  /* situações */
+  const S=$('pSits');S.textContent='';S.hidden=c.situacoes.length<2;
+  c.situacoes.forEach((s,i)=>{const b=document.createElement('button');const pa=PAINEL.passou[c.id][s.id]===LANG.assinatura(PAINEL.prog),fa=PAINEL.falhou[c.id][s.id]===LANG.assinatura(PAINEL.prog);
+    /* passou com uma versão anterior do programa: o ✓ vira ↻ (precisa testar de novo, porque o programa mudou) */
+    const velho=c.etapa!=='demo'&&!pa&&!fa&&!!PAINEL.passou[c.id][s.id];
+    b.className='sit'+(i===PAINEL.sit?' atual':'')+(c.etapa!=='demo'&&pa?' ok':'')+(c.etapa!=='demo'&&!pa&&fa?' erro':'')+(velho?' velho':'');
+    b.textContent=(velho?'↻ ':'')+s.nome;b.title=velho?'Deu certo com uma versão anterior do programa. Como o programa mudou, teste de novo.':'';b.disabled=rodando;
+    b.onclick=()=>{if(i!==PAINEL.sit){painelParar(false);PAINEL.sit=i;PAINEL.parado=null;PAINEL.ultimoEv=null;mostrarErro(null);renderPainel();}};S.appendChild(b);});
+  renderVars();
+  const txt=PAINEL.texto;
+  $('pProg').hidden=txt;$('pTexto').hidden=!txt;
+  if(txt){$('pEdit').hidden=true;$('pRef').textContent=referenciaTexto(c);}else{renderPrograma();renderEditor();}
+  renderPaleta();renderRef();renderFixas();
+  /* controles */
+  const demo=c.etapa==='demo';
+  $('pClear').hidden=demo;$('pDica').hidden=demo||!c.dicas;$('pModo').hidden=demo;
+  $('pRun').disabled=rodando&&PAINEL.run.modo==='exec';$('pStep').disabled=rodando&&PAINEL.run.modo==='exec';$('pStop').disabled=!rodando;
+  $('pReset').disabled=!PAINEL.run&&!PAINEL.parado;$('pClear').disabled=rodando||(!PAINEL.prog.length&&!c.inicial);$('pModo').disabled=rodando;
+  {const b=$('pClear'),t=c.inicial?'Código original':'Limpar';rotuloBotao(b,c.inicial?'↺':'🗑',t);b.lastChild.remove();const s=document.createElement('span');s.className='tx';s.textContent=' '+t;b.appendChild(s);
+    b.setAttribute('aria-label',c.inicial?'Voltar ao código original':'Limpar o programa');b.title=c.inicial?'Código original: volta o programa ao que veio escrito (pede confirmação)':'Limpar: apaga as linhas do programa (pede confirmação)';}
+  rotuloBotao($('pModo'),txt?'✔':'✎',txt?'Pronto':'Escrever');
+  if(c.dicas){const n=G.dicas[c.id]||0;rotuloBotao($('pDica'),'💡','Dica '+(n>=3?'3/3':(n+1)+'/3'));}
+  rotuloBotao($('pRun'),'▶',rodando&&PAINEL.run.modo==='passo'?'Continuar':'Executar');
+  ajustarMsg();
+}
+function renderVars(){
+  const c=PAINEL.cfg,V=$('pVars');V.textContent='';
+  const env=PAINEL.run?PAINEL.run.s.env:PAINEL.parado?PAINEL.parado.env:null;
+  const ini=env||LANG.iniciar(c,mundoAtual(),sitAtual(),[]).env;
+  const lista=(c.vars||[]).map(d=>({d,sensor:false})).concat((c.sensores||[]).map(d=>({d,sensor:true})));
+  /* a variável do for aparece enquanto o for roda */
+  if(env)for(const k in env)if(env[k].laco)lista.push({d:{nome:k,t:'int'},sensor:false,laco:true});
+  V.hidden=!lista.length;
+  /* o cenário do desafio em casas legíveis (tabuleiro ou trilho), numa linha própria acima das variáveis */
+  const Cn=$('pCena'),trilho=c.mundo==='estufa'||c.mundo==='jardim';Cn.textContent='';Cn.hidden=c.mundo!=='grade'&&!trilho;
+  if(c.mundo==='grade')Cn.appendChild(tabuleiroDom());else if(trilho)Cn.appendChild(trilhoDom());
+  for(const{d,sensor,laco}of lista){const e=ini[d.nome],v=e?e.val:null;const el=document.createElement('div');el.className='var'+(v===null?' vazio':'')+(sensor?' sensor':'')+(laco?' laco':'');
+    const unid=d.unid&&v?' '+d.unid:'';
+    el.innerHTML='<span class="tp"></span><span class="nm"></span><span class="vl"></span>';el.children[0].textContent=(sensor?'sensor · ':laco?'variável do for · ':'aceita ')+LANG.rotulo(d.t);el.title=sensor?'Sensor: o programa só lê o valor.':laco?'Muda sozinha a cada volta do for.':'Contêiner da máquina: aceita só '+LANG.rotulo(d.t)+'.';
+    el.children[1].textContent=d.nome;el.children[2].textContent=v===null?'vazia':LANG.fmt(v)+unid;
+    const mu=(PAINEL.run||PAINEL.parado)&&PAINEL.mudancas&&PAINEL.mudancas[d.nome];
+    if(mu){el.classList.add('mudou');el.children[2].textContent=(mu.antes?LANG.fmt(mu.antes):'vazia')+' → '+LANG.fmt(mu.depois)+unid;el.title+=' Mudou neste passo.';}
+    V.appendChild(el);}
+}
+/* Engrenagens: o tabuleiro também aparece no painel, em casas grandes e legíveis (no celular, a faixa da sala corta o
+   tabuleiro). Mostra o destino, as pedras, o rastro e o autômato com a seta para onde ele olha, e acompanha a execução. */
+function tabuleiroDom(){
+  const v=painelVis(),w=v&&v.ws;const box=document.createElement('div');box.className='tab';if(!w||!w.grid)return box;
+  const g=document.createElement('div');g.className='tabg';g.style.gridTemplateColumns='repeat('+w.grid[0].length+',24px)';
+  const SETA=['▲','▶','▼','◀'],rastro=new Set((w.rastro||[]).map(p=>p[0]+','+p[1]));
+  w.grid.forEach((lin,y)=>{for(let x=0;x<lin.length;x++){const k=lin[x],i=document.createElement('i');
+    if(x===w.x&&y===w.y){i.className='a';i.textContent=SETA[w.dir];}
+    else if(k==='#'){i.className='r';i.textContent='■';}
+    else if(k==='G'){i.className='g';i.textContent='◆';}
+    else if(rastro.has(x+','+y)){i.className='t';i.textContent='·';}
+    g.appendChild(i);}});
+  const leg=document.createElement('p');leg.className='tabl';
+  leg.textContent=(w.ativo?'✔ Mecanismo ativado. ':'')+'▲ autômato (a ponta mostra para onde ele olha) · ◆ destino · ■ pedra'+(w.rastro&&w.rastro.length>1?' · · caminho feito':'');
+  box.appendChild(g);box.appendChild(leg);box.setAttribute('aria-label','Tabuleiro: '+w.grid.join(' / '));return box;
+}
+/* Viva e Cidade-Jardim: o trilho em casas legíveis (umidade de cada organismo / solo de cada canteiro, onde o robô está
+   e o fim do caminho), que acompanha a execução — antes, só os números em pixels da sala mostravam isso */
+function trilhoDom(){
+  const v=painelVis(),w=v&&v.ws,box=document.createElement('div');box.className='tab trilho';if(!w)return box;
+  const g=document.createElement('div');g.className='tabg';const lista=w.pods||w.beds||[];
+  g.style.gridTemplateColumns='repeat('+(lista.length+1)+',auto)';
+  const alvo=w.alvo||3;
+  lista.forEach((p,i)=>{const d=document.createElement('i');d.className='c'+(i===w.x?' a':'')+(p&&(w.pods?p.um>=alvo:p.solo!=='seco')?' ok':'');
+    d.textContent=w.pods?(p?String(p.um):'—'):(p.solo==='seco'?'seco':'úmido');d.title=(i+1)+'º '+(w.pods?'organismo':'canteiro');g.appendChild(d);});
+  const f=document.createElement('i');f.className='c fim'+(w.x>=w.fimX?' a':'');f.textContent=w.pods?'base':'fonte';g.appendChild(f);
+  const leg=document.createElement('p');leg.className='tabl';
+  leg.textContent=w.pods?'Umidade de cada organismo (precisa chegar a '+alvo+'); a casa laranja é onde o polinizador está.':'Solo de cada canteiro; a casa laranja é onde o robô está'+(w.regas?' · regas: '+w.regas:'')+'.';
+  box.appendChild(g);box.appendChild(leg);box.setAttribute('aria-label',leg.textContent+' Casas: '+[...g.children].map(i=>i.textContent).join(', ')+'.');return box;
+}
+/* linhas do programa (como em Python) com o cursor de inserção */
+function renderPrograma(){
+  const c=PAINEL.cfg,ol=$('pProg');ol.textContent='';
+  const rodando=rodandoAgora(),demo=c.etapa==='demo';
+  const atual=PAINEL.run?PAINEL.run.linha:null,erro=(PAINEL.run&&PAINEL.run.s.erro&&PAINEL.run.s.erro.linha)||(PAINEL.parado&&PAINEL.parado.erroLinha);
+  const conts={};if(PAINEL.run)for(const k of LANG.contadores(PAINEL.run.s))conts[k.id]=k;
+  const cur=PAINEL.cur;let curPosto=false;
+  const linhaCur=nv=>{if(demo||rodando)return;const li=document.createElement('li');li.className='ln cur';li.style.paddingLeft=(nv*20)+'px';li.textContent='▸ a próxima linha entra aqui';li.dataset.cursor='1';ol.appendChild(li);curPosto=true;};
+  const ehCur=(pai,ramo,i)=>!curPosto&&(cur.pai===(pai?pai.id:null))&&((cur.ramo||null)===(ramo||null))&&cur.i===i;
+  const add=(L,txt,sim,cls,id)=>{
+    const li=document.createElement('li');li.className='ln'+(cls?' '+cls:'');li.style.paddingLeft=(L.nv*20)+'px';
+    li.dataset.id=id;li.dataset.tipo=L.tipo;if(L.j!==undefined)li.dataset.j=L.j;
+    const s=document.createElement('span');s.className='sim';s.textContent=sim;li.appendChild(s);
+    const tx=document.createElement('span');tx.className='cod';tx.textContent=txt;if(/\?/.test(txt)&&L.tipo!=='fim')tx.classList.add('inc');li.appendChild(tx);
+    if(id===PAINEL.sel&&!rodando&&(L.tipo==='no'||L.tipo==='elif'))li.classList.add('sel');
+    if((L.tipo==='no'||L.tipo==='elif')&&id===atual)li.classList.add('atual');
+    if((L.tipo==='no'||L.tipo==='elif')&&id===erro)li.classList.add('erro');
+    if(L.tipo==='no'&&conts[id]){const b=document.createElement('span');b.className='cont';const k=conts[id];b.textContent=k.k==='rep'?'volta '+k.volta+'/'+k.n+' · '+k.var+' = '+(k.volta-1):'volta '+k.volta;li.appendChild(b);}
+    ol.appendChild(li);return li;
+  };
+  const simDe=n=>n.k==='cmd'?(LANG.CMD[n.cmd]||{}).sim:n.k==='set'?BLOCO_INFO.set.sim:n.k==='se'?BLOCO_INFO[n.senao?'sese':'se'].sim:BLOCO_INFO[n.k].sim;
+  (function w(l,nv,pai,ramo){
+    l.forEach((n,i)=>{
+      if(ehCur(pai,ramo,i))linhaCur(nv);
+      add({tipo:'no',nv},LANG.fmtNo(n),simDe(n)||'',n.k!=='cmd'?'estr':'',n.id);
+      if(n.k==='se'){
+        w(n.entao,nv+1,n,'entao');
+        LANG.elifsDe(n).forEach((e,j)=>{add({tipo:'elif',nv,j},LANG.fmtNo(e),BLOCO_INFO.elif.sim,'estr',e.id);w(e.corpo,nv+1,n,'elif'+j);});
+        if(n.senao){add({tipo:'senao',nv},'else:','◈','estr',n.id);w(n.senao,nv+1,n,'senao');}
+        add({tipo:'fim',nv},'# fim do if','','fimbl',n.id);
+      }
+      else if(n.k==='rep'||n.k==='enq'){w(n.corpo,nv+1,n,'corpo');add({tipo:'fim',nv},n.k==='rep'?'# fim do for':'# fim do while','','fimbl',n.id);}
+    });
+    if(ehCur(pai,ramo,l.length))linhaCur(nv);
+  })(PAINEL.prog,0,null,null);
+  if(!PAINEL.prog.length&&!curPosto&&!demo)linhaCur(0);
+  /* com a área de erro aberta, só a lista rola (a explicação do erro continua à vista) */
+  const el=ol.querySelector('.ln.atual,.ln.erro,.ln.sel,.ln.cur');
+  if(el&&!$('pErro').hidden){const a=ol.getBoundingClientRect(),b=el.getBoundingClientRect();if(b.top<a.top)ol.scrollTop-=a.top-b.top;else if(b.bottom>a.bottom)ol.scrollTop+=b.bottom-a.bottom;}
+  else if(el)try{el.scrollIntoView({block:'nearest'});}catch(e){}
+}
+/* toque numa linha: seleciona e coloca o cursor logo depois (num bloco, dentro dele) */
+function painelTocarLinha(li){
+  if(rodandoAgora())return;if(PAINEL.cfg.etapa==='demo'||li.dataset.cursor)return;
+  const id=+li.dataset.id,tipo=li.dataset.tipo,a=LANG.achar(PAINEL.prog,id);if(!a)return;
+  if(tipo==='no'){PAINEL.sel=id;PAINEL.cur=a.no.k==='cmd'||a.no.k==='set'?{pai:a.pai?a.pai.id:null,ramo:a.ramo,i:a.i+1}:{pai:id,ramo:a.no.k==='se'?'entao':'corpo',i:0};}
+  else if(tipo==='elif'){PAINEL.sel=id;PAINEL.cur={pai:a.pai.id,ramo:'elif'+a.i,i:0};}
+  else if(tipo==='senao'){PAINEL.sel=null;PAINEL.cur={pai:id,ramo:'senao',i:0};}
+  else{PAINEL.sel=null;PAINEL.cur={pai:a.pai?a.pai.id:null,ramo:a.ramo,i:a.i+1};}
+  SFX.click();painelSoltar();renderPainel();
+}
+function painelCursor(c){PAINEL.cur=c;PAINEL.sel=null;renderPainel();}
+/* depois de editar: a execução anterior deixa de valer para a tela */
+function painelSoltar(){if(PAINEL.run&&PAINEL.run.s.fim){PAINEL.run=null;}PAINEL.parado=null;PAINEL.ultimoEv=null;mostrarErro(null);}
+function programaMudou(){painelSoltar();guardarPrograma();const c=PAINEL.cfg;const g=c.etapa==='guiada'&&!G.learn[c.id]?guiaDe(c,PAINEL.prog):null;if(g)painelMsg(g.texto,'');}
+
+/* ---------- editor da linha selecionada ---------- */
+function chip(txt,on,fn,cls,img){const b=document.createElement('button');b.className='ch'+(on?' on':'')+(cls?' '+cls:'');if(img){const im=document.createElement('img');im.className='px';im.src=img;b.appendChild(im);}b.appendChild(document.createTextNode(txt));b.onclick=fn;return b;}
+const ICONE={};function iconeObj(o){if(!ICONE[o.id])ICONE[o.id]=escalar(SPR.get('valor',o.icone),2).toDataURL();return ICONE[o.id];}
+function renderEditor(){
+  const E=$('pEdit'),c=PAINEL.cfg;E.textContent='';
+  const a=PAINEL.sel?LANG.achar(PAINEL.prog,PAINEL.sel):null;
+  if(!a||c.etapa==='demo'||rodandoAgora()){E.hidden=true;return;}
+  E.hidden=false;const n=a.no,num=LANG.numeroLinha(PAINEL.prog,n.id);
+  const lbl=document.createElement('div');lbl.className='lbl';lbl.textContent='Linha '+num+': '+LANG.fmtNo(n);E.appendChild(lbl);
+  const lim={linhas:c.maxLinhas||LANG.LIM.linhas,prof:LANG.LIM.prof};
+  const fim=()=>{programaMudou();renderPainel();};
+  if(n.k!=='elif'){
+    const mv=d=>()=>{if(LANG.mover(PAINEL.prog,n.id,d,lim)){SFX.placa();PAINEL.cur={pai:null,ramo:null,i:PAINEL.prog.length};fim();}};
+    E.appendChild(chip('↑ Subir',false,mv(-1),'op'));E.appendChild(chip('↓ Descer',false,mv(1),'op'));
+  }
+  E.appendChild(chip(n.k==='elif'?'✕ Remover elif':'✕ Remover',false,()=>{const cur=LANG.remover(PAINEL.prog,n.id);PAINEL.sel=null;if(cur)PAINEL.cur=cur;SFX.tira();fim();},'op'));
+  /* o Guia no assunto da instrução selecionada */
+  const tg=topicoDaLinha(n,a,c),TG=GUIA.find(g=>g.id===tg);if(TG)E.appendChild(chip('📖 '+TG.t,false,()=>abrirGuia(tg),'op gl'));
+  const sep=t=>{const d=document.createElement('div');d.className='lbl';d.textContent=t;E.appendChild(d);};
+  const objs=opcoesValor(c);
+  if(n.k==='set'){
+    sep('Variável:');for(const v of c.vars||[])E.appendChild(chip(v.nome+' ('+LANG.TIPOS[v.t].rot+')',n.nome===v.nome,()=>{n.nome=v.nome;if(n.expr&&n.expr.k==='lit'&&LANG.compativel(v.t,n.expr.val)){n.expr=null;}fim();}));
+    const tipo=(c.vars.find(v=>v.nome===n.nome)||{}).t;
+    sep('Valor guardado (objetos da bancada):');
+    for(const o of objs)E.appendChild(chip(o.rotulo,n.expr&&n.expr.k==='lit'&&n.obj===o.id,()=>{
+      const msg=LANG.compativel(tipo,o.val);if(msg){SFX.deny();painelMsg(o.nome+': '+msg,'erro');return;}
+      n.expr={k:'lit',val:o.val};n.obj=o.id;SFX.atribui();fim();painelMsg(n.nome+' = '+LANG.fmt(o.val)+' ('+LANG.rotulo(o.val.t)+').','');},'',iconeObj(o)));
+    if(c.arit&&c.arit.length){
+      sep('Ou uma conta (o valor atual da variável mais ou menos um número):');
+      for(const op of c.arit)for(const o of objs.filter(o=>o.val.t==='int'||o.val.t==='float'))
+        E.appendChild(chip(n.nome+' '+op+' '+o.rotulo,n.expr&&n.expr.k==='op'&&n.expr.op===op&&n.expr.b.val.v===o.val.v,()=>{n.expr={k:'op',op,a:{k:'var',nome:n.nome},b:{k:'lit',val:o.val}};n.obj=undefined;SFX.atribui();fim();},'',iconeObj(o)));
+    }
+  }else if(n.k==='se'||n.k==='enq'||n.k==='elif'){
+    editorCondicao(E,n,c,sep,fim);
+    if(n.k==='se'){
+      const extras=[];
+      if(LANG.permite(c,'elif'))extras.push(chip('+ elif',false,()=>{const r=LANG.adicionarElif(PAINEL.prog,n.id,condPadrao(c),lim);if(typeof r==='string'){SFX.deny();painelMsg(r,'erro');return;}PAINEL.sel=r.elif;PAINEL.cur={pai:r.pai,ramo:r.ramo,i:0};SFX.placa();fim();painelMsg('elif entrou embaixo do if. Complete a condição dele; as linhas que você tocar agora entram dentro do elif.','');},'op'));
+      if(LANG.permite(c,'senao'))extras.push(chip(n.senao?'− tirar o else':'+ else',false,()=>{
+        const tira=()=>{const r=LANG.alternarSenao(PAINEL.prog,n.id,lim);if(typeof r==='string'){SFX.deny();painelMsg(r,'erro');return;}PAINEL.cur=r;SFX.placa();fim();};
+        if(n.senao&&n.senao.length)confirmar('Tirar o else?','As linhas de dentro do else saem do programa.','Tirar',tira);else tira();},'op'));
+      if(extras.length){sep('Mais caminhos:');extras.forEach(x=>E.appendChild(x));}
+    }
+  }else if(n.k==='rep'){
+    const mx=c.repMax||8;
+    sep('Quantas voltas (range):');
+    E.appendChild(chip('−',false,()=>{if(n.n>0){n.n--;fim();}},'op'));
+    E.appendChild(chip('range('+n.n+')',true,()=>{},'op'));
+    E.appendChild(chip('+',false,()=>{if(n.n<mx){n.n++;fim();}},'op'));
+  }
+  /* o editor aparece inteiro, acima da barra fixa de linhas e controles */
+  if(PAINEL.editorDe!==n.id){PAINEL.editorDe=n.id;aVista(E);}
+}
+function topicoDaLinha(n,a,c){
+  if(n.k==='set'){const v=(c.vars||[]).find(d=>d.nome===n.nome);return v?LANG.TIPOS[v.t].guia:'variaveis';}
+  if(n.k==='se')return n.senao?'else':'if';if(n.k==='elif')return'elif';if(n.k==='rep')return'for';if(n.k==='enq')return'while';
+  return'comandos';
+}
+/* condição de if, elif e while: o que comparar, como comparar e com qual valor — ou um booleano sozinho (x / not x) */
+function editorCondicao(E,n,c,sep,fim){
+  const cd=n.cond||(n.cond={a:null,op:null,b:null});const objs=opcoesValor(c);
+  sep('Condição: o que testar');for(const v of nomesLeitura(c))E.appendChild(chip(v.nome,cd.a&&cd.a.nome===v.nome,()=>{cd.a={k:'var',nome:v.nome};
+    if(v.t==='bool'&&cd.op!=='not'){cd.op='bool';cd.b=null;}else if(v.t!=='bool'&&(cd.op==='bool'||cd.op==='not'))cd.op=(c.ops&&c.ops.length===1)?c.ops[0]:null;fim();}));
+  const va=cd.a&&nomesLeitura(c).find(v=>v.nome===cd.a.nome),ehBool=va&&va.t==='bool';
+  sep('Como testar:');
+  if(ehBool){E.appendChild(chip(cd.a.nome+' (é True?)',cd.op==='bool',()=>{cd.op='bool';cd.b=null;fim();},'op'));E.appendChild(chip('not '+cd.a.nome,cd.op==='not',()=>{cd.op='not';cd.b=null;fim();},'op'));}
+  for(const op of c.ops||LANG.OPS_CMP)E.appendChild(chip(op,cd.op===op,()=>{cd.op=op;fim();painelMsg(op+' pergunta: '+(cd.a?cd.a.nome:'…')+' '+LANG.OP_NOME[op]+' …? A resposta é True ou False.','');},'op'));
+  if(cd.op==='bool'||cd.op==='not')return;
+  sep('Com o valor:');
+  for(const o of objs)E.appendChild(chip(o.rotulo,cd.b&&cd.b.k==='lit'&&LANG.fmt(cd.b.val)===LANG.fmt(o.val)&&cd.b.val.t===o.val.t,()=>{cd.b={k:'lit',val:o.val};fim();},'',iconeObj(o)));
+  if(c.cmpVars)for(const v of c.vars||[])E.appendChild(chip(v.nome,cd.b&&cd.b.k==='var'&&cd.b.nome===v.nome,()=>{cd.b={k:'var',nome:v.nome};fim();}));
+}
+/* ---------- paleta ---------- */
+function renderPaleta(){
+  const c=PAINEL.cfg,P0=$('pPaleta');P0.textContent='';
+  const rodando=rodandoAgora();
+  if(c.etapa==='demo'){
+    c.demo.forEach((d,i)=>{const b=document.createElement('button');b.className='pb';b.innerHTML='<span class="sim">▶</span>';b.appendChild(document.createTextNode('Ver: '+d.nome+(PAINEL.demoVisto[c.id+':'+i]?' ✔':'')));b.disabled=rodando;
+      b.onclick=()=>{PAINEL.demoIdx=i;PAINEL.prog=LANG.clonar(d.prog);painelSoltar();PAINEL.run=null;renderPainel();painelExecutar();};P0.appendChild(b);});
+    if(G.learn[c.id]){const prox=desafiosDa(c.tumba)[desafiosDa(c.tumba).indexOf(c)+1];if(prox){const b=document.createElement('button');b.className='pb estr';b.innerHTML='<span class="sim">➜</span>Continuar';b.onclick=()=>escolherDesafio(prox);P0.appendChild(b);}}
+    return;
+  }
+  /* no modo Escrever a paleta continua: cada linha é escrita no cursor do texto */
+  const g=!PAINEL.texto&&c.etapa==='guiada'&&!G.learn[c.id]?guiaDe(c,PAINEL.prog):null;
+  for(const bl of c.blocos){
+    const info=blocoInfo(bl),b=document.createElement('button');b.className='pb'+(LANG.CMD[bl]?'':' estr')+(g&&g.bloco===bl?' sug':'');b.title=info.ajuda;
+    const s=document.createElement('span');s.className='sim';s.textContent=info.sim;b.appendChild(s);const t=document.createElement('span');t.className='cod';t.textContent=info.nome;b.appendChild(t);b.disabled=rodando;
+    b.onclick=()=>PAINEL.texto?inserirBlocoTexto(bl):painelInserir(bl);P0.appendChild(b);
+  }
+}
+function painelInserir(bl){
+  const c=PAINEL.cfg;if(rodandoAgora())return;
+  const lim={linhas:c.maxLinhas||LANG.LIM.linhas,prof:LANG.LIM.prof};
+  if(bl==='elif'){
+    /* o elif entra no if selecionado, ou no if em que o cursor está */
+    let alvo=null;const sel=PAINEL.sel&&LANG.achar(PAINEL.prog,PAINEL.sel);
+    if(sel&&sel.no.k==='se')alvo=sel.no;else if(sel&&sel.no.k==='elif')alvo=sel.pai;
+    else if(PAINEL.cur.pai!==null){const p=LANG.achar(PAINEL.prog,PAINEL.cur.pai);if(p&&p.no.k==='se')alvo=p.no;}
+    if(!alvo){const ses=[];LANG.cada(PAINEL.prog,n=>{if(n.k==='se')ses.push(n);});if(ses.length===1)alvo=ses[0];}
+    if(!alvo){SFX.deny();painelMsg('O elif é um caminho a mais de um if. Primeiro crie o if (ou toque nele) e depois toque em elif.','erro');return;}
+    const r=LANG.adicionarElif(PAINEL.prog,alvo.id,condPadrao(c),lim);if(typeof r==='string'){SFX.deny();painelMsg(r,'erro');return;}
+    PAINEL.sel=r.elif;PAINEL.cur={pai:r.pai,ramo:r.ramo,i:0};SFX.placa();programaMudou();renderPainel();
+    painelMsg('elif entrou embaixo do if, antes do else. Complete a condição dele (abaixo); as linhas que você tocar agora entram dentro do elif.','');return;
+  }
+  const no=novoNo(c,bl,PAINEL.prog);
+  if(no.k==='rep')no.var=['i','j','k'][Math.min(2,LANG.nivelDe(PAINEL.prog,PAINEL.cur))];
+  const r=LANG.inserir(PAINEL.prog,PAINEL.cur,no,lim);
+  if(typeof r==='string'){SFX.deny();painelMsg(r,'erro');return;}
+  PAINEL.cur=r;SFX.placa();
+  /* linhas com escolhas (valor, condição, voltas) já abrem o editor */
+  PAINEL.sel=no.k==='cmd'?null:no.id;
+  programaMudou();renderPainel();
+  if(no.k==='set')painelMsg('Escolha o valor que vai para a variável '+no.nome+' (veja as opções abaixo da linha).','');
+  else if(no.k==='se'||no.k==='enq')painelMsg('Complete a condição abaixo: o que testar, como e com qual valor. Depois toque nas linhas que vão dentro do bloco (com recuo).','');
+  else if(no.k==='rep')painelMsg('Ajuste quantas voltas com − e +. As linhas que você tocar agora entram dentro do for (com recuo).','');
+}
+
+/* ---------- modo Escrever: o programa como texto ---------- */
+function referenciaTexto(c){
+  return'Recuo: 4 espaços (Tab). O editor aceita um pedaço do Python: sem print, listas, def nem and/or (📖 Guia › O que o editor aceita).';
+}
+/* ---------- Comandos e variáveis: referência nos dois modos ---------- */
+function valoresAtuais(c){const env=PAINEL.run?PAINEL.run.s.env:PAINEL.parado?PAINEL.parado.env:null;return env||LANG.iniciar(c,mundoAtual(),sitAtual(),[]).env;}
+function renderRef(){
+  const c=PAINEL.cfg,box=$('pRefBox'),B=$('pRefC');B.textContent='';
+  if(c.etapa==='demo'){box.hidden=true;return;}box.hidden=false;
+  const txt=PAINEL.texto,rodando=rodandoAgora(),ini=valoresAtuais(c);
+  const sec=t=>{const d=document.createElement('div');d.className='rsec';const h=document.createElement('b');h.textContent=t;d.appendChild(h);B.appendChild(d);return d;};
+  const item=(d,rot,sub,fn,cls)=>{const b=document.createElement('button');b.type='button';b.className='rch'+(cls?' '+cls:'');const k=document.createElement('code');k.textContent=rot;b.appendChild(k);
+    if(sub){const s=document.createElement('span');s.textContent=sub;b.appendChild(s);}b.disabled=rodando;b.onclick=fn;d.appendChild(b);return b;};
+  const valDe=v=>{const e=ini[v.nome],x=e?e.val:null;return x===null?'vazia':LANG.fmt(x)+(v.unid?' '+v.unid:'');};
+  const fs=c.blocos.filter(b=>LANG.CMD[b]);
+  if(fs.length){const d=sec('🎮 Funções das máquinas (só existem no jogo; escreva com os parênteses)');for(const b of fs){const C=LANG.CMD[b];item(d,C.py+'()',C.ajuda,()=>txt?inserirNoTexto(C.py+'()',true):painelInserir(b));}}
+  if(c.vars&&c.vars.length){const d=sec('Variáveis: cada contêiner aceita um tipo');
+    for(const v of c.vars)item(d,v.nome,'aceita '+LANG.rotulo(v.t)+' · agora: '+valDe(v),()=>txt?inserirNoTexto(v.nome,false):inserirAtribuicao(v.nome));}
+  if(c.sensores&&c.sensores.length){const d=sec('Sensores (o programa só lê)');
+    for(const v of c.sensores)item(d,v.nome,LANG.rotulo(v.t)+' · agora: '+valDe(v),()=>txt?inserirNoTexto(v.nome,false):painelMsg(v.nome+' é um sensor: use o nome dele numa condição (if, elif, while).',''));}
+  const objs=opcoesValor(c);
+  if(objs.length){const d=sec('Valores da bancada');for(const o of objs)item(d,LANG.fmt(o.val),LANG.rotulo(o.val.t),()=>txt?inserirNoTexto(LANG.fmt(o.val),false):usarValorBloco(o),'val');}
+  const es=['set','se','sese','elif','rep','enq'].filter(b=>c.blocos.indexOf(b)>=0);
+  if(es.length){const d=sec('🐍 Estruturas do Python (iguais fora do jogo)');for(const b of es){const I=BLOCO_INFO[b];item(d,I.nome,I.ajuda,()=>txt?inserirBlocoTexto(b):painelInserir(b));}}
+  /* pistas desta sala: o texto das lidas (com 📌 para fixar) e um aviso das que faltam ler */
+  const ps=PISTA_IDS.filter(id=>PISTAS[id].lugar===c.tumba);
+  if(ps.length){const d=sec('Pistas desta sala');
+    for(const id of ps){const P0=PISTAS[id],p=document.createElement('div');p.className='rpista'+(G.pistas[id]?'':' falta');
+      if(G.pistas[id]){const t=document.createElement('p');t.textContent=P0.nome+': '+P0.texto;p.appendChild(t);
+        const fx=G.fixadas.indexOf(id)>=0,bt=document.createElement('button');bt.type='button';bt.className='btn fixar';bt.textContent=fx?'📌 Fixada (tirar)':'📌 Fixar no alto';bt.onclick=()=>fixarPista(id);p.appendChild(bt);}
+      else p.textContent='Há uma placa com ! nesta sala que você ainda não leu: '+P0.nome+'.';
+      d.appendChild(p);}}
+}
+/* pistas fixadas: ficam no alto do painel, em qualquer terminal, até serem tiradas */
+function renderFixas(){
+  const F=$('pFixas');F.textContent='';F.hidden=!G.fixadas.length;
+  for(const id of G.fixadas){const P0=PISTAS[id],d=document.createElement('div');d.className='fx';const t=document.createElement('span');t.textContent='📌 '+P0.nome+': '+P0.texto;d.appendChild(t);
+    const b=document.createElement('button');b.type='button';b.className='btn';b.textContent='✕';b.title='Tirar a pista do alto do painel';b.onclick=()=>fixarPista(id);d.appendChild(b);F.appendChild(d);}
+}
+/* modo de blocos: o nome da variável vira uma linha "variável = valor" com ela; um valor vai para a linha selecionada */
+function inserirAtribuicao(nome){
+  if(rodandoAgora())return;const c=PAINEL.cfg;if(c.blocos.indexOf('set')<0){painelMsg(nome+' é uma variável desta etapa; aqui o programa só a lê.','');return;}
+  painelInserir('set');const a=PAINEL.sel&&LANG.achar(PAINEL.prog,PAINEL.sel);if(a&&a.no.k==='set'){a.no.nome=nome;programaMudou();renderPainel();painelMsg('Escolha o valor que vai para a variável '+nome+' (veja as opções abaixo da linha).','');}
+}
+function usarValorBloco(o){
+  const a=PAINEL.sel&&LANG.achar(PAINEL.prog,PAINEL.sel);
+  if(!a||a.no.k!=='set'){painelMsg(LANG.fmt(o.val)+' é '+LANG.rotulo(o.val.t)+'. Para guardá-lo, toque numa linha "variável = valor" e escolha o valor no editor dela.','');return;}
+  const n=a.no,tipo=((PAINEL.cfg.vars||[]).find(v=>v.nome===n.nome)||{}).t,msg=LANG.compativel(tipo,o.val);
+  if(msg){SFX.deny();painelMsg(o.nome+': '+msg,'erro');return;}
+  n.expr={k:'lit',val:o.val};n.obj=o.id;SFX.atribui();programaMudou();renderPainel();painelMsg(n.nome+' = '+LANG.fmt(o.val)+' ('+LANG.rotulo(o.val.t)+').','');
+}
+/* ---------- modo Escrever: escrever no cursor ----------
+   Linha nova (função, estrutura): entra numa linha própria, com o recuo da linha do cursor (mais 4 espaços depois de uma
+   linha que termina em ":"). Nome ou valor: entra no cursor. marcar: trecho que fica selecionado para ser trocado. */
+function inserirNoTexto(txt,novaLinha,marcar){
+  const a=$('pTxt'),v=a.value;let i=a.selectionStart,j=a.selectionEnd,ins=txt,pos=i;
+  if(novaLinha){
+    const ini=v.lastIndexOf('\n',i-1)+1,fl=v.indexOf('\n',i),fim=fl<0?v.length:fl,linha=v.slice(ini,fim);
+    let rec=(linha.match(/^ */)||[''])[0];const vazia=linha.trim()==='';
+    if(txt.alinhar){rec=txt.alinhar(v,vazia?ini:fim+1,rec);txt=txt.t;}
+    else if(!vazia&&/:\s*$/.test(linha))rec+='    ';
+    const corpo=String(txt).split('\n').map((l,k)=>rec+l).join('\n');
+    /* linha do cursor vazia: escreve nela; senão, usa a linha vazia logo abaixo (a que um bloco deixou pronta) ou abre uma */
+    const pf=fim<v.length?v.indexOf('\n',fim+1):-1,prox=fim<v.length?v.slice(fim+1,pf<0?v.length:pf):null;
+    if(vazia){i=ini;j=fim;ins=corpo;pos=ini;}else if(prox!==null&&prox.trim()===''){i=fim+1;j=pf<0?v.length:pf;ins=corpo;pos=i;}else{i=j=fim;ins='\n'+corpo;pos=fim;}
+  }
+  a.value=v.slice(0,i)+ins+v.slice(j);
+  let s0=pos+ins.length,s1=s0;if(marcar){const k=ins.indexOf(marcar);if(k>=0){s0=pos+k;s1=s0+marcar.length;}}
+  try{a.focus({preventScroll:true});a.setSelectionRange(s0,s1);}catch(e){}
+  PAINEL.erroTexto=null;mostrarErro(null);SFX.placa();
+}
+/* elif e else ficam no recuo do if a que pertencem: o if/elif mais próximo acima com recuo menor que o das linhas de dentro */
+function recuoDoIf(v,ate,rec){
+  const L=v.slice(0,ate).split('\n');let dentro=null;
+  for(let k=L.length-1;k>=0;k--){const l=L[k];if(!l.trim())continue;const m=l.match(/^( *)(if|elif)\b/);
+    if(dentro===null){dentro=l.match(/^ */)[0].length;if(m)return m[1];continue;}
+    if(m&&m[1].length<dentro)return m[1];}
+  return rec.length>=4?rec.slice(4):rec;
+}
+function inserirBlocoTexto(bl){
+  const c=PAINEL.cfg;if(rodandoAgora())return;
+  if(LANG.CMD[bl])return inserirNoTexto(LANG.CMD[bl].py+'()',true);
+  if(bl==='set'){const v=$('pTxt').value,vs=c.vars||[],d=vs.find(x=>!new RegExp('^\\s*'+x.nome+'\\s*=','m').test(v))||vs[0];return inserirNoTexto((d?d.nome:'nome')+' = valor',true,'valor');}
+  if(bl==='se')return inserirNoTexto('if condição:\n    ',true,'condição');
+  if(bl==='sese')return inserirNoTexto('if condição:\n    \nelse:\n    ',true,'condição');
+  if(bl==='elif')return inserirNoTexto({t:'elif condição:\n    ',alinhar:recuoDoIf},true,'condição');
+  if(bl==='rep')return inserirNoTexto('for i in range(3):\n    ',true,'3');
+  if(bl==='enq')return inserirNoTexto('while condição:\n    ',true,'condição');
+}
+function painelModoTexto(on){
+  if(rodandoAgora())return;
+  if(on){painelParar(false);PAINEL.texto=true;PAINEL.sel=null;$('pTxt').value=LANG.codigo(PAINEL.prog);mostrarErro(null);abrirRef(true);renderPainel();painelMsg('Escreva o código como em Python. A paleta e Comandos e variáveis escrevem no cursor. Toque em ✔ Pronto (ou ▶ Executar) para o jogo ler o texto.','');try{$('pTxt').focus({preventScroll:true});}catch(e){}aVista($('pTxt'));SFX.click();return;}
+  if(lerTexto(false)){PAINEL.texto=false;abrirRef(false);renderPainel();SFX.placa();}
+}
+/* a referência abre como o jogador deixou em cada modo (no Escrever, aberta por padrão) */
+function abrirRef(texto){const c=cfgLer(),ab=texto?c.refTexto!==false:c.refBlocos===true;PAINEL.refAuto=true;$('pRefBox').open=ab;setTimeout(()=>{PAINEL.refAuto=false;},0);}
+/* lê o texto do campo. Com erro, mostra a área de erro e continua no modo Escrever (silencioso: só ao fechar) */
+function lerTexto(silencioso){
+  const c=PAINEL.cfg,r=LANG.ler($('pTxt').value,c);
+  if(r.erro){if(silencioso){PAINEL.texto=false;return false;}PAINEL.erroTexto=r.erro;mostrarErro(r.erro);SFX.erroProg();painelMsg('O texto tem um erro na linha '+r.erro.linha+'. Veja a explicação abaixo e corrija.','erro');marcarLinhaTexto(r.erro.linha);return false;}
+  PAINEL.prog=r.prog;PAINEL.cur={pai:null,ramo:null,i:PAINEL.prog.length};PAINEL.erroTexto=null;programaMudou();
+  painelMsg('Código lido: '+LANG.contarLinhas(PAINEL.prog)+(LANG.contarLinhas(PAINEL.prog)===1?' linha.':' linhas.')+' Toque em ▶ Executar.','');
+  return true;
+}
+function marcarLinhaTexto(n){const a=$('pTxt'),L=a.value.split('\n');let i=0;for(let k=0;k<n-1&&k<L.length;k++)i+=L[k].length+1;try{a.focus({preventScroll:true});a.setSelectionRange(i,i+(L[n-1]||'').length);}catch(e){}}
+
+/* ---------- execução: Executar e Passo usam o mesmo LANG.passo() ---------- */
+function novaExecucao(modo){
+  const c=PAINEL.cfg;
+  painelSoltar();
+  const s=LANG.iniciar(c,mundoAtual(),sitAtual(),PAINEL.prog);
+  PAINEL.run={s,modo,t:0,dur:0.6,linha:null,ev:null,tStep:1,eventos:[]};PAINEL.mudancas={};
+  PAINEL.sel=null;
+  if(PAINEL.area&&PAINEL.area.aoIniciar)PAINEL.area.aoIniciar(s);
+}
+/* antes de executar no modo Escrever, o texto é lido e o painel volta às linhas (para mostrar a linha da vez) */
+function prepararTexto(){if(!PAINEL.texto)return true;if(!lerTexto(false))return false;PAINEL.texto=false;return true;}
+/* previsão: antes da primeira tentativa o jogador diz o que espera que aconteça. A pergunta parte do programa que está
+   no painel (perguntaPrevisao, em 03-learn): nas etapas de corrigir, o painel confere no fim da tentativa; nas práticas
+   guiadas, a resposta certa é calculada executando o programa do jogador (ou uma variação dele, mostrada), vem na hora
+   com o caminho que a execução fez, e a situação da pergunta fica escolhida para a execução seguinte conferir.
+   Sem programa ainda, a pergunta espera a próxima tentativa. Dá para pular. */
+function pedirPrevisao(continuar){
+  const c=PAINEL.cfg;if(!c.previsao||G.learn[c.id]||PAINEL.previsao[c.id])return false;
+  const P=perguntaPrevisao(c,PAINEL.prog);if(!P)return false;
+  const box=$('pPrev'),ops=box.querySelector('.ops'),cod=box.querySelector('.cod');
+  box.querySelector('.q').textContent='🔮 '+P.rotulo+' · '+P.pergunta;ops.textContent='';
+  cod.hidden=!P.codigo;cod.textContent=P.codigo||'';
+  const certa=(P.opcoes.find(o=>o.ok)||{}).t;
+  const fim=v=>{PAINEL.previsao[c.id]=v;box.hidden=true;SFX.click();
+    if(v.pulou)registro(c.id).p='p';else if(!P.conferir)registro(c.id).p=v.ok?'c':'e';
+    if(P.sit!==null&&P.sit!==undefined&&P.sit!==PAINEL.sit){PAINEL.sit=P.sit;PAINEL.run=null;PAINEL.parado=null;renderPainel();}
+    if(P.explica&&!v.pulou){painelMsg('🔮 '+(v.ok?'Você acertou! ':'Não é bem isso: a resposta é «'+certa+'». ')+P.explica+(P.sit!==null&&P.sit!==undefined&&!P.codigo?' Toque em ▶ Executar para conferir.':''),v.ok?'ok':'');return;}
+    continuar();};
+  P.opcoes.forEach(op=>{const b=document.createElement('button');b.className='btn';rotuloCodigo(b,op.t);b.onclick=()=>fim({t:op.t,ok:op.ok,conferir:!!P.conferir});ops.appendChild(b);});
+  const pb=document.createElement('button');pb.className='btn pular';pb.textContent='Pular';pb.onclick=()=>fim({pulou:true});ops.appendChild(pb);
+  box.hidden=false;painelMsg('Antes de executar, pense: o que este programa vai fazer? Escolha uma resposta (ou pule).','');aVista(box);
+  return true;
+}
+/* botão com ícone separado da palavra: no celular pequeno deitado o ícone some e a palavra cabe inteira */
+function rotuloBotao(b,ic,t){b.textContent='';const s=document.createElement('span');s.className='ic';s.textContent=ic;b.appendChild(s);b.appendChild(document.createTextNode(' '+t));}
+/* nome de função num botão estreito: quebra só depois de um _ (nunca no meio da palavra nem antes dos parênteses) */
+function rotuloCodigo(b,t){
+  if(!/^[a-z_]+\(\)$/.test(t)){b.textContent=t;return;}
+  b.textContent='';t.split(/(?<=_)/).forEach((p,i)=>{if(i)b.appendChild(document.createElement('wbr'));const s=document.createElement('span');s.style.whiteSpace='nowrap';s.textContent=p;b.appendChild(s);});
+}
+function conferirPrevisao(c,ok){const p=PAINEL.previsao[c.id];if(!p||!p.conferir)return'';p.conferir=false;registro(c.id).p=p.ok===ok?'c':'e';
+  return'🔮 Sua previsão: «'+p.t+'» — '+(p.ok===ok?'você acertou! ':'o resultado foi outro. ')+
+    (ok?'O programa chegou ao objetivo. ':'O programa não chegou ao objetivo: a área de erro mostra a linha e o motivo. ');}
+function painelExecutar(){
+  if(rodandoAgora()){if(PAINEL.run.modo==='passo'){PAINEL.run.modo='exec';PAINEL.run.t=PAINEL.run.dur;renderPainel();}return;}
+  if(!prepararTexto())return;
+  if(pedirPrevisao(painelExecutar))return;
+  novaExecucao('exec');PAINEL.run.t=PAINEL.run.dur*0.6;renderPainel();painelMsg('Executando…','passo');
+}
+function painelPassoBtn(){
+  if(rodandoAgora()&&PAINEL.run.modo==='exec')return;
+  if(!PAINEL.run||PAINEL.run.s.fim){if(!prepararTexto())return;if(pedirPrevisao(painelPassoBtn))return;novaExecucao('passo');}
+  executarUm();
+}
+function painelParar(render){
+  const r=PAINEL.run;if(!r)return;
+  if(!r.s.fim){PAINEL.parado={env:r.s.env,ws:r.s.ws,ev:r.ev,linha:r.linha};if(render!==false)painelMsg('Tentativa parada'+(r.linha?' na linha '+LANG.numeroLinha(r.s.prog,r.linha):'')+'. Toque em ↺ Reiniciar para começar outra tentativa (o mecanismo volta ao começo e o programa fica), ou edite o programa.','');}
+  else PAINEL.parado={env:r.s.env,ws:r.s.ws,ev:r.ev,linha:r.linha,erroLinha:r.s.erro&&r.s.erro.linha};
+  PAINEL.run=null;if(render!==false)renderPainel();
+}
+function painelReiniciar(){PAINEL.run=null;PAINEL.parado=null;PAINEL.ultimoEv=null;mostrarErro(null);SFX.click();mensagemInicial();renderPainel();if(PAINEL.area&&PAINEL.area.aoReiniciar)PAINEL.area.aoReiniciar();}
+function painelLimpar(){
+  const c=PAINEL.cfg;
+  if(c.inicial){confirmar('Voltar ao código original?','O programa desta etapa volta a ser o que veio escrito, com os erros para corrigir.','Voltar',()=>{PAINEL.prog=programaInicial(c);PAINEL.texto=false;PAINEL.cur={pai:null,ramo:null,i:PAINEL.prog.length};PAINEL.sel=null;programaMudou();PAINEL.run=null;mensagemInicial();renderPainel();});return;}
+  if(!PAINEL.prog.length)return;
+  confirmar('Limpar o programa?','Todas as linhas desta etapa saem do painel. As etapas já concluídas continuam concluídas.','Limpar',()=>{PAINEL.prog=[];PAINEL.texto=false;PAINEL.cur={pai:null,ramo:null,i:0};PAINEL.sel=null;programaMudou();PAINEL.run=null;mensagemInicial();renderPainel();});
+}
+/* dica do Lume: uma de cada vez (conceito → caminho → quase a solução); depois da terceira, ele repete e sugere o Passo */
+const NIVEL_DICA=['o conceito','o caminho','quase a solução'];
+function painelDica(){
+  const c=PAINEL.cfg;if(!c.dicas)return;
+  const antes=G.dicas[c.id]||0,n=Math.min(3,antes+1);G.dicas[c.id]=n;$('pDica').classList.remove('chama');
+  const t=antes>=3?'Lume: você já viu as três dicas. '+c.dicas.map((d,i)=>(i+1)+') '+d).join(' ')+' Experimente ⏭ Passo para ver o programa uma linha de cada vez e achar onde ele se separa do que você esperava.'
+    :'Lume · Dica '+n+' de 3 ('+NIVEL_DICA[n-1]+'): '+c.dicas[n-1];
+  painelMsg(t,'lume');SFX.page();renderPainel();salvar(false);
+}
+function executarUm(){
+  const r=PAINEL.run;if(!r||r.s.fim)return;
+  /* o que mudou neste passo (variáveis, sensores e o i do for) fica marcado com "antes → depois" */
+  const foto={};for(const k in r.s.env)foto[k]=r.s.env[k].val;
+  const ev=LANG.passo(r.s);if(!ev)return;
+  PAINEL.mudancas={};for(const k in r.s.env){const a=foto[k],d=r.s.env[k].val;if(d&&(!a||LANG.fmt(a)!==LANG.fmt(d)))PAINEL.mudancas[k]={antes:a,depois:d};}
+  r.ev=ev;r.eventos.push(ev);r.linha=ev.linha;r.tStep=0;PAINEL.ultimoEv=ev;
+  /* sons e mensagem do passo */
+  if(ev.tipo==='cmd')SFX.passo(r.eventos.length);else if(ev.tipo==='set')SFX.atribui();else if(ev.tipo==='se')SFX.decide(ev.res);else if(ev.tipo==='rep'||ev.tipo==='repFim'||ev.tipo==='enq')SFX.volta();
+  if(PAINEL.area&&PAINEL.area.aoEvento)PAINEL.area.aoEvento(ev,r.s);
+  /* a última instrução já mostra o resultado: sem um toque a mais só para "terminar" */
+  if(!r.s.fim&&LANG.soFaltaFim(r.s)){const f=LANG.passo(r.s);if(f){r.eventos.push(f);r.evFim=f;}}
+  if(r.s.fim)terminouExecucao();
+  else painelMsg(LANG.narrar(ev,r.s),'passo');
+  renderPainel();
+}
+function terminouExecucao(){
+  const r=PAINEL.run,s=r.s,c=PAINEL.cfg,sit=sitAtual(),sig=LANG.assinatura(PAINEL.prog);
+  if(c.etapa==='demo'){
+    PAINEL.demoVisto[c.id+':'+PAINEL.demoIdx+(c.demo[PAINEL.demoIdx].todas?':'+sit.id:'')]=true;
+    const fimMsg=s.ok?(LANG.narrar(r.evFim||r.ev,s)||'Fim do programa.'):LANG.explicar(s);
+    /* com "todas", a demonstração passa sozinha para a próxima situação */
+    const d=c.demo[PAINEL.demoIdx];
+    if(d.todas&&PAINEL.sit<c.situacoes.length-1){painelMsg(fimMsg+' Agora a mesma demonstração na situação '+c.situacoes[PAINEL.sit+1].nome+'…','ok');
+      setTimeout(()=>{if(PAINEL.aberto&&PAINEL.cfg===c){PAINEL.sit++;PAINEL.run=null;renderPainel();painelExecutar();}},1500);return;}
+    const vistos=c.demo.every((d2,i)=>d2.todas?c.situacoes.every(x=>PAINEL.demoVisto[c.id+':'+i+':'+x.id]):PAINEL.demoVisto[c.id+':'+i]);
+    if(vistos&&!G.learn[c.id]){painelMsg(fimMsg+' '+c.conclusao,'ok');concluirDesafio(c);}
+    else painelMsg(fimMsg+(vistos?' '+c.conclusao:' Veja também o outro programa.'),'ok');
+    return;
+  }
+  {const rg=registro(c.id);rg.t=(rg.t||0)+1;if(!s.ok)rg.e=(rg.e||0)+1;}
+  if(s.ok){
+    PAINEL.errosSeguidos=0;$('pDica').classList.remove('chama');
+    PAINEL.passou[c.id][sit.id]=sig;delete PAINEL.falhou[c.id][sit.id];SFX.sucesso();mostrarErro(null);
+    const falta=c.situacoes.filter(x=>PAINEL.passou[c.id][x.id]!==sig);
+    /* o programa que resolveu a etapa fica guardado para o diário */
+    if(!falta.length)G.solucoes[c.id]=LANG.clonar(PAINEL.prog);
+    const pv=conferirPrevisao(c,true);
+    let t=pv+(LANG.narrar(r.ev,s)||'')+(r.evFim&&r.evFim.msg&&r.evFim!==r.ev?' '+r.evFim.msg:'')+(s.aviso?' '+s.aviso:'');
+    if(!falta.length){t=pv+c.sucesso+(s.aviso?' '+s.aviso:'');painelMsg(t,'ok');if(!G.learn[c.id])concluirDesafio(c);else salvar(false);}
+    else{painelMsg((t?t+' ':'')+'Deu certo em '+sit.nome+'. Agora teste o mesmo programa em '+falta.map(x=>x.nome).join(' e ')+'.','ok');}
+  }else{
+    PAINEL.falhou[c.id][sit.id]=sig;SFX.erroProg();
+    PAINEL.errosSeguidos=(PAINEL.errosCfg===c.id?PAINEL.errosSeguidos||0:0)+1;PAINEL.errosCfg=c.id;
+    const sug=PAINEL.errosSeguidos>=3&&(G.dicas[c.id]||0)<3?' Já são '+PAINEL.errosSeguidos+' tentativas com erro: que tal uma 💡 Dica (ela não entrega a resposta) ou o ⏭ Passo para ver onde o programa se separa do que você esperava?':'';
+    $('pDica').classList.toggle('chama',!!sug);
+    const x=LANG.explicarErro(s);mostrarErro(x);const pv=conferirPrevisao(c,false);
+    painelMsg(pv+(x.cat==='objetivo'?'O programa rodou até o fim, mas o objetivo ainda não foi alcançado. Observe o mecanismo, leia a explicação e corrija.'+(s.aviso?' '+s.aviso:'')
+      :(x.linha?'O programa parou na linha '+x.linha+'.':'O programa parou.')+' Observe o mecanismo, leia a explicação e corrija.'+(s.aviso?' '+s.aviso:''))+sug,'erro');
+  }
+}
+/* registro de aprendizagem: só o que aconteceu nesta partida (nada é deduzido nem inventado) */
+function hojeISO(){const d=new Date(),z=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate());}
+function registro(id){if(!G.reg)G.reg={};if(!G.regDesde)G.regDesde=hojeISO();return G.reg[id]||(G.reg[id]={});}
+function concluirDesafio(c){
+  if(!G.learn[c.id])registro(c.id).d=hojeISO();
+  G.learn[c.id]=true;guardarPrograma();
+  if(RELIC_KEYS.indexOf(c.tumba)>=0&&saberOk(c.tumba))saberConcluido(c.tumba);
+  if(PAINEL.area&&PAINEL.area.aoConcluir)PAINEL.area.aoConcluir(c);
+  if(PAINEL.area)acenderTochaProgresso(PAINEL.area,c.id);
+  salvar(false);renderPainel();
+  const l=desafiosDa(c.tumba),prox=l[l.indexOf(c)+1];
+  if(prox&&c.etapa!=='demo')setTimeout(()=>{if(PAINEL.aberto&&PAINEL.cfg===c)toast('Etapa liberada: '+prox.titulo+'. Toque nela no alto do painel.','good');},400);
+  if(!prox&&RELIC_KEYS.indexOf(c.tumba)>=0)setTimeout(()=>{if(PAINEL.aberto&&PAINEL.cfg===c)toast('Todas as etapas desta tumba estão concluídas. Feche o painel e procure a relíquia.','good');},400);
+}
+/* a cada quadro com o painel aberto: anda a execução automática e a animação do passo */
+function painelPasso(dt){
+  const r=PAINEL.run;if(!r)return;
+  r.tStep=Math.min(1,r.tStep+dt/(r.dur/PAINEL.vel));
+  if(r.modo==='exec'&&!r.s.fim){r.t+=dt*PAINEL.vel;if(r.t>=r.dur){r.t=0;executarUm();}}
+}
+/* o que a sala deve desenhar: estado do mundo (da execução, da última parada ou o inicial da situação) */
+function painelVis(){
+  const c=PAINEL.cfg;if(!c)return null;
+  if(PAINEL.run)return{cfg:c,ws:PAINEL.run.s.ws,ev:PAINEL.run.ev,t:PAINEL.run.tStep,s:PAINEL.run.s,rodando:!PAINEL.run.s.fim};
+  if(PAINEL.parado)return{cfg:c,ws:PAINEL.parado.ws,ev:PAINEL.parado.ev,t:1,s:null,rodando:false};
+  return{cfg:c,ws:mundoAtual().init(sitAtual(),c),ev:null,t:1,s:null,rodando:false};
+}

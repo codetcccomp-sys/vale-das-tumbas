@@ -2,3 +2,4 @@ build/
 node_modules/
 test/shots/
 public/
+2d/test/shots/

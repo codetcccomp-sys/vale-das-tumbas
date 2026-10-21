@@ -4,6 +4,11 @@ Jogo 3D de exploração e aventura feito com JavaScript e three.js. Um explorado
 de eras diferentes (Engrenagens, Motores, Reator e Viva). Lá dentro, resolve enigmas e recolhe relíquias que abrem a Cidade-Jardim.
 Tudo é desenhado e sintetizado por código: não há imagens nem sons externos.
 
+## Versão 2D (pixel art, lógica de programação)
+A pasta [`2d/`](2d/README.md) tem uma versão nova do jogo, em pixel art vista de cima, em que cada tumba ensina um conceito de
+programação (sequência, dados e variáveis, decisões, repetições). Ela é independente: tem build, testes e configuração da
+Vercel próprios, e nada nesta versão 3D foi alterado.
+
 ## Jogar
 - **Arquivo único, sem internet:** rode `./build.sh && ./build-offline.sh` e abra `build/vale-das-tumbas.html` no navegador
   do computador ou do celular. O three.js vai embutido; as fontes vêm do Google Fonts e, sem internet, o navegador usa fontes parecidas.

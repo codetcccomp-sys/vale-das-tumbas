@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#17100b">
+<title>Vale das Tumbas 2D</title>
+<style>
+/* Layout: o canvas do jogo ocupa a tela inteira; HUD, botões de toque, painel de programação, diário e menus ficam por cima.
+   Visual: molduras de pixel (bordas duras de 2–3 px, sem cantos arredondados), cores de latão, tinta e papel do caderno. */
+:root{
+  --ink:#17100b;--ink2:#241912;--ink3:#33241a;--paper:#ecdcb4;--paper2:#bfa97a;--brass:#d8a24a;--copper:#c8743a;
+  --ice:#6fd3ff;--reactor:#5dff7a;--spore:#b98cff;--gold:#ffd24a;--alert:#ff6a4a;--ok:#7ee08a;
+  --f:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;--mono:ui-monospace,'Cascadia Mono','DejaVu Sans Mono',Menlo,Consolas,monospace;
+  --sl:max(12px,env(safe-area-inset-left,0px));--sr:max(12px,env(safe-area-inset-right,0px));--st:max(10px,env(safe-area-inset-top,0px));--sb:max(10px,env(safe-area-inset-bottom,0px));
+  color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none;background:var(--ink);color:var(--paper);font-family:var(--f);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-text-size-adjust:100%}
+#app{position:fixed;inset:0;overflow:hidden;background:#000;touch-action:none}
+#c{position:absolute;left:0;top:0;display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+#toque{position:absolute;inset:0;z-index:1;touch-action:none}
+.px{image-rendering:pixelated;image-rendering:crisp-edges}
+/* moldura de pixel */
+.moldura{background:var(--ink2);border:3px solid #0b0705;box-shadow:inset 0 0 0 2px #5a3e22,inset 0 0 0 4px #24160d}
+.btn{font:700 16px/1.15 var(--f);color:var(--paper);background:#3a2a1c;border:3px solid #0b0705;box-shadow:inset 0 -3px 0 #24160d,inset 0 2px 0 #5e4430;
+  padding:10px 14px;min-height:46px;cursor:pointer;letter-spacing:.02em;text-align:center}
+.btn:hover{background:#46321f}.btn:active,.btn.on{box-shadow:inset 0 3px 0 #24160d;transform:translateY(1px)}
+.btn:disabled{opacity:.42;cursor:default;transform:none}
+.btn:focus-visible{outline:3px solid var(--gold);outline-offset:1px}
+.btn.main{background:#7a4a1c;box-shadow:inset 0 -3px 0 #4a2c10,inset 0 2px 0 #b07a3a;color:#fff6dc}
+.btn.verde{background:#2e5a2c;box-shadow:inset 0 -3px 0 #1a3a1a,inset 0 2px 0 #4a8a44}
+.btn.vermelho{background:#6a2a1c;box-shadow:inset 0 -3px 0 #3a140c,inset 0 2px 0 #9a4a34}
+.btn.azul{background:#22465a;box-shadow:inset 0 -3px 0 #102838,inset 0 2px 0 #3a6a84}.btn.ambar{background:#5a4418;box-shadow:inset 0 -3px 0 #34260a,inset 0 2px 0 #8a6a2a}
+
+/* ---------- HUD ---------- */
+#hud{position:absolute;inset:0;z-index:3;pointer-events:none}
+body:not(.jogando) #hud,body:not(.jogando) #toqueUi{display:none}
+#hl{position:absolute;left:var(--sl);top:var(--st);display:flex;flex-direction:column;gap:6px;align-items:flex-start;max-width:calc(100vw - var(--sl) - var(--sr) - 196px)}
+.chip{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;padding:5px 9px;max-width:100%;background:rgba(23,16,11,.86);border:2px solid #0b0705;box-shadow:inset 0 0 0 2px #4a3220}
+#hearts{display:flex;gap:3px}#hearts img{width:21px;height:18px}
+#relics{display:flex;gap:4px}#relics img{width:20px;height:20px}
+#relicTxt{font:700 13px var(--f);color:var(--paper2)}
+#goal{display:block;font:600 14px/1.25 var(--f);color:#fff2cc;max-width:min(340px,100%);border-color:#0b0705;box-shadow:inset 0 0 0 2px #8a6a2a}
+#goal b{color:var(--gold);font-weight:800;display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:1px}
+#goal .gs{display:block}
+#goal .gd{display:none;font-weight:500;font-size:12.5px;line-height:1.3;color:#e8d8b0;margin-top:3px}#goal.aberto .gd{display:block}
+@media (min-width:621px) and (min-height:521px){#goal:not(.curto) .gd{display:block}}
+@media (max-width:620px),(max-height:520px){#goal.comdet.aberto b::after{content:' ▴';color:var(--paper2)}#goal.comdet:not(.curto):not(.aberto) b::after{content:' ▾';color:var(--paper2)}}
+#goal .bus{display:inline-block;width:13px;height:11px;margin:0 6px -1px 0;background:var(--gold);clip-path:polygon(0 30%,55% 30%,55% 0,100% 50%,55% 100%,55% 70%,0 70%);transition:transform .2s}
+@media (max-width:480px){#goal{font-size:13px}}
+#goal:empty{display:none}
+#goal.flash{animation:gflash 1.4s ease-out}@keyframes gflash{0%{box-shadow:inset 0 0 0 2px #8a6a2a,0 0 0 4px var(--gold)}100%{box-shadow:inset 0 0 0 2px #8a6a2a,0 0 0 0 transparent}}
+/* telas pequenas: o objetivo encolhe para o título e uma linha (tocar abre de novo) */
+@media (max-width:620px),(max-height:520px){#goal{pointer-events:auto;cursor:pointer}}
+#goal.curto .gs{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#goal.curto b::after{content:' ▸';color:var(--paper2)}
+.hlinha{display:flex;flex-wrap:wrap;gap:6px;align-items:stretch}body:not(.intomb) .hlinha{display:none}
+#lantern{display:flex;align-items:center;gap:7px;font:700 12px var(--f)}#lantern #ltxt{color:#ffd76a}#lantern.off{opacity:.6}#lantern.off #ltxt{color:var(--paper2)}
+body:not(.intomb) #lantern,body.semLanterna #lantern{display:none}
+#mao{gap:7px;font:700 12px var(--f)}#mao b{font:800 13px var(--mono);color:#ffe9a0}#mao.flash{animation:gflash 1s ease-out}
+#hr{position:absolute;right:var(--sr);top:var(--st);display:flex;gap:6px;pointer-events:auto}
+#hr .btn{min-height:44px;min-width:46px;padding:6px 10px;font-size:14px;position:relative}
+#btnDiary.new::after{content:'';position:absolute;right:3px;top:3px;width:9px;height:9px;background:var(--gold);border:2px solid #0b0705}
+#prompt{position:absolute;left:50%;bottom:calc(var(--sb) + 18px);transform:translateX(-50%);padding:8px 14px;font:700 15px var(--f);background:rgba(23,16,11,.9);border:2px solid #0b0705;box-shadow:inset 0 0 0 2px #8a6a2a;white-space:nowrap;max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis}
+#prompt kbd{font:800 13px var(--mono);background:var(--brass);color:#24160d;padding:1px 6px;margin-right:6px}
+body.touch #prompt{left:auto;right:calc(var(--sr) + 4px);transform:none;bottom:calc(var(--sb) + 112px);max-width:min(64vw,300px);white-space:normal;text-align:right}
+body.touch #prompt kbd{display:none}
+/* nas tumbas o texto da ação fica um pouco mais alto, acima do botão LUZ */
+@media (min-height:521px){body.touch.intomb #prompt{bottom:calc(var(--sb) + 140px)}}
+@media (max-height:520px){body.touch #prompt{bottom:calc(var(--sb) + 10px);right:calc(var(--sr) + 172px);max-width:min(38vw,260px)}}
+/* alvo da etapa (símbolo, texto curto e cor) e nome do objeto ao alcance */
+#marcaAlvo{position:absolute;transform:translate(-50%,-100%);pointer-events:none;white-space:nowrap;padding:2px 7px 2px 5px;font:800 12px/1.2 var(--f);color:#24160d;background:#ffd24a;border:2px solid #0b0705;box-shadow:0 2px 0 #0b0705}
+#marcaAlvo::before{content:'◆ ';color:#8a3a10}#marcaAlvo::after{content:'';position:absolute;left:50%;bottom:-8px;margin-left:-5px;border:5px solid transparent;border-top-color:#0b0705}
+#nomeObj{position:absolute;transform:translate(-50%,-100%);pointer-events:none;white-space:nowrap;padding:2px 7px;font:700 13px/1.2 var(--f);color:#fff2cc;background:rgba(23,16,11,.9);border:2px solid #0b0705;box-shadow:inset 0 0 0 1px #8a6a2a}
+#nomeObj.alvo{color:#24160d;background:#ffd24a}
+/* bússola: seta na borda da tela quando o alvo do objetivo está fora dela (nome e distância); nunca fica sob o HUD nem sob os botões */
+#bordaAlvo{position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;--c:#ffd24a}
+#bordaAlvo .baSeta{position:absolute;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:rgba(23,16,11,.92);border:3px solid var(--c);box-shadow:0 0 0 2px #0b0705;box-sizing:border-box}
+#bordaAlvo .baSeta::after{content:'';position:absolute;left:50%;top:50%;margin:-7px 0 0 -3px;border-left:12px solid var(--c);border-top:7px solid transparent;border-bottom:7px solid transparent}
+#bordaAlvo .baSeta::before{content:'';position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -9px;background:var(--c);opacity:.55}
+#bordaAlvo .baTxt{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;padding:3px 8px;font:800 12px/1.15 var(--f);color:#fff2cc;background:rgba(23,16,11,.94);border:2px solid #0b0705;box-shadow:inset 0 0 0 1px var(--c);text-align:center}
+#bordaAlvo .baTxt small{display:block;font-weight:600;font-size:11px;color:#e8d8b0}
+#seta{position:absolute;width:28px;height:28px;pointer-events:none;image-rendering:pixelated}
+/* avisos */
+#msgs{position:absolute;left:50%;transform:translateX(-50%);top:calc(var(--st) + 54px);width:min(460px,calc(100vw - 24px));display:flex;flex-direction:column;gap:6px;align-items:center}
+.toast{padding:8px 12px;font:600 14px/1.3 var(--f);background:rgba(23,16,11,.92);border:2px solid #0b0705;box-shadow:inset 0 0 0 2px #5a3e22;max-width:100%;transition:opacity .4s,transform .4s;display:flex;gap:8px;align-items:flex-start}
+.toast.good{box-shadow:inset 0 0 0 2px #8a7a2a;color:#fff2c0}.toast.warn{box-shadow:inset 0 0 0 2px #9a3a2a;color:#ffd8cc}
+.toast.dano,.toast.curto{padding:3px 9px;font-size:12px;line-height:1.2;box-shadow:inset 0 0 0 2px #9a3a2a;color:#ffd8cc;width:auto}
+.toast .n{font:800 12px var(--f);color:var(--gold)}.toast.out{opacity:0;transform:translateY(-6px)}
+/* telas pequenas: avisos mais compactos (no máximo dois por vez, logo abaixo do HUD) */
+@media (max-width:620px),(max-height:520px){.toast{padding:6px 10px;font-size:13px}}
+/* celular em pé e estreito: vida e objetivo descem para baixo dos botões do alto */
+@media (max-width:480px) and (orientation:portrait){#hl{top:calc(var(--st) + 52px);max-width:calc(100vw - var(--sl) - var(--sr))}}
+/* deitado e baixo: os botões do alto ficam em coluna e os avisos usam o espaço entre a vida e eles */
+@media (max-height:520px){#hl{max-width:min(310px,calc(100vw - var(--sl) - var(--sr) - 84px))}
+  #hr{flex-direction:column;align-items:stretch}#hr .btn{min-height:40px}
+  #msgs{top:calc(var(--st) + 2px);left:auto;right:calc(var(--sr) + 84px);transform:none;width:min(380px,calc(100vw - var(--sl) - var(--sr) - 408px));align-items:stretch}}
+
+/* ---------- toque ---------- */
+#toqueUi{position:absolute;inset:0;z-index:4;pointer-events:none}
+body:not(.touch) #toqueUi{display:none}
+#joy{position:absolute;width:132px;height:132px;margin:-66px 0 0 -66px;border-radius:50%;background:rgba(23,16,11,.35);border:3px solid rgba(236,220,180,.35)}
+#joy i{position:absolute;left:41px;top:41px;width:44px;height:44px;border-radius:50%;background:rgba(236,220,180,.55);border:3px solid rgba(23,16,11,.6)}
+.tbtn{position:absolute;pointer-events:auto;display:grid;place-items:center;font:800 13px var(--f);color:var(--paper);background:rgba(58,42,28,.88);border:3px solid #0b0705;box-shadow:inset 0 -4px 0 #24160d,inset 0 2px 0 #6a4c34}
+.tbtn.on{transform:translateY(2px);box-shadow:inset 0 3px 0 #24160d}
+#bUse{right:var(--sr);bottom:var(--sb);width:92px;height:92px;font-size:15px;background:rgba(122,74,28,.92)}
+#bUse.vazio{opacity:.45}
+#bLan{right:calc(var(--sr) + 100px);bottom:calc(var(--sb) + 8px);width:62px;height:62px}
+body:not(.intomb) #bLan,body.semLanterna #bLan{display:none}
+#zoneHint{position:absolute;left:var(--sl);bottom:calc(var(--sb) + 20px);padding:8px 12px;font:600 14px var(--f);background:rgba(23,16,11,.8);border:2px dashed rgba(236,220,180,.5);max-width:min(46vw,calc(100vw - var(--sl) - var(--sr) - 172px))}
+/* a dica do lado de andar some enquanto há uma interação na mira (o aviso dela fica embaixo) */
+body:has(#prompt:not([hidden])) #zoneHint{display:none}
+
+/* ---------- painel de programação ---------- */
+#painel{position:absolute;z-index:6;left:0;right:0;bottom:0;height:62%;display:flex;flex-direction:column;background:#1b130d;border-top:4px solid #0b0705;box-shadow:inset 0 3px 0 #6a4a2a;
+  padding:6px var(--sr) var(--sb) var(--sl);gap:5px;user-select:none;touch-action:manipulation;overflow-y:auto;overscroll-behavior:contain}
+#painel>*{flex-shrink:0}
+@media (orientation:landscape) and (min-aspect-ratio:5/4){#painel{left:auto;top:0;height:auto;width:min(58vw,640px);border-top:0;border-left:4px solid #0b0705;box-shadow:inset 3px 0 0 #6a4a2a;padding:var(--st) var(--sr) var(--sb) 10px}}
+#pTopo{display:flex;align-items:flex-start;gap:8px}
+#pTit{flex:1;min-width:0}#pTit b{display:block;font:800 15px/1.2 var(--f);color:#fff2cc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#pTit span{display:block;font:700 10px/1.2 var(--f);letter-spacing:.1em;text-transform:uppercase;color:var(--brass);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#pFechar{min-height:42px;padding:6px 12px;font-size:14px}
+#pLayout{min-height:42px;padding:6px 10px;font-size:13px;white-space:nowrap}
+/* editor amplo (padrão): o painel fica com a maior parte da tela e a sala vira uma faixa compacta no mecanismo */
+body.painel.pAmplo #painel{height:76%}
+@media (orientation:landscape) and (min-aspect-ratio:5/4){body.painel.pAmplo #painel{height:auto;width:min(74vw,1000px)}}
+/* pistas fixadas no alto do painel */
+#pFixas{display:flex;flex-direction:column;gap:4px}#pFixas[hidden]{display:none}
+#pFixas .fx{display:flex;gap:6px;align-items:flex-start;font:600 13px/1.35 var(--f);padding:5px 6px 5px 8px;background:#2e2610;border-left:4px solid var(--gold);color:#fff2c8}
+#pFixas .fx span{flex:1;min-width:0}#pFixas .fx .btn{flex:none;min-height:32px;min-width:36px;padding:2px 8px;font-size:13px}
+/* Comandos e variáveis: referência recolhível nos dois modos */
+#pRefBox{flex:none;background:#20160e;border:2px solid #0b0705}#pRefBox[hidden]{display:none}
+#pRefBox>summary{cursor:pointer;min-height:38px;display:flex;align-items:center;gap:6px;padding:4px 10px;font:800 13px var(--f);color:var(--gold);list-style:none}
+#pRefBox>summary::-webkit-details-marker{display:none}#pRefBox>summary::before{content:'▸';color:var(--brass)}#pRefBox[open]>summary::before{content:'▾'}
+#pRefC{display:flex;flex-direction:column;gap:7px;padding:2px 8px 8px;max-height:32vh;overflow:auto}
+.rsec{display:flex;flex-wrap:wrap;gap:5px}.rsec>b{width:100%;font:700 11px var(--f);letter-spacing:.06em;text-transform:uppercase;color:var(--paper2)}
+.rch{display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-height:42px;max-width:100%;padding:4px 8px;background:#2e2216;border:2px solid #0b0705;box-shadow:inset 0 0 0 1px #6a4a2a;color:#fff2cc;text-align:left;cursor:pointer}
+.rch code{font:800 14px var(--mono);color:#ffe9a0;white-space:nowrap}.rch span{font:600 11px/1.25 var(--f);color:var(--paper2)}.rch.val code{color:#9fe8ff}.rch:disabled{opacity:.5}
+.rpista{width:100%;font:600 13px/1.35 var(--f);color:#fff2c8;padding:4px 8px;background:#2a2410;border-left:3px solid var(--gold)}.rpista p{margin:0 0 4px}
+.rpista.falta{color:var(--paper2);border-left-color:#6a5a44;background:#221a10;font-style:italic}.rpista .btn{min-height:34px;padding:2px 10px;font-size:13px}
+#pEtapas,#pSits{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;flex:none}
+#pEtapas::-webkit-scrollbar,#pSits::-webkit-scrollbar{display:none}
+.etp{flex:none;font:700 12px var(--f);padding:6px 8px;min-height:34px;border:2px solid #0b0705;background:#2a1e14;color:var(--paper2);cursor:pointer}
+.etp.ok{color:var(--ok)}.etp.atual{background:#4a3420;color:#fff2cc;box-shadow:inset 0 0 0 2px var(--brass)}.etp:disabled{opacity:.45;cursor:default}
+.sit{flex:none;font:700 13px var(--f);padding:6px 10px;min-height:38px;border:2px solid #0b0705;background:#2a1e14;color:var(--paper);cursor:pointer}
+.sit.atual{box-shadow:inset 0 0 0 2px var(--ice);background:#20303a}.sit.ok::before{content:'✔ ';color:var(--ok)}.sit.erro::before{content:'✖ ';color:var(--alert)}.sit.velho{border-style:dashed;border-color:#8a7a4a}
+#pVars{display:flex;gap:6px;overflow-x:auto;flex:none;scrollbar-width:none}#pVars::-webkit-scrollbar{display:none}
+#pCena{flex:none;display:flex;overflow-x:auto;scrollbar-width:none}#pCena[hidden]{display:none}#pCena::-webkit-scrollbar{display:none}
+.tab{flex:none;display:flex;gap:8px;align-items:center;padding:4px 6px;background:#20160e;border:2px solid #0b0705}
+.tabg{display:grid;gap:2px}.tabg i{width:24px;height:24px;display:flex;align-items:center;justify-content:center;font:800 15px/1 var(--mono);font-style:normal;background:#3a2a1a;color:#ffe9a0}
+.tabg i.r{background:#14100c;color:#8a7a62}.tabg i.g{background:#6a4a10;color:#ffd24a}.tabg i.a{background:#c8743a;color:#fff}.tabg i.t{color:#ffb455}
+.tabl{margin:0;font:600 12px/1.35 var(--f);color:var(--paper2);max-width:170px;white-space:normal}
+.trilho .tabg i.c{width:auto;min-width:28px;padding:0 4px;font-size:13px}.trilho .tabg i.ok{background:#1e4a24;color:#c8ffc8}.trilho .tabg i.a{background:#c8743a;color:#fff}.trilho .tabg i.fim{background:#2a2040;color:#c9a6ff}.trilho .tabg i.fim.a{background:#c8743a;color:#fff}
+.var{flex:none;display:flex;flex-direction:column;gap:1px;padding:4px 8px;border:2px solid #0b0705;background:#24303a;min-width:86px}
+.var .nm{font:700 13px var(--mono);color:#fff}.var .tp{font:700 10px var(--f);letter-spacing:.06em;color:var(--ice);text-transform:uppercase}
+.var .vl{font:800 15px var(--mono);color:var(--gold)}.var.vazio .vl{color:#8a8a8a;font-style:italic;font-weight:600}.var.vazio{border-style:dashed;border-color:#5a6a7a;background:#1c242c}
+.var.sensor{background:#2a2a1a}.var.sensor .tp{color:var(--reactor)}.var.laco{background:#2a2040}.var.laco .tp{color:var(--spore)}.var.mudou{animation:vflash .7s}@keyframes vflash{0%{background:#6a5a1a}100%{}}
+#pMsg{flex:none;font:600 14px/1.35 var(--f);padding:6px 10px;background:#2a1e14;border-left:4px solid var(--brass);max-height:5.6em;overflow:auto;user-select:text;-webkit-user-select:text}
+#pMsg.erro{border-left-color:var(--alert);background:#2e1610;color:#ffe0d6}#pMsg.ok{border-left-color:var(--ok);background:#16261a;color:#e2ffe4}#pMsg.passo{border-left-color:var(--ice);background:#16222a}
+#pMsg.lume{border-left-color:var(--gold);background:#2e2610;color:#fff2c8}
+#pTarefa{flex:none;font:800 14px/1.3 var(--f);color:#ffe9a0;padding:5px 10px;background:#1e160c;border:2px solid #0b0705;box-shadow:inset 0 0 0 1px #6a4a1c}#pTarefa:empty{display:none}@media (max-height:760px){#painel.erroTexto #pTarefa{display:none}}#pTarefa .rot{font:800 11px var(--f);letter-spacing:.08em;color:var(--brass);margin-right:6px}#pTarefa.feita{color:#c8f0c8}
+/* enunciado longo: aberto quando cabe; senão recolhido, com esmaecido no corte e o botão para ler o resto */
+#pMsg.aberto{max-height:none}#pMsg.longo:not(.aberto){-webkit-mask-image:linear-gradient(#000 70%,transparent);mask-image:linear-gradient(#000 70%,transparent)}
+#pMsgMais{align-self:flex-end;min-height:34px;margin-top:-4px;padding:2px 12px;font-size:13px}
+/* as informações do desafio: no celular em pé seguem o fluxo do painel; deitado viram a coluna da esquerda */
+#pInfo{display:contents}
+/* previsão antes de executar: pensar no resultado, depois conferir */
+#pPrev{flex:none;padding:8px 10px;background:#1a2a36;border:2px solid #0b0705;box-shadow:inset 0 0 0 2px #4a8aaa}
+#pPrev .q{margin:0 0 6px;font:700 14px/1.35 var(--f);color:#e6f6ff}#pPrev .ops{display:flex;flex-wrap:wrap;gap:5px}#pPrev .btn{min-height:42px;font-size:14px;flex:1 1 auto}
+#pPrev .pular{flex:0 0 auto;opacity:.8}#pPrev .cod{margin:0 0 6px;padding:6px 8px;background:#0e0a08;border:1px solid #4a8aaa;color:#ffe9b0;font:13px/1.4 var(--mono);white-space:pre-wrap}
+/* área de erro: onde, o nome do erro e a explicação */
+#pErro{flex:none;padding:7px 10px;background:#3a140e;border:2px solid #0b0705;box-shadow:inset 0 0 0 2px #9a3a2a;color:#ffe6dc;max-height:9em;overflow:auto;user-select:text;-webkit-user-select:text}
+#pErro .onde{display:block;font:800 11px var(--f);letter-spacing:.1em;text-transform:uppercase;color:#ff9a7a}
+#pErro p{margin:2px 0 0}#pErro .tit{font:800 14px/1.3 var(--mono);color:#fff}#pErro .txt{font:600 14px/1.35 var(--f)}#pErro .dica{font:600 12px var(--f);color:#ffbfa8}#pErro .dica:empty{display:none}
+#pErro .gbtn{margin-top:6px;min-height:36px;padding:4px 10px;font-size:13px}#pErro .gbtn[hidden]{display:none}
+/* cada origem de erro tem a sua cor: Python (vermelho), regra da máquina (âmbar), objetivo (azul), limite e editor */
+#pErro.cat-maquina{background:#3a2a0e;box-shadow:inset 0 0 0 2px #b8862a}#pErro.cat-maquina .onde{color:#ffd27a}
+#pErro.cat-objetivo,#pErro.cat-mecanismo{background:#122634;box-shadow:inset 0 0 0 2px #3a7a9a}#pErro.cat-objetivo .onde,#pErro.cat-mecanismo .onde{color:#8fd8ff}
+#pErro.cat-subconjunto,#pErro.cat-semEfeito{background:#16282a;box-shadow:inset 0 0 0 2px #3a8a7a}#pErro.cat-subconjunto .onde,#pErro.cat-semEfeito .onde{color:#8affd8}
+#pErro.cat-limite,#pErro.cat-editor{background:#261a34;box-shadow:inset 0 0 0 2px #7a5aaa}#pErro.cat-limite .onde,#pErro.cat-editor .onde{color:#d8b8ff}
+/* modo Escrever */
+#pTexto{display:flex;flex-direction:column;gap:4px}
+#pRef{margin:0;font:600 12px/1.35 var(--f);color:var(--paper2)}
+#pTxt{width:100%;min-height:150px;max-height:44vh;resize:vertical;padding:8px;font:700 15px/1.45 var(--mono);color:#f0e4c4;background:#0f0a07;border:2px solid #0b0705;box-shadow:inset 0 0 0 2px #4a3220;tab-size:4;white-space:pre;user-select:text;-webkit-user-select:text}
+#pTxt:focus{outline:2px solid var(--gold)}
+#pCorpo{flex:1 0 auto;display:flex;flex-direction:column;gap:5px}
+#pProg{flex:1 1 auto;min-height:88px;max-height:44vh;overflow:auto;margin:0;padding:4px;list-style:none;background:#0f0a07;border:2px solid #0b0705;counter-reset:ln}
+.ln{display:flex;align-items:center;gap:6px;min-height:36px;padding:2px 6px 2px 0;font:700 15px var(--mono);color:#f0e4c4;border:2px solid transparent;cursor:pointer;white-space:nowrap}
+.ln.estr .cod{color:#ffd8a0}.ln.fimbl{min-height:22px;font:italic 600 12px var(--mono);color:#7a6a54}.ln.fimbl::before{content:'';counter-increment:none}.ln.fimbl .sim{visibility:hidden}
+.ln::before{counter-increment:ln;content:counter(ln);display:inline-block;width:2.2em;text-align:right;color:#6a5a44;font-size:12px;flex:none}
+.ln .sim{flex:none;width:1.4em;text-align:center;color:var(--brass)}.ln.estr .sim{color:var(--spore)}
+.ln.sel{border-color:var(--brass);background:#2a1e14}.ln.atual{background:#1e3a4a;border-color:var(--ice)}.ln.erro{background:#4a1a12;border-color:var(--alert)}
+.ln .inc{color:var(--alert);font-weight:800}
+.ln.cur{min-height:22px;color:var(--ice);font-size:12px}.ln.cur::before{content:none;counter-increment:none}
+.ln .cont{margin-left:6px;font:800 11px var(--f);color:#0b0705;background:var(--ice);padding:1px 5px}
+#pEdit{flex:none;display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:6px;background:#2a1e14;border:2px solid #0b0705;max-height:150px;overflow-y:auto}
+#pEdit .lbl{font:700 12px var(--f);color:var(--paper2);width:100%}
+.ch{font:700 14px var(--mono);min-height:40px;padding:5px 9px;border:2px solid #0b0705;background:#3a2a1c;color:var(--paper);cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+.ch.on{box-shadow:inset 0 0 0 2px var(--gold);background:#4a3a1a}.ch img{width:24px;height:24px}
+.ch.op{min-width:44px;justify-content:center}
+#pPaleta{flex:none;display:flex;gap:5px;overflow-x:auto;padding-bottom:2px;scrollbar-width:thin}
+.pb .cod{font:800 12px/1.1 var(--mono);text-transform:none}
+.pb{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:76px;min-height:52px;padding:4px 8px;font:800 12px/1.1 var(--f);color:#fff2cc;cursor:pointer;
+  background:#4a3420;border:3px solid #0b0705;box-shadow:inset 0 -3px 0 #2a1a0e,inset 0 2px 0 #7a5a3a;text-align:center}
+.pb .sim{font-size:18px;line-height:1;color:var(--gold)}.pb.estr{background:#3a2a4a;box-shadow:inset 0 -3px 0 #24162e,inset 0 2px 0 #5a4a7a}
+.pb.sug,#pDica.chama{animation:sug 1.1s infinite}@keyframes sug{50%{box-shadow:inset 0 0 0 3px var(--gold)}}
+.pb:disabled{opacity:.45}
+#pCtl{flex:none;display:flex;gap:5px;flex-wrap:wrap}
+#pRodape{flex:none;display:flex;flex-direction:column;gap:5px;position:sticky;bottom:calc(-1 * var(--sb));background:#1b130d;padding:4px 0 var(--sb);margin-bottom:calc(-1 * var(--sb));z-index:1;box-shadow:0 -5px 6px #1b130d}
+#pCtl .btn{flex:1 1 auto;min-width:0;min-height:44px;padding:5px 5px;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#pCtl .btn.ex{font-weight:800;font-size:15px}@media (max-width:400px){#pCtl .btn{font-size:13px;padding:5px 3px}#pCtl .btn.ex{font-size:13px}}#pCtl .btn.ex:disabled{opacity:.45}#pCtl .quebra{flex-basis:100%;height:0}#pClear{flex:0 1 auto}
+#pVel{min-width:52px!important;flex:0 0 auto!important;order:1}#pDica,#pGuia,#pModo,#pClear{order:2}
+body.painel #hud,body.painel #toqueUi{display:none}
+/* teclado virtual aberto (celular): o painel fica inteiro na parte visível, acima do teclado */
+body.teclado #painel{bottom:var(--kb,0px);top:auto;height:auto;max-height:calc(100% - var(--kb,0px) - 4px)}
+/* telas baixas: a área de erro rola por dentro e os botões fixos ficam mais baixos (sem perder o tamanho de toque) */
+@media (max-height:600px){#pErro{max-height:6.2em}}
+/* telas de celular: área de erro e referência mais baixas, para o código continuar à vista */
+/* celular em pé: a fileira de apoio (velocidade, Dica, Guia, Escrever, Limpar) cabe numa linha só; Limpar fica só com o ícone */
+@media (orientation:portrait) and (max-width:480px){#pClear .tx{display:none}#pClear{flex:0 0 auto!important;min-width:44px!important}#pCtl .btn:not(.ex){min-height:40px}#pCtl .ic{margin-right:1px}}
+@media (orientation:portrait) and (max-width:400px){#pDica .ic,#pGuia .ic,#pModo .ic{display:none}}
+@media (orientation:portrait) and (max-width:340px){#pCtl .btn.ex .ic{display:none}#pCtl{gap:4px}}
+/* celular pequeno em pé (360×640 e parecidos): painel mais compacto, para o programa aparecer junto com a tarefa,
+   a paleta e Executar, sem rolar; textos com pelo menos 12 px */
+@media (orientation:portrait) and (max-height:760px){
+  #painel{gap:4px;padding-top:4px}body.painel.pAmplo #painel{height:78%}
+  #pFechar,#pLayout{min-height:36px;padding:4px 10px}#pTit b{font-size:14px}#pTit span{font-size:11px}
+  .etp{min-height:30px;padding:4px 8px;font-size:13px}.sit{min-height:32px;padding:4px 10px}
+  .var{flex-direction:row;align-items:baseline;gap:6px;padding:3px 8px;min-width:0}.var .tp{font-size:11px}.var .vl{font-size:14px}
+  #pTarefa{font-size:13px;padding:4px 8px}
+  #pMsg{max-height:2.9em;padding:4px 8px}#pMsg.aberto{max-height:none}
+  #pMsgMais{position:relative;z-index:1;margin-top:-30px;min-height:28px;padding:2px 10px;font-size:12px}
+  #pRefBox>summary{min-height:34px}#pProg{min-height:80px}
+  #pRodape{gap:4px}
+  #pRef{font-size:12px;line-height:1.3;margin:0 0 2px}
+  .trilho .tabl{display:none}.tab{padding:3px 6px}.tabg i{width:20px;height:20px;font-size:13px}.tabl{font-size:11px;line-height:1.25}
+  /* o programa vem logo depois da tarefa e do enunciado; Comandos e variáveis (recolhível) fica embaixo dele */
+  #pProg,#pTexto{order:1}#pEdit{order:2}#pRefBox{order:3}
+}
+@media (max-height:960px) and (orientation:portrait){#pErro{max-height:7.2em}#pErro .gbtn{min-height:36px;padding:3px 10px}#pRefC{max-height:22vh}#pTxt{min-height:7.6em}}
+/* celular deitado (tela baixa): duas colunas — à esquerda o desafio (etapas, variáveis, enunciado, erro), à direita o
+   programa com a paleta e os botões; cada coluna rola por conta própria */
+@media (orientation:landscape) and (max-height:560px){
+  #pPrev .q{font-size:13px;margin-bottom:4px}#pPrev .ops{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}#pPrev .btn{min-height:36px;font-size:13px;padding:3px 6px;white-space:normal;overflow-wrap:break-word}
+  #painel{display:grid;grid-template-columns:minmax(0,0.85fr) minmax(0,1.3fr);grid-template-rows:auto minmax(0,1fr) auto;gap:5px 10px;overflow:hidden}
+  body.painel.pAmplo #painel{width:min(80vw,1000px)}
+  #pTopo{grid-column:1/-1}
+  #pInfo{display:flex;flex-direction:column;gap:5px;grid-column:1;grid-row:2/4;overflow-y:auto;min-height:0;overscroll-behavior:contain}
+  #pInfo>*{flex-shrink:0}#pMsg{max-height:none}#pMsg.longo:not(.aberto){-webkit-mask-image:none;mask-image:none}#pMsgMais{display:none}#pErro{max-height:70vh}
+  #pCorpo{grid-column:2;grid-row:2;min-height:0;overflow-y:auto}#pCorpo>*{flex-shrink:0}#pProg,#pTxt{max-height:none}#pProg{min-height:5.5em}#pTxt{min-height:6em;flex:1}#pTexto{flex:1}
+  #pRefC{max-height:30vh}
+  #pRodape{grid-column:2;grid-row:3;position:static;margin:0;padding:0;box-shadow:none}
+  #pCtl{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}#pCtl .quebra{display:none}#pCtl .btn.ex{font-size:13px}#pCtl .btn{min-height:40px;min-width:0;padding:3px 4px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+/* celular pequeno deitado: os botões do painel ficam só com a palavra (sem o ícone) para caber inteiros */
+@media (orientation:landscape) and (max-height:560px) and (max-width:720px){#pCtl .ic{display:none}#pCtl{gap:2px}#pCtl .btn,#pCtl .btn.ex{padding:3px 0;font-size:12.5px}#painel{grid-template-columns:minmax(0,0.75fr) minmax(0,1.3fr)}}
+@media (max-height:420px){#pCtl .btn{min-height:40px;padding:3px 6px}.pb{min-height:46px}}
+
+/* volumes da pausa: música e efeitos separados */
+.vols{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:4px 10px;width:100%;margin:2px 0}.vols label{font:700 14px var(--f);color:var(--paper)}
+.vols input{width:100%;min-height:36px;accent-color:var(--gold)}
+/* ---------- telas: início, pausa, confirmação, diário, fim ---------- */
+.tela{position:absolute;inset:0;z-index:8;display:grid;place-items:center;padding:var(--st) var(--sr) var(--sb) var(--sl);background:rgba(10,7,5,.82);overflow:auto}
+.caixa{width:min(520px,100%);padding:18px;display:flex;flex-direction:column;gap:10px;max-height:100%;overflow:auto}
+.caixa h1{margin:0;font:900 28px/1.1 Georgia,'Times New Roman',serif;color:var(--brass);letter-spacing:.02em;text-align:center}
+.caixa h2{margin:0;font:800 20px var(--f);color:#fff2cc}
+.caixa p{margin:0;font:500 15px/1.45 var(--f);color:var(--paper)}
+.caixa .sub{color:var(--paper2);font-size:14px}
+#logo{width:min(420px,100%);align-self:center}
+.ctl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font:600 13px var(--f);color:var(--paper2)}.ctl b{color:var(--paper);font-weight:800}
+#diario .caixa{width:min(720px,100%);height:min(720px,100%)}
+.abas{display:flex;gap:5px;flex-wrap:wrap}.aba{flex:1;white-space:nowrap}.aba.on{background:#5a3e22;box-shadow:inset 0 0 0 2px var(--brass)}
+.relBar{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 8px}.relBar .btn{flex:1 1 auto;min-height:44px}
+#dLista{flex:1;overflow:auto;display:flex;flex-direction:column;gap:10px;padding-right:4px;user-select:text;-webkit-user-select:text}
+.entry{padding:10px 12px;background:#e9d8ae;color:#2a1a0e;border:2px solid #0b0705;box-shadow:inset 0 0 0 2px #c8b080}
+.entry h3{margin:0 0 4px;font:800 16px var(--f);display:flex;gap:8px;align-items:center}
+.entry p{margin:0;font:500 15px/1.45 Georgia,serif;color:#2a1a0e}
+.entry pre{margin:8px 0 0;padding:8px;background:#20160e;color:#ffe9b0;font:600 13px/1.4 var(--mono);white-space:pre-wrap;border:2px solid #0b0705}
+.entry .tag{font:800 10px var(--f);background:var(--alert);color:#fff;padding:2px 5px;letter-spacing:.08em}
+.entry.saber{background:#d8e8d0;box-shadow:inset 0 0 0 2px #7aa86a}.entry.bloq{background:#3a2e22;color:#a89878;box-shadow:inset 0 0 0 2px #5a4a3a}.entry.bloq p,.entry.bloq h3{color:#a89878}
+#mapCv{width:min(520px,100%);align-self:center;image-rendering:pixelated;border:3px solid #0b0705}
+/* Guia de Programação */
+#guia{z-index:9}
+#guia .caixa{width:min(760px,100%);height:min(760px,100%)}
+#gTopicos{display:flex;flex-direction:column;gap:5px;flex:none}
+.ggrupos{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}.ggr{min-height:38px;padding:4px 2px;font-size:12px}.ggr.on{background:#5a3e22;box-shadow:inset 0 0 0 2px var(--brass)}.ggr.aqui{color:var(--gold)}
+.gchips{display:flex;flex-wrap:wrap;gap:4px;position:relative}
+.gtop{flex:none;min-height:36px;padding:5px 9px;font-size:13px}.gtop.on{background:#5a3e22;box-shadow:inset 0 0 0 2px var(--brass)}
+#gConteudo{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:8px;padding-right:4px;user-select:text;-webkit-user-select:text}
+/* nenhum bloco do conteúdo encolhe (o exemplo de código ficava esmagado numa faixa): quem rola é a área inteira */
+#gConteudo>*{flex-shrink:0}
+/* telas pequenas: os assuntos ficam numa fileira que rola para o lado, e o texto fica com a maior parte da altura */
+@media (max-width:620px),(max-height:600px){
+  #guia .caixa{padding:10px 12px;gap:8px}#guia h2{font-size:18px}#gFechar{min-height:42px;padding:6px 12px}
+  .gchips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}.gchips::-webkit-scrollbar{display:none}
+  .ggr{min-height:40px}.gtop{white-space:nowrap;min-height:40px}
+  .gcab canvas{height:36px}.gcab h3{font-size:18px}.gtxt{font-size:15px}pre.gcod{font-size:14px;padding:8px}}
+.gcab{display:flex;align-items:center;gap:10px}.gcab canvas{height:48px;width:auto}.gcab h3{margin:0;font:800 20px var(--f);color:#fff2cc}
+.gtxt{margin:0;font:500 16px/1.5 var(--f);color:var(--paper)}.gsub{margin:4px 0 0;font:800 11px var(--f);letter-spacing:.1em;text-transform:uppercase;color:var(--brass)}
+.gjogo{margin:4px 0 0;padding:8px 10px;font:600 14px/1.45 var(--f);color:#e2ffe4;background:#16261a;border-left:4px solid var(--ok)}
+pre.gcod{margin:0;padding:10px;background:#0f0a07;color:#f0e4c4;font:700 15px/1.5 var(--mono);white-space:pre;overflow-x:auto;border:2px solid #0b0705;box-shadow:inset 0 0 0 2px #3a2a1c}
+.c-kw{color:#c9a6ff}.c-str{color:#7ee08a}.c-num{color:#ffd24a}.c-fn{color:#6fd3ff}.c-com{color:#8a7a62;font-style:italic}.c-op{color:#ff9a7a}
+.gpassos{display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center}.gpassos span{padding:4px 8px;background:#2a1e14;border:2px solid #0b0705;font:700 13px var(--mono);color:#fff2cc}.gpassos b{color:var(--brass)}
+.gcaixa{align-self:flex-start;display:flex;flex-direction:column;align-items:center;padding:6px 14px;background:#24303a;border:2px solid #0b0705;box-shadow:inset 0 0 0 2px #4a6a7a}
+.gcaixa .nm{font:700 13px var(--mono);color:#fff}.gcaixa .vl{font:800 20px var(--mono);color:var(--gold)}
+.gtipos{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px}.gtipo{display:flex;gap:8px;align-items:center;padding:6px;background:#2a1e14;border:2px solid #0b0705}
+.gtipo canvas{width:40px;height:40px}.gtipo span{display:flex;flex-direction:column}.gtipo b{font:800 15px var(--mono);color:var(--ice)}.gtipo code{font:700 14px var(--mono);color:var(--gold)}.gtipo i{font:600 12px var(--f);color:var(--paper2);font-style:normal}
+.gtab{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:center}.gtab code{font:800 14px var(--mono);color:var(--gold);background:#0f0a07;padding:2px 6px;border:2px solid #0b0705}.gtab span{font:600 14px var(--f)}
+/* história: páginas curtas antes do treino (também no menu) */
+#historia .caixa{width:min(560px,100%)}#hImg{width:min(320px,100%);align-self:center;background:#120c08;border:3px solid #0b0705}
+#hTexto{font:600 17px/1.55 var(--f);color:#fff2cc;min-height:6.2em;user-select:text;-webkit-user-select:text}#hPag{margin:0;text-transform:uppercase;letter-spacing:.1em;font-size:12px}
+.hBtns{display:grid;grid-template-columns:1fr 2fr;gap:8px}
+/* conversa com o Lume */
+#dialogo{z-index:10;align-items:end;background:rgba(10,7,5,.45)}
+#dialogo .caixa{width:min(620px,100%);gap:8px;margin-bottom:max(8px,env(safe-area-inset-bottom,0px))}
+.dTopo{display:flex;align-items:center;gap:8px}.dTopo canvas{width:48px;height:48px;background:#24160d;border:2px solid #0b0705}.dTopo b{font:800 17px var(--f);color:var(--gold)}
+#dTexto{margin:0;font:600 16px/1.5 var(--f);color:#fff2cc;user-select:text;-webkit-user-select:text}
+#dOpcoes{display:flex;flex-direction:column;gap:5px}#dOpcoes .btn{text-align:left;min-height:44px}
+#fade{position:absolute;inset:0;z-index:7;background:#000;opacity:0;pointer-events:none;transition:opacity .35s}
+#fade.on{opacity:1}
+#fim{background:rgba(6,14,8,.94)}#fim p{text-align:center;font-family:Georgia,serif;font-size:17px}
+#boot{position:absolute;inset:0;z-index:20;display:grid;place-items:center;background:var(--ink);font:700 18px var(--f);color:var(--brass)}
+body.modal #toqueUi{display:none}
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="c"></canvas>
+  <div id="toque"></div>
+  <div id="hud">
+    <!-- marcas do mundo primeiro: ficam por baixo do HUD e dos avisos -->
+    <div id="marcaAlvo" hidden></div><div id="nomeObj" hidden></div>
+    <div id="bordaAlvo" hidden aria-hidden="true"><i class="baSeta"></i><span class="baTxt"><b></b><small></small></span></div>
+    <div id="hl">
+      <div class="chip"><div id="hearts"></div><div id="relics"></div><span id="relicTxt"></span></div>
+      <div class="hlinha"><div class="chip" id="lantern"><span>Lanterna</span><span id="ltxt"></span></div><div class="chip" id="mao" hidden></div></div>
+      <div class="chip" id="goal"></div>
+    </div>
+    <div id="hr"><button class="btn" id="btnGuia" title="Guia de Programação (G)" data-acao="guia">Guia</button><button class="btn" id="btnDiary" title="Diário (J)" data-acao="diario">Diário</button><button class="btn" id="btnPause" title="Pausa (Esc)" data-acao="pausa">II</button></div>
+    <div id="msgs" aria-live="polite"></div>
+    <div id="prompt" hidden></div>
+  </div>
+  <div id="toqueUi">
+    <div id="joy" hidden><i></i></div>
+    <button class="tbtn" id="bUse" data-acao="usar" aria-label="Interagir">AÇÃO</button>
+    <button class="tbtn" id="bLan" data-acao="lanterna" aria-label="Lanterna">LUZ</button>
+    <div id="zoneHint" hidden>Toque e arraste deste lado para andar. Use o botão AÇÃO para interagir.</div>
+  </div>
+
+  <div id="painel" hidden role="dialog" aria-label="Painel de programação">
+    <div id="pTopo"><div id="pTit"><span id="pEtapa"></span><b id="pTitulo"></b></div><button class="btn" id="pLayout" type="button"></button><button class="btn" id="pFechar">✕ Fechar</button></div>
+    <div id="pInfo">
+    <div id="pEtapas"></div>
+    <div id="pFixas" hidden></div>
+    <div id="pSits"></div>
+    <div id="pCena" hidden></div>
+    <div id="pVars"></div>
+    <div id="pTarefa" role="note"></div><div id="pPrev" hidden><p class="q"></p><pre class="cod" hidden></pre><div class="ops"></div></div><div id="pMsg" role="status" aria-live="polite"></div><button class="btn" id="pMsgMais" type="button" hidden></button>
+    <div id="pErro" hidden role="alert"><b class="onde"></b><p class="tit"></p><p class="txt"></p><p class="dica"></p><button class="btn gbtn" type="button"></button></div>
+    </div>
+    <div id="pCorpo">
+      <details id="pRefBox"><summary>Comandos e variáveis</summary><div id="pRefC"></div></details>
+      <ol id="pProg"></ol>
+      <div id="pTexto" hidden><p id="pRef"></p><textarea id="pTxt" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" wrap="off" aria-label="Código do programa"></textarea></div>
+      <div id="pEdit" hidden></div>
+    </div>
+    <div id="pRodape"><div id="pPaleta"></div>
+    <div id="pCtl">
+      <button class="btn verde ex" id="pRun" title="Uma tentativa inteira: roda todas as instruções (Ctrl+Enter)"><span class="ic">▶</span> Executar</button><button class="btn azul ex" id="pStep" title="Roda uma instrução por toque; na última, mostra o resultado (Ctrl+Shift+Enter)"><span class="ic">⏭</span> Passo</button><button class="btn vermelho ex" id="pStop" title="Interrompe a tentativa (Ctrl+.)"><span class="ic">■</span> Parar</button><button class="btn ambar ex" id="pReset" title="Nova tentativa: o mecanismo volta ao começo e o programa continua igual (Alt+R)"><span class="ic">↺</span> Reiniciar</button><span class="quebra" aria-hidden="true"></span>
+      <button class="btn" id="pDica" title="Uma dica do Lume por vez: conceito, caminho, quase a solução"><span class="ic">💡</span> Dica</button><button class="btn" id="pGuia" title="Abre o Guia no assunto desta etapa; o programa não se perde"><span class="ic">📖</span> Guia</button><button class="btn" id="pModo" title="Escrever o programa como texto Python"><span class="ic">✎</span> Escrever</button><button class="btn" id="pClear" title="Limpar: apaga as linhas do programa (pede confirmação)" aria-label="Limpar o programa"><span class="ic">🗑</span><span class="tx"> Limpar</span></button><button class="btn" id="pVel" title="Velocidade">1×</button>
+    </div></div>
+  </div>
+
+  <div id="fade"></div>
+  <section class="tela" id="scStart" hidden><div class="caixa moldura">
+    <canvas id="logo" class="px" width="210" height="88"></canvas>
+    <p class="sub" id="startNote"></p>
+    <button class="btn main" id="btnContinue">Continuar</button>
+    <button class="btn" id="btnNew">Novo jogo</button>
+    <button class="btn" id="btnHistoria">📜 História</button>
+    <button class="btn" id="btnGuiaIni">📖 Guia de Programação</button>
+    <button class="btn" id="btnFull">Tela cheia</button>
+    <div class="ctl" id="ctlStart"></div>
+    <p class="sub" style="font-size:12px">Versão 2D em pixel art. A versão 3D continua disponível separadamente.</p>
+  </div></section>
+  <section class="tela" id="historia" hidden role="dialog" aria-label="História"><div class="caixa moldura">
+    <p class="sub" id="hPag"></p><h2 id="hTit"></h2>
+    <canvas id="hImg" class="px" width="160" height="100"></canvas>
+    <p id="hTexto"></p>
+    <div class="hBtns"><button class="btn" id="hVoltar">◀ Voltar</button><button class="btn main" id="hProx">Continuar ▶</button></div>
+    <button class="btn" id="hPular">Pular a história</button>
+  </div></section>
+  <section class="tela" id="scPause" hidden><div class="caixa moldura">
+    <h2>Pausa</h2><p class="sub" id="saveInfo"></p>
+    <button class="btn main" id="pResume">Continuar</button><button class="btn" id="pGuiaPausa">📖 Guia de Programação</button><button class="btn" id="pDiary">Diário</button><button class="btn" id="pRelat">📊 Relatório de aprendizagem</button>
+    <button class="btn" id="pSound"></button><button class="btn" id="pFull">Tela cheia</button>
+    <div class="vols"><label for="pMus">Música</label><input type="range" id="pMus" min="0" max="100" step="5"><label for="pEfx">Efeitos</label><input type="range" id="pEfx" min="0" max="100" step="5"></div>
+    <button class="btn" id="pHome">Voltar ao início</button><button class="btn vermelho" id="pErase">Apagar progresso</button>
+    <div class="ctl" id="ctlPause"></div>
+  </div></section>
+  <section class="tela" id="scConfirm" hidden><div class="caixa moldura">
+    <h2 id="cfTitle"></h2><p id="cfText"></p><button class="btn vermelho" id="cfYes"></button><button class="btn" id="cfNo">Cancelar</button>
+  </div></section>
+  <section class="tela" id="diario" hidden><div class="caixa moldura">
+    <div style="display:flex;gap:8px;align-items:center"><h2 style="flex:1">Diário</h2><button class="btn" id="dFechar">✕ Fechar</button></div>
+    <div class="abas"><button class="btn aba" data-aba="notas">Notas</button><button class="btn aba" data-aba="saberes">Saberes</button><button class="btn aba" data-aba="exemplos">Exemplos</button><button class="btn aba" data-aba="pistas">Pistas</button><button class="btn aba" data-aba="mapa">Mapa</button><button class="btn aba" data-aba="relatorio">📊 Relatório</button></div>
+    <p class="sub" id="dInfo"></p>
+    <div id="dLista"></div>
+    <canvas id="mapCv" width="180" height="180" hidden></canvas>
+  </div></section>
+  <section class="tela" id="guia" hidden><div class="caixa moldura">
+    <div style="display:flex;gap:8px;align-items:center"><h2 style="flex:1">Guia de Programação</h2><button class="btn" id="gFechar">✕ Fechar</button></div>
+    <div id="gTopicos"></div>
+    <div id="gConteudo"></div>
+  </div></section>
+  <section class="tela" id="dialogo" hidden role="dialog" aria-label="Conversa"><div class="caixa moldura">
+    <div class="dTopo"><canvas id="dRetrato" class="px" width="24" height="24"></canvas><b id="dNome">Lume</b></div>
+    <p id="dTexto"></p>
+    <div id="dOpcoes"></div>
+  </div></section>
+  <section class="tela" id="fim" hidden><div class="caixa">
+    <h1>Vale das Tumbas</h1><div id="fimTxt" style="display:flex;flex-direction:column;gap:10px"></div>
+    <button class="btn main" id="fimOk">Continuar explorando</button>
+  </div></section>
+  <div id="boot">Carregando o vale…</div>
+</div>

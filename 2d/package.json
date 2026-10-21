@@ -1,0 +1,13 @@
+{
+  "name": "vale-das-tumbas-2d",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Vale das Tumbas em pixel art 2D: aventura para aprender lógica de programação.",
+  "scripts": {
+    "build": "./build.sh",
+    "test": "./build.sh && ./test/rodar.sh"
+  },
+  "devDependencies": {
+    "playwright": "^1.48.0"
+  }
+}

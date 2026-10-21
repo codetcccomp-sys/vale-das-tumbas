@@ -1,0 +1,12 @@
+const {open}=require('../lib');const path=require('path');
+(async()=>{const dir=process.argv[2];const {browser,page,logs}=await open({viewport:{width:412,height:860},dpr:2,touch:true});
+const ev=(f,a)=>page.evaluate(f,a);const foto=async n=>{await page.waitForTimeout(200);await page.screenshot({path:path.join(dir,n+'.png')});};
+await foto('inicio');
+await ev(()=>document.getElementById('btnNew').click());
+await ev(()=>{__vt.G.learn={s0:true,s1:true,s2:true,d0:true,d1:true};__vt.G.relics.steam=true;addDiary('saber_seq',true);addDiary('steam_relic',true);addDiary('oficina_steam',true);__vt.G.sec.f_nw=true;__vt.G.sec.f_se=true;});
+await ev(()=>abrirDiario('notas'));await foto('diario_notas');
+await ev(()=>mostrarAba('saberes'));await foto('diario_saberes');
+await ev(()=>mostrarAba('mapa'));await foto('diario_mapa');
+await ev(()=>{fecharDiario();pausar();});await foto('pausa');
+await ev(()=>{retomar();__vt.G.learn.c1=true;__vt.entrar('final');__vt.ir(14*16,5*16+4,'cima');cenaFinal();});await foto('fim');
+console.log(logs.slice(0,3).join('\n'));await browser.close();})();
